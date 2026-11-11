@@ -1,6 +1,6 @@
 /**
  * Google Analytics for Firebase (free). Only anonymous usage: screens and tool names.
- * Never file names or file contents. Advertising ID collection is off (AndroidManifest.xml).
+ * Never file names or file contents. Advertising ID and ad personalisation are off (firebase.json).
  */
 import { getApp } from '@react-native-firebase/app';
 import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
