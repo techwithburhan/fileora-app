@@ -1,0 +1,37 @@
+# Builds the Fileora Android app on GitHub: every push to main, or by hand (Actions → Build Android APK → Run workflow).
+# Result (about 20–30 minutes): Actions → the run → Artifacts → "fileora-apk" (download, unzip, install app-release.apk on the phone).
+name: Build Android APK
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Install JavaScript packages
+        run: npm ci
+      - name: Check the code (TypeScript + ESLint)
+        run: npx tsc --noEmit && npx eslint App.tsx src
+      - name: Build APK (release, signed with the test key)
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a,x86_64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fileora-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 30
