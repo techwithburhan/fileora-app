@@ -1,4 +1,4 @@
-package in.fileora.app
+package `in`.fileora.app
 
 import android.app.Application
 import com.facebook.react.PackageList
