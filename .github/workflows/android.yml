@@ -10,6 +10,8 @@ jobs:
   apk:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    permissions:
+      contents: write # only to publish the APK to the "builds" branch
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -35,3 +37,18 @@ jobs:
           name: fileora-apk
           path: android/app/build/outputs/apk/release/app-release.apk
           retention-days: 30
+      # Also keep the latest APK in the "builds" branch: builds/fileora-app.apk (one commit, replaced each time).
+      - name: Publish APK to the builds branch
+        if: github.ref == 'refs/heads/main'
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p out && cp android/app/build/outputs/apk/release/app-release.apk out/fileora-app.apk
+          cd out
+          echo "Fileora app APK from commit ${GITHUB_SHA::7} ($(date -u +%Y-%m-%d))" > README.md
+          git init -q -b builds
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add fileora-app.apk README.md
+          git commit -q -m "APK from ${GITHUB_SHA::7}"
+          git push -q -f "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" builds
