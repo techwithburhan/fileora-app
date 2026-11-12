@@ -70,7 +70,7 @@ export default function SplashIntro({ onDone }: { onDone: () => void }) {
     icon.value = withTiming(1, { duration: 350 });
     glow.value = withSequence(withTiming(1, { duration: 600, easing: Easing.out(Easing.quad) }), withDelay(150, withTiming(0, { duration: 250 })));
     scale.value = withSequence(
-      withTiming(1, { duration: 450, easing: Easing.out(Easing.back(1.4)) }),
+      withTiming(1, { duration: 450, easing: Easing.out(Easing.cubic) }),
       withTiming(0.88, { duration: 300, easing: Easing.inOut(Easing.quad) }),
       withTiming(24, { duration: 800, easing: rush }),
     );

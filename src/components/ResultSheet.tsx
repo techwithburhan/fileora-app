@@ -1,10 +1,12 @@
 /**
- * "Your file is ready" pop-up after a task: open the file, and keep going with it in a
- * related tool (e.g. after Merge PDF: Compress, Sign, Watermark, Page Number).
+ * Success pop-up after a task (shown only when it worked): confetti, "Congratulations! Your files
+ * are completed successfully.", open the file, and keep going with it in a related tool
+ * (e.g. after Merge PDF: Compress, Sign, Watermark, Page Number).
  */
 import React from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeIn, SlideInDown, ZoomIn } from 'react-native-reanimated';
+import Animated, { Easing, FadeIn, FadeInUp } from 'react-native-reanimated';
+import Confetti from './Confetti';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FileThumb from './FileThumb';
 import Icon, { IconName } from './Icon';
@@ -24,6 +26,7 @@ export default function ResultSheet({
   onOpen,
   onNext,
   note,
+  openLabel,
 }: {
   file: FileRec | null;
   tool: string;
@@ -32,6 +35,8 @@ export default function ResultSheet({
   onOpen: (f: FileRec) => void;
   onNext: (toolId: string, f: FileRec) => void;
   note?: string;
+  /** e.g. "View scan" when the result is a scanned document */
+  openLabel?: string;
 }) {
   const insets = useSafeAreaInsets();
   if (!file) return null;
@@ -41,14 +46,17 @@ export default function ResultSheet({
       <Animated.View entering={FadeIn.duration(200)} style={styles.backdrop}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close" />
       </Animated.View>
-      <Animated.View entering={SlideInDown.springify().damping(18)} style={[styles.sheet, { backgroundColor: theme.bg, paddingBottom: insets.bottom + 18 }]}>
+      <Animated.View
+        entering={FadeInUp.duration(320).easing(Easing.out(Easing.cubic))}
+        style={[styles.sheet, { backgroundColor: theme.bg, paddingBottom: insets.bottom + 18 }]}>
         <ScrollView contentContainerStyle={styles.body} bounces={false}>
-          <Animated.View entering={ZoomIn.delay(120).springify().damping(12)} style={[styles.okIcon, { backgroundColor: theme.accent }]}>
-            <Icon name="check" size={30} color="#fff" width={3} />
+          <Animated.View entering={FadeIn.delay(80).duration(260)} style={[styles.okIcon, { backgroundColor: theme.accent }]}>
+            <Icon name="party" size={30} color="#fff" width={2.2} />
           </Animated.View>
-          <Text style={[type.title, styles.center, { color: theme.ink }]} accessibilityRole="header">
-            Your file is ready
-          </Text>
+          <View accessible accessibilityRole="header" accessibilityLiveRegion="polite">
+            <Text style={[type.title, styles.center, { color: theme.ink }]}>Congratulations!</Text>
+            <Text style={[type.body, styles.center, { color: theme.ink2 }]}>Your files are completed successfully.</Text>
+          </View>
           <Text style={[type.bodySm, styles.center, { color: theme.muted }]}>{note ?? 'Saved in Files and in Downloads/Fileora on this phone.'}</Text>
           <View style={[styles.file, { backgroundColor: theme.surface, borderColor: theme.line }]}>
             <FileThumb path={file.path} mime={file.mime} name={file.name} theme={theme} size={46} />
@@ -63,7 +71,7 @@ export default function ResultSheet({
             </View>
           </View>
           <PressableScale onPress={() => onOpen(file)} accessibilityRole="button" style={[styles.btn, { backgroundColor: theme.accent }]}>
-            <Text style={[type.button, { color: theme.onAccent }]}>Open file</Text>
+            <Text style={[type.button, { color: theme.onAccent }]}>{openLabel ?? 'Open file'}</Text>
           </PressableScale>
           {next.length > 0 && (
             <>
@@ -95,6 +103,7 @@ export default function ResultSheet({
           </PressableScale>
         </ScrollView>
       </Animated.View>
+      <Confetti play={!!file} />
     </Modal>
   );
 }

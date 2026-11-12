@@ -4,7 +4,9 @@
  */
 import React, { useEffect } from 'react';
 import { LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+
+const SMOOTH = { duration: 260, easing: Easing.out(Easing.cubic) };
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import Icon, { IconName } from './Icon';
 import { Theme } from '../theme';
@@ -21,9 +23,9 @@ const META: Record<string, { label: string; icon: IconName }> = {
 function TabItem({ focused, label, icon, theme, onPress }: { focused: boolean; label: string; icon: IconName; theme: Theme; onPress: () => void }) {
   const f = useSharedValue(focused ? 1 : 0);
   useEffect(() => {
-    f.value = withSpring(focused ? 1 : 0, { damping: 14, stiffness: 180 });
+    f.value = withTiming(focused ? 1 : 0, SMOOTH);
   }, [focused, f]);
-  const iconStyle = useAnimatedStyle(() => ({ transform: [{ translateY: -2 * f.value }, { scale: 1 + 0.12 * f.value }] }));
+  const iconStyle = useAnimatedStyle(() => ({ transform: [{ translateY: -1.5 * f.value }, { scale: 1 + 0.06 * f.value }] }));
   const color = focused ? theme.accent : theme.muted;
   return (
     <Pressable onPress={onPress} accessibilityRole="tab" accessibilityState={{ selected: focused }} accessibilityLabel={label} style={styles.item}>
@@ -43,7 +45,7 @@ export default function AnimatedTabBar({ state, navigation, insets, theme }: Bot
   const count = state.routes.length;
 
   useEffect(() => {
-    if (w.value) x.value = withSpring(state.index * (w.value / count), { damping: 18, stiffness: 170 });
+    if (w.value) x.value = withTiming(state.index * (w.value / count), SMOOTH);
   }, [state.index, count, w, x]);
 
   const onLayout = (e: LayoutChangeEvent) => {

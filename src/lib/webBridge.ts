@@ -56,3 +56,29 @@ export function injectedScript(dark: boolean): string {
   }, true);
 })(); true;`;
 }
+
+/**
+ * Puts files into the tool page's file chooser (the website's ".fo-file-in" input), exactly as if
+ * they had been picked with "Choose files". Waits up to 10 s for the tool to appear.
+ */
+export function fileInjection(files: { name: string; mime: string; data: string }[]): string {
+  return `(function (files) {
+  function toFile(f) {
+    var bin = atob(f.data), u = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    return new File([u], f.name, { type: f.mime });
+  }
+  var tries = 0;
+  (function attempt() {
+    var input = document.querySelector('.fo-file-in') || document.querySelector('input[type=file]:not([capture])');
+    if (!input) { if (++tries < 40) { setTimeout(attempt, 250); } else { window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'inject-fail' })); } return; }
+    try {
+      var dt = new DataTransfer();
+      files.forEach(function (f) { dt.items.add(toFile(f)); });
+      input.files = dt.files;
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'inject-ok', n: files.length }));
+    } catch (e) { window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'inject-fail' })); }
+  })();
+})(${JSON.stringify(files)}); true;`;
+}

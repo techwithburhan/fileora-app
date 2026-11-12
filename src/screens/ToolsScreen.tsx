@@ -52,7 +52,7 @@ export default function ToolsScreen({ theme }: { theme: Theme }) {
         numColumns={2}
         onScroll={onScroll}
         scrollEventThrottle={16}
-        itemLayoutAnimation={LinearTransition.springify().damping(18)}
+        itemLayoutAnimation={LinearTransition.duration(220)}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.content}
         columnWrapperStyle={styles.col}

@@ -4,7 +4,8 @@
  * the phone's browser, downloads are saved to Downloads/Fileora, file pickers work.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, BackHandler, Linking, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, BackHandler, Linking, StyleSheet, Text, View } from 'react-native';
+import BlobUtil from 'react-native-blob-util';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 
@@ -12,7 +13,8 @@ import { WebView, WebViewMessageEvent } from 'react-native-webview';
 const WV = WebView<object>;
 import { useFocusEffect } from '@react-navigation/native';
 import { SITE_HOSTS } from '../config';
-import { injectedScript } from '../lib/webBridge';
+import { fileInjection, injectedScript } from '../lib/webBridge';
+import type { InjectFile } from '../navigation/types';
 import { DownloadMessage, handleDownloadMessage } from '../lib/downloads';
 import { brand, Theme } from '../theme';
 import Icon from './Icon';
@@ -24,8 +26,33 @@ function allowedInApp(url: string): boolean {
   return !!m && SITE_HOSTS.includes(m[1].toLowerCase());
 }
 
-export default function WebPage({ url, theme, onBackAtStart, tool }: { url: string; theme: Theme; onBackAtStart?: () => void; tool?: string }) {
+export default function WebPage({
+  url,
+  theme,
+  onBackAtStart,
+  tool,
+  inject,
+}: {
+  url: string;
+  theme: Theme;
+  onBackAtStart?: () => void;
+  tool?: string;
+  /** files to put into the tool page's file chooser (shared images, "keep going" results) */
+  inject?: InjectFile[];
+}) {
   const ref = useRef<WebView<object>>(null);
+  const injected = useRef(false);
+  const giveFiles = async () => {
+    if (!inject?.length || injected.current) return;
+    injected.current = true;
+    try {
+      const files = [];
+      for (const f of inject) files.push({ name: f.name, mime: f.mime, data: await BlobUtil.fs.readFile(f.path, 'base64') });
+      ref.current?.injectJavaScript(fileInjection(files));
+    } catch {
+      Alert.alert('Choose the file on the page', 'The file couldn’t be added automatically. Tap “Choose files” on the page.');
+    }
+  };
   const canGoBack = useRef(false);
   const [error, setError] = useState(false);
   const [key, setKey] = useState(0);
@@ -59,6 +86,8 @@ export default function WebPage({ url, theme, onBackAtStart, tool }: { url: stri
     try {
       const msg = JSON.parse(e.nativeEvent.data) as DownloadMessage;
       if (msg && typeof msg.type === 'string' && msg.type.startsWith('dl-')) handleDownloadMessage(msg, tool);
+      else if ((msg as { type: string }).type === 'inject-fail')
+        Alert.alert('Choose the file on the page', 'The file couldn’t be added automatically. Tap “Choose files” on the page.');
     } catch {
       // not ours
     }
@@ -118,6 +147,7 @@ export default function WebPage({ url, theme, onBackAtStart, tool }: { url: stri
         onLoadEnd={() => {
           progress.value = withTiming(1, { duration: 150 });
           shown.value = withTiming(0, { duration: 400 });
+          giveFiles();
         }}
         onError={() => setError(true)}
         startInLoadingState

@@ -84,7 +84,7 @@ export default function SettingsScreen({ theme }: { theme: Theme }) {
                 const body = (
                   <>
                     <View style={[styles.icon, { backgroundColor: theme.accent + '1F' }]}>
-                      <Icon name={r.icon} size={19} color={theme.dark ? theme.accent : '#0F7F49'} />
+                      <Icon name={r.icon} size={19} color={theme.accentInk} />
                     </View>
                     <View style={styles.flex}>
                       <Text style={[type.heading, { color: theme.ink }]}>{r.label}</Text>

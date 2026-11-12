@@ -6,6 +6,7 @@ import Animated, {
   useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
+  useReducedMotion,
   withRepeat,
   withSequence,
   withTiming,
@@ -24,18 +25,21 @@ import { categoryUsage, dailyBytes, popularTools, recentTools, totals } from '..
 import { formatBytes } from '../store/files';
 import { useStore } from '../store/store';
 import { activityFiles } from '../store/activity';
-import { confirmDelete, openRecord } from '../lib/openFile';
+import { openRecord } from '../lib/openFile';
+import { useFileActions } from '../components/FileActions';
 import { ActivityTab } from '../navigation/types';
 import { brand, catColor, Theme } from '../theme';
 import { type } from '../typography';
 
-/** A soft circle that drifts slowly in the hero (endless, UI thread). */
+/** A soft circle that drifts very slowly in the hero (endless, UI thread; still when reduced motion is on). */
 function Blob({ size, color, x, y, dx, dy, ms }: { size: number; color: string; x: number; y: number; dx: number; dy: number; ms: number }) {
   const t = useSharedValue(0);
+  const reduced = useReducedMotion();
   useEffect(() => {
+    if (reduced) return;
     t.value = withRepeat(withSequence(withTiming(1, { duration: ms, easing: Easing.inOut(Easing.sin) }), withTiming(0, { duration: ms, easing: Easing.inOut(Easing.sin) })), -1);
-  }, [t, ms]);
-  const s = useAnimatedStyle(() => ({ transform: [{ translateX: dx * t.value }, { translateY: dy * t.value }, { scale: 1 + 0.08 * t.value }] }));
+  }, [t, ms, reduced]);
+  const s = useAnimatedStyle(() => ({ transform: [{ translateX: dx * t.value }, { translateY: dy * t.value }, { scale: 1 + 0.04 * t.value }] }));
   return <Animated.View style={[styles.blob, { width: size, height: size, borderRadius: size / 2, backgroundColor: color, left: x, top: y }, s]} />;
 }
 
@@ -57,6 +61,7 @@ function Skeleton({ theme }: { theme: Theme }) {
 }
 
 export default function HomeScreen({ theme }: { theme: Theme }) {
+  const [showActions, actionSheet] = useFileActions(theme);
   const nav = useNavigation();
   const scrollY = useSharedValue(0);
   const onScroll = useAnimatedScrollHandler(e => {
@@ -102,8 +107,8 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
       <Animated.ScrollView onScroll={onScroll} scrollEventThrottle={16} contentContainerStyle={styles.content}>
         {/* Hero */}
         <View style={styles.hero}>
-          <Blob size={190} color={brand.green} x={210} y={-70} dx={-18} dy={14} ms={4200} />
-          <Blob size={120} color={brand.blue} x={-40} y={150} dx={22} dy={-10} ms={5200} />
+          <Blob size={190} color={brand.green} x={210} y={-70} dx={-10} dy={8} ms={7000} />
+          <Blob size={120} color={brand.blue} x={-40} y={150} dx={12} dy={-6} ms={8000} />
           <Animated.Text entering={FadeInDown.delay(150).duration(500)} style={styles.kicker}>
             FREE · NO SIGN-UP · PRIVATE
           </Animated.Text>
@@ -223,7 +228,7 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
           </View>
         ) : (
           lists[tab].slice(0, 3).map(f => (
-            <FileRow key={f.id} file={f} theme={theme} when={tab === 'opened' ? 'opened' : 'created'} onPress={() => openRecord(f)} onMore={() => confirmDelete(f)} />
+            <FileRow key={f.id} file={f} theme={theme} when={tab === 'opened' ? 'opened' : 'created'} onPress={() => openRecord(f)} onMore={() => showActions(f)} />
           ))
         )}
 
@@ -306,6 +311,7 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
           </Animated.View>
         ))}
       </Animated.ScrollView>
+      {actionSheet}
     </View>
   );
 }

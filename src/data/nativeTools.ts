@@ -4,6 +4,8 @@
  *  - server: sent to the Fileora server through the website's REST API (same as the website)
  */
 import type { Accept } from '../lib/pick';
+import { API_TOOLS_LIVE } from '../config';
+import { isAvailable, toolById } from './tools';
 
 export type Choice = { value: string; label: string };
 export type OptionDef =
@@ -124,13 +126,20 @@ export const NATIVE: Record<string, NativeTool> = {
   },
 };
 
-export const isNative = (id: string) => id in NATIVE;
+/** Runs natively in the app: on the phone always; through the server API only when it is live. */
+export const isNative = (id: string) => id in NATIVE && (NATIVE[id].kind !== 'server' || API_TOOLS_LIVE);
 
 /** What to suggest after a task ("Keep going with this file"). */
 export function relatedFor(toolId: string, mime: string): string[] {
+  return related(toolId, mime).filter(id => {
+    const t = toolById(id);
+    return !!t && isAvailable(t);
+  });
+}
+function related(toolId: string, mime: string): string[] {
   if (toolId === 'merge') return ['compress', 'sign', 'watermark', 'pagenum'];
   if (mime === 'application/pdf') {
-    const base = ['compress', 'watermark', 'pagenum', 'protect', 'merge', 'ocr'];
+    const base = ['compress', 'watermark', 'pagenum', 'merge', 'sign', 'protect', 'ocr'];
     return base.filter(t => t !== toolId).slice(0, 4);
   }
   if (/wordprocessing|msword/.test(mime)) return ['word2pdf'];

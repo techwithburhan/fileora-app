@@ -29,7 +29,7 @@ export default function WebScreen({ theme }: { theme: Theme }) {
         action={url ? { icon: 'external', label: 'Open in browser', onPress: () => Linking.openURL(url) } : undefined}
       />
       {url ? (
-        <WebPage url={url} theme={theme} tool={params.tool} />
+        <WebPage url={url} theme={theme} tool={params.tool} inject={params.inject} />
       ) : (
         <View style={styles.center}>
           {missing ? (

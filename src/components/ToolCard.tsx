@@ -3,15 +3,22 @@ import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Icon, { IconName } from './Icon';
 import PressableScale from './PressableScale';
-import { Tool } from '../data/tools';
+import { isAvailable, Tool } from '../data/tools';
 import { catColor, Theme } from '../theme';
 
 export function ExecBadge({ tool, theme }: { tool: Tool; theme: Theme }) {
-  const device = tool.exec === 'browser';
+  if (!isAvailable(tool))
+    return (
+      <View style={styles.badgeRow}>
+        <Icon name="info" size={14} color={theme.warnInk} />
+        <Text style={[styles.where, { color: theme.warnInk }]}>{tool.pending ? 'Coming soon' : 'Unavailable: maintenance'}</Text>
+      </View>
+    );
+  const device = tool.exec !== 'server';
   return (
     <View style={styles.badgeRow}>
       <Icon name={device ? 'phone' : 'cloud'} size={14} color={device ? theme.accent : theme.link} />
-      <Text style={[styles.where, { color: theme.muted }]}>{device ? 'On your phone' : tool.exec === 'hybrid' ? 'Phone or server' : 'Fileora server'}</Text>
+      <Text style={[styles.where, { color: theme.muted }]}>{device ? 'On your phone' : 'Fileora server'}</Text>
     </View>
   );
 }

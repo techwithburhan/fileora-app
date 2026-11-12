@@ -1,5 +1,6 @@
 package `in`.fileora.app
 
+import android.content.Intent
 import android.os.Bundle
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
@@ -17,6 +18,17 @@ class MainActivity : ReactActivity() {
   /** react-native-screens: don't restore old fragments after the process was killed (avoids a crash). */
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(null)
+    // opened from the share sheet (Gallery → Share → Fileora)
+    if (savedInstanceState == null) ShareInbox.offer(intent)
+  }
+
+  /** Fileora was already open: keep the new share and tell JavaScript. */
+  override fun onNewIntent(intent: Intent) {
+    super.onNewIntent(intent)
+    setIntent(intent)
+    if (ShareInbox.offer(intent)) {
+      reactHost?.currentReactContext?.emitDeviceEvent(FileoraNativeModule.EVENT_SHARE)
+    }
   }
 
   /**

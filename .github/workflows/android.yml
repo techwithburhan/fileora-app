@@ -1,5 +1,5 @@
 # Builds the Fileora Android app on GitHub: every push to main, or by hand (Actions → Build Android APK → Run workflow).
-# Result (about 20–30 minutes): Actions → the run → Artifacts → "fileora-apk" (download, unzip, install app-release.apk on the phone).
+# Result (about 15 minutes): Actions → the run → Artifacts → "fileora-apk", and builds/fileora-app.apk in the "builds" branch.
 name: Build Android APK
 on:
   push:
@@ -25,10 +25,30 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Install JavaScript packages
         run: npm ci
-      - name: Check the code (TypeScript + ESLint)
-        run: npx tsc --noEmit && npx eslint App.tsx src
-      - name: Build APK (release, signed with the test key)
+      - name: Check the code (TypeScript + ESLint, scanner page up to date)
+        run: |
+          node scripts/build-editor.js && git diff --exit-code src/scanner/editorHtml.ts
+          npx tsc --noEmit && npx eslint App.tsx src
+      # Signing: with the repository's private key when its secrets exist (Settings → Secrets and
+      # variables → Actions: FILEORA_KEYSTORE_BASE64, FILEORA_KEYSTORE_PASSWORD, FILEORA_KEY_ALIAS,
+      # FILEORA_KEY_PASSWORD). Without them the APK uses React Native's public test key (testing only).
+      - name: Signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.FILEORA_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/fileora-release.keystore"
+            echo "FILEORA_KEYSTORE_FILE=$RUNNER_TEMP/fileora-release.keystore" >> "$GITHUB_ENV"
+            echo "Signing with the private release key"
+          else
+            echo "::warning::No signing secrets: this APK is signed with the public test key (for testing only)"
+          fi
+      - name: Build APK (release)
         working-directory: android
+        env:
+          FILEORA_KEYSTORE_PASSWORD: ${{ secrets.FILEORA_KEYSTORE_PASSWORD }}
+          FILEORA_KEY_ALIAS: ${{ secrets.FILEORA_KEY_ALIAS }}
+          FILEORA_KEY_PASSWORD: ${{ secrets.FILEORA_KEY_PASSWORD }}
         run: |
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a,x86_64

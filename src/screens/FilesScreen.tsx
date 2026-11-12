@@ -1,19 +1,20 @@
 /**
  * Files tab: My Storage (Fileora's real file sizes and counts, the phone's free space),
- * Internal storage (Android's file picker), and Fileora's files with filters.
+ * Internal storage (Android's file picker), Cloud Storage, Recycle Bin, and Fileora's files with filters.
  */
 import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import BlobUtil from 'react-native-blob-util';
-import { RouteProp, useFocusEffect, useRoute } from '@react-navigation/native';
+import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import AppHeader from '../components/AppHeader';
 import FileRow from '../components/FileRow';
 import Icon, { IconName } from '../components/Icon';
 import PressableScale from '../components/PressableScale';
 import Segmented from '../components/Segmented';
 import { pickFiles } from '../lib/pick';
-import { confirmDelete, openRecord } from '../lib/openFile';
+import { openRecord } from '../lib/openFile';
+import { useFileActions } from '../components/FileActions';
 import { formatBytes, kindOf, openWithViewer } from '../store/files';
 import { FileRec, Source, useStore } from '../store/store';
 import { FileFilter, TabParamList } from '../navigation/types';
@@ -23,12 +24,16 @@ import { type } from '../typography';
 const FOLDERS: { id: Source[]; key: string; label: string; icon: IconName }[] = [
   { id: ['downloaded'], key: 'downloaded', label: 'Downloads', icon: 'download' },
   { id: ['processed'], key: 'processed', label: 'Processed', icon: 'check' },
-  { id: ['scan', 'scan-image'], key: 'scans', label: 'Scans', icon: 'scan' },
+  { id: ['scan', 'scan-image', 'convert'], key: 'scans', label: 'Scans', icon: 'scan' },
 ];
 
 export default function FilesScreen({ theme }: { theme: Theme }) {
+  const nav = useNavigation();
   const { params } = useRoute<RouteProp<TabParamList, 'Files'>>();
   const files = useStore(s => s.files);
+  const bin = useStore(s => s.bin);
+  const clouds = useStore(s => s.clouds);
+  const [showActions, actionSheet] = useFileActions(theme);
   const [filter, setFilter] = useState<FileFilter>(params?.filter ?? 'all');
   const [folder, setFolder] = useState<string | null>(null);
   const [disk, setDisk] = useState<{ free: number; total: number } | null>(null);
@@ -88,7 +93,7 @@ export default function FilesScreen({ theme }: { theme: Theme }) {
       <Animated.View entering={FadeInDown.duration(350)} style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.line }]}>
         <View style={styles.row}>
           <View style={[styles.icon, { backgroundColor: theme.accent + '1F' }]}>
-            <Icon name="storage" size={21} color={theme.dark ? theme.accent : '#0F7F49'} />
+            <Icon name="storage" size={21} color={theme.accentInk} />
           </View>
           <View style={styles.flex}>
             <Text style={[type.heading, { color: theme.ink }]}>My Storage</Text>
@@ -131,6 +136,26 @@ export default function FilesScreen({ theme }: { theme: Theme }) {
         </View>
       </Animated.View>
 
+      {/* Cloud Storage + Recycle Bin */}
+      <View style={styles.pair}>
+        <PressableScale onPress={() => nav.navigate('Cloud')} accessibilityRole="button" style={[styles.card, styles.half, { backgroundColor: theme.surface, borderColor: theme.line }]}>
+          <View style={[styles.icon, { backgroundColor: theme.link + '1A' }]}>
+            <Icon name="cloud" size={21} color={theme.link} />
+          </View>
+          <Text style={[type.heading, { color: theme.ink }]}>Cloud Storage</Text>
+          <Text style={[type.caption, { color: theme.muted }]}>
+            {Object.keys(clouds).length ? `${Object.keys(clouds).length} connected` : 'Drive, JioCloud, OneDrive'}
+          </Text>
+        </PressableScale>
+        <PressableScale onPress={() => nav.navigate('RecycleBin')} accessibilityRole="button" style={[styles.card, styles.half, { backgroundColor: theme.surface, borderColor: theme.line }]}>
+          <View style={[styles.icon, { backgroundColor: theme.danger + '14' }]}>
+            <Icon name="trash" size={20} color={theme.danger} />
+          </View>
+          <Text style={[type.heading, { color: theme.ink }]}>Recycle Bin</Text>
+          <Text style={[type.caption, { color: theme.muted }]}>{bin.length ? `${bin.length} ${bin.length === 1 ? 'file' : 'files'} · ${formatBytes(bin.reduce((a, f) => a + f.size, 0))}` : 'Empty'}</Text>
+        </PressableScale>
+      </View>
+
       {/* Internal storage */}
       <PressableScale onPress={browse} accessibilityRole="button" style={[styles.card, styles.row, { backgroundColor: theme.surface, borderColor: theme.line }]}>
         <View style={[styles.icon, { backgroundColor: theme.surface2 }]}>
@@ -171,7 +196,7 @@ export default function FilesScreen({ theme }: { theme: Theme }) {
                 accessibilityRole="button"
                 accessibilityState={{ selected: on }}
                 style={[styles.folder, { backgroundColor: on ? theme.accent + '1F' : theme.surface, borderColor: on ? theme.accent : theme.line }]}>
-                <Icon name="folder" size={24} color={theme.dark ? theme.accent : '#0F7F49'} />
+                <Icon name="folder" size={24} color={theme.accentInk} />
                 <Text style={[type.heading, { color: theme.ink }]} numberOfLines={1} adjustsFontSizeToFit>
                   {fo.label}
                 </Text>
@@ -198,8 +223,9 @@ export default function FilesScreen({ theme }: { theme: Theme }) {
         ListHeaderComponent={header}
         contentContainerStyle={styles.list}
         ListEmptyComponent={<Text style={[type.bodySm, styles.empty, { color: theme.muted }]}>{emptyText}</Text>}
-        renderItem={({ item }) => <FileRow file={item} theme={theme} onPress={() => openRecord(item)} onMore={() => confirmDelete(item)} />}
+        renderItem={({ item }) => <FileRow file={item} theme={theme} onPress={() => openRecord(item)} onMore={() => showActions(item)} />}
       />
+      {actionSheet}
     </View>
   );
 }
@@ -217,6 +243,8 @@ const styles = StyleSheet.create({
   stats: { flexDirection: 'row', gap: 8 },
   stat: { flex: 1, borderRadius: 14, paddingVertical: 10, paddingHorizontal: 6, alignItems: 'center' },
   folders: { flexDirection: 'row', gap: 8 },
+  pair: { flexDirection: 'row', gap: 10 },
+  half: { flex: 1, gap: 4 },
   folder: { flex: 1, borderWidth: 1, borderRadius: 16, padding: 12, gap: 4 },
   empty: { textAlign: 'center', paddingVertical: 28 },
 });

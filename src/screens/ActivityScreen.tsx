@@ -9,7 +9,8 @@ import Icon from '../components/Icon';
 import Segmented from '../components/Segmented';
 import { activityFiles } from '../store/activity';
 import { useStore } from '../store/store';
-import { confirmDelete, openRecord } from '../lib/openFile';
+import { openRecord } from '../lib/openFile';
+import { useFileActions } from '../components/FileActions';
 import { ActivityTab, RootStackParamList } from '../navigation/types';
 import { Theme } from '../theme';
 import { type } from '../typography';
@@ -21,6 +22,7 @@ const EMPTY: Record<ActivityTab, string> = {
 };
 
 export default function ActivityScreen({ theme }: { theme: Theme }) {
+  const [showActions, actionSheet] = useFileActions(theme);
   const nav = useNavigation();
   const { params } = useRoute<RouteProp<RootStackParamList, 'Activity'>>();
   const [tab, setTab] = useState<ActivityTab>(params?.tab ?? 'downloaded');
@@ -55,10 +57,11 @@ export default function ActivityScreen({ theme }: { theme: Theme }) {
         }
         renderItem={({ item, index }) => (
           <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 35).duration(300)}>
-            <FileRow file={item} theme={theme} when={tab === 'opened' ? 'opened' : 'created'} onPress={() => openRecord(item)} onMore={() => confirmDelete(item)} />
+            <FileRow file={item} theme={theme} when={tab === 'opened' ? 'opened' : 'created'} onPress={() => openRecord(item)} onMore={() => showActions(item)} />
           </Animated.View>
         )}
       />
+      {actionSheet}
     </View>
   );
 }

@@ -1,16 +1,16 @@
 {
   "name": "fileora-app",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "scripts": {
     "android": "react-native run-android",
     "ios": "react-native run-ios",
     "lint": "eslint .",
     "start": "react-native start",
-    "test": "jest"
+    "test": "jest",
+    "editor": "node scripts/build-editor.js"
   },
   "dependencies": {
-    "@dariyd/react-native-document-scanner": "^2.2.0",
     "@react-native-documents/picker": "^12.0.3",
     "@react-native-firebase/analytics": "^27.1.1",
     "@react-native-firebase/app": "^27.1.1",
@@ -21,6 +21,7 @@
     "react": "19.3.0",
     "react-native": "0.88.1",
     "react-native-blob-util": "^1.1.1",
+    "react-native-image-picker": "^8.3.0",
     "react-native-pdf-thumbnail": "^2.0.0",
     "react-native-reanimated": "^4.7.1",
     "react-native-safe-area-context": "^5.5.2",

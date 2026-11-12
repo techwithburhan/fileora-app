@@ -4,7 +4,7 @@
  * API, a document scanner, and files and activity kept on this phone.
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import { StatusBar, StyleSheet, View } from 'react-native';
+import { Alert, StatusBar, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -20,7 +20,12 @@ import HomeScreen from './src/screens/HomeScreen';
 import ProcessScreen from './src/screens/ProcessScreen';
 import ResumeScreen from './src/screens/ResumeScreen';
 import ScannerScreen from './src/screens/ScannerScreen';
-import ScanReviewScreen from './src/screens/ScanReviewScreen';
+import ScanEditorScreen from './src/screens/ScanEditorScreen';
+import ScanDocScreen from './src/screens/ScanDocScreen';
+import SharedScreen from './src/screens/SharedScreen';
+import RecycleBinScreen from './src/screens/RecycleBinScreen';
+import CloudScreen from './src/screens/CloudScreen';
+import { native } from './src/lib/native';
 import SettingsScreen from './src/screens/SettingsScreen';
 import ToolScreen from './src/screens/ToolScreen';
 import ToolsScreen from './src/screens/ToolsScreen';
@@ -53,10 +58,25 @@ export default function App() {
   const theme = useTheme();
   const [splash, setSplash] = useState(true);
   const done = useCallback(() => setSplash(false), []);
+  const [navReady, setNavReady] = useState(false);
   useEffect(() => {
     // files, activity and the dark-mode choice saved on this phone
     store.load();
   }, []);
+  // Gallery → Share → Fileora: open the shared images, ready for an image tool
+  useEffect(() => {
+    if (!navReady || splash) return;
+    const take = () =>
+      native
+        .takeSharedFiles()
+        .then(list => {
+          if (list.length && navigationRef.isReady())
+            navigationRef.navigate('Shared', { files: list.map(f => ({ key: f.path, name: f.name, size: f.size, path: f.path, mime: f.mime })) });
+        })
+        .catch(e => Alert.alert('Couldn’t open the shared image', e instanceof Error ? e.message : String(e)));
+    take();
+    return native.onShare(take);
+  }, [navReady, splash]);
   const navTheme = theme.dark
     ? { ...DarkTheme, colors: { ...DarkTheme.colors, background: theme.bg, card: theme.header, primary: theme.accent, border: theme.line, text: theme.ink } }
     : { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: theme.bg, card: theme.header, primary: theme.accent, border: theme.line, text: theme.ink } };
@@ -70,6 +90,7 @@ export default function App() {
           <NavigationContainer
             ref={navigationRef}
             theme={navTheme}
+            onReady={() => setNavReady(true)}
             onStateChange={() => {
               const r = navigationRef.getCurrentRoute();
               if (r) trackScreen(r.name);
@@ -79,7 +100,13 @@ export default function App() {
               <Stack.Screen name="Tool">{() => <ToolScreen theme={theme} />}</Stack.Screen>
               <Stack.Screen name="Process">{() => <ProcessScreen theme={theme} />}</Stack.Screen>
               <Stack.Screen name="Activity">{() => <ActivityScreen theme={theme} />}</Stack.Screen>
-              <Stack.Screen name="ScanReview">{() => <ScanReviewScreen theme={theme} />}</Stack.Screen>
+              <Stack.Screen name="ScanEditor" options={{ animation: 'fade' }}>
+                {() => <ScanEditorScreen theme={theme} />}
+              </Stack.Screen>
+              <Stack.Screen name="ScanDoc">{() => <ScanDocScreen theme={theme} />}</Stack.Screen>
+              <Stack.Screen name="Shared">{() => <SharedScreen theme={theme} />}</Stack.Screen>
+              <Stack.Screen name="RecycleBin">{() => <RecycleBinScreen theme={theme} />}</Stack.Screen>
+              <Stack.Screen name="Cloud">{() => <CloudScreen theme={theme} />}</Stack.Screen>
               <Stack.Screen name="Blog">{() => <BlogScreen theme={theme} />}</Stack.Screen>
               <Stack.Screen name="Web" options={{ animation: 'slide_from_bottom' }}>
                 {() => <WebScreen theme={theme} />}

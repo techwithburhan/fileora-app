@@ -1,13 +1,15 @@
 /**
  * Fileora tools – generated from the Fileora Core plugin's modules (plugin 2.16.0).
- * Only tools with status "ready" (Edit PDF is still "pending" on the website).
+ * Edit PDF is still "pending" on the website: it is listed (as unavailable) like the other API tools.
  * The tool page is https://www.fileora.in/<slug>/ (Tool Management can change slugs: update here too).
  */
+import { API_TOOLS_LIVE } from '../config';
+
 export type CategoryId = 'pdf' | 'image' | 'converter' | 'optimizer' | 'security' | 'editor' | 'ai';
 export type Exec = 'browser' | 'server' | 'hybrid';
 
 export type Category = { id: CategoryId; name: string; desc: string; count: number };
-export type Tool = { id: string; slug: string; name: string; desc: string; cat: CategoryId; exec: Exec; keys: string };
+export type Tool = { id: string; slug: string; name: string; desc: string; cat: CategoryId; exec: Exec; keys: string; pending?: boolean };
 
 export const CATEGORIES: Category[] = [
   {
@@ -44,7 +46,7 @@ export const CATEGORIES: Category[] = [
     "id": "editor",
     "name": "File Edit",
     "desc": "Turn flat PDFs into fillable forms and edit page content.",
-    "count": 1
+    "count": 2
   },
   {
     "id": "ai",
@@ -659,6 +661,16 @@ export const TOOLS: Tool[] = [
     "keys": "fillable fields checkbox form fill acroform"
   },
   {
+    "id": "edit",
+    "slug": "edit-pdf",
+    "name": "Edit PDF",
+    "desc": "Add text, images, shapes and freehand notes to any page.",
+    "cat": "editor",
+    "exec": "server",
+    "keys": "annotate text add write draw shapes modify",
+    "pending": true
+  },
+  {
     "id": "summarize",
     "slug": "ai-pdf-summarizer",
     "name": "AI Summarizer",
@@ -679,7 +691,18 @@ export const TOOLS: Tool[] = [
 ];
 
 export const TOOL_COUNT = TOOLS.length;
-export const DEVICE_TOOL_COUNT = TOOLS.filter(t => t.exec === 'browser').length;
+/** Browser-based: run on the phone (Compress and Repair PDF run in the browser too, with an optional server mode). */
+export const DEVICE_TOOL_COUNT = TOOLS.filter(t => t.exec !== 'server').length;
+/** API-based: need the Fileora processing server. */
+export const API_TOOL_COUNT = TOOLS.filter(t => t.exec === 'server').length;
+
+/** API-based tools stay switched off (maintenance message) until the server is live: see API_TOOLS_LIVE. */
+export function isApiTool(t: Tool): boolean {
+  return t.exec === 'server';
+}
+export function isAvailable(t: Tool): boolean {
+  return !t.pending && (!isApiTool(t) || API_TOOLS_LIVE);
+}
 
 export function toolById(id: string): Tool | undefined {
   return TOOLS.find(t => t.id === id);

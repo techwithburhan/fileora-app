@@ -97,15 +97,25 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
+        // Your own private key, never in the repository: on GitHub it comes from the repository's
+        // secrets (see .github/workflows/android.yml); locally from these environment variables.
+        release {
+            def ks = System.getenv("FILEORA_KEYSTORE_FILE")
+            if (ks) {
+                storeFile file(ks)
+                storePassword System.getenv("FILEORA_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("FILEORA_KEY_ALIAS")
+                keyPassword System.getenv("FILEORA_KEY_PASSWORD") ?: System.getenv("FILEORA_KEYSTORE_PASSWORD")
+            }
+        }
     }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
         }
         release {
-            // Caution! In production, you need to generate your own keystore file.
-            // see https://reactnative.dev/docs/signed-apk-android.
-            signingConfig signingConfigs.debug
+            // Private key when it is set up; otherwise React Native's public test key (testing only).
+            signingConfig System.getenv("FILEORA_KEYSTORE_FILE") ? signingConfigs.release : signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }

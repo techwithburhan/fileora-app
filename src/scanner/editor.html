@@ -1,0 +1,463 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #111418; touch-action: none; -webkit-user-select: none; user-select: none; }
+  canvas { display: block; }
+  #view { width: 100vw; height: 100vh; }
+  #loupe { position: fixed; width: 132px; height: 132px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 6px 22px rgba(0,0,0,.45); display: none; pointer-events: none; }
+  #busy { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; }
+  #busy i { width: 34px; height: 34px; border-radius: 50%; border: 3px solid rgba(255,255,255,.25); border-top-color: #17AF64; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<canvas id="view"></canvas>
+<canvas id="loupe"></canvas>
+<div id="busy"><i></i></div>
+<script>
+/*
+ * Fileora scanner editor (runs inside the app's WebView, no network).
+ * Messages in:  init, load, mode, quad, set, thumbs, export
+ * Messages out: ready, loaded, quad, quadChanged, thumbs, exported, error
+ */
+(function () {
+  'use strict';
+  var view = document.getElementById('view'), vctx = view.getContext('2d');
+  var loupe = document.getElementById('loupe'), lctx = loupe.getContext('2d');
+  var busyEl = document.getElementById('busy');
+  var ACCENT = '#17AF64', BG = '#111418';
+  var MAX_SRC = 2600;
+
+  var src = null, srcData = null, W = 0, H = 0;      // full-resolution source
+  var disp = null;                                    // source scaled for the screen
+  var quad = null, autoQuad = null, detected = false; // TL, TR, BR, BL in source pixels
+  var mode = 'border', filter = 'none', rot = 0, distortion = true;
+  var base = null, baseKey = '', shown = null, shownKey = '';
+  var fit = { s: 1, ox: 0, oy: 0, w: 0, h: 0 };
+  var drag = -1, dpr = Math.max(1, Math.min(3, window.devicePixelRatio || 1));
+
+  function post(m) {
+    var s = JSON.stringify(m);
+    if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(s);
+    else if (window.__out) window.__out(m);
+  }
+  function busy(on) { busyEl.style.display = on ? 'flex' : 'none'; }
+  function canvas(w, h) { var c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w)); c.height = Math.max(1, Math.round(h)); return c; }
+  function dist(a, b) { return Math.hypot(a[0] - b[0], a[1] - b[1]); }
+  function full() { return [[0, 0], [W, 0], [W, H], [0, H]]; }
+
+  /* ---------------- loading ---------------- */
+  function load(m) {
+    busy(true);
+    var img = new Image();
+    img.onload = function () {
+      var k = Math.min(1, MAX_SRC / Math.max(img.naturalWidth, img.naturalHeight));
+      W = Math.round(img.naturalWidth * k); H = Math.round(img.naturalHeight * k);
+      src = canvas(W, H);
+      var c = src.getContext('2d'); c.imageSmoothingQuality = 'high'; c.drawImage(img, 0, 0, W, H);
+      srcData = c.getImageData(0, 0, W, H);
+      autoQuad = m.quad ? null : detect();
+      detected = m.quad ? !!m.detected : !!autoQuad;
+      quad = m.quad ? scaleQuad(m.quad, m.w && m.h ? W / m.w : 1) : (autoQuad || full());
+      filter = m.filter || 'none'; rot = m.rot || 0; distortion = m.distortion !== false;
+      mode = m.mode || 'border'; base = null; baseKey = ''; shown = null; shownKey = '';
+      layout(); render(); busy(false);
+      post({ t: 'loaded', id: m.id, w: W, h: H, quad: quad, detected: detected });
+    };
+    img.onerror = function () { busy(false); post({ t: 'error', id: m.id, message: 'This image could not be opened.' }); };
+    img.src = m.url;
+  }
+  function scaleQuad(q, k) { return q.map(function (p) { return [p[0] * k, p[1] * k]; }); }
+
+  /* ---------------- automatic page detection ---------------- */
+  function detect() {
+    var S = 360, k = S / Math.max(W, H), w = Math.max(8, Math.round(W * k)), h = Math.max(8, Math.round(H * k));
+    var c = canvas(w, h), x = c.getContext('2d'); x.drawImage(src, 0, 0, w, h);
+    var d = x.getImageData(0, 0, w, h).data, n = w * h, g = new Float32Array(n), i;
+    for (i = 0; i < n; i++) g[i] = 0.299 * d[i * 4] + 0.587 * d[i * 4 + 1] + 0.114 * d[i * 4 + 2];
+    g = boxBlur(g, w, h, 2); g = boxBlur(g, w, h, 2);
+    var t = otsu(g), best = null;
+    [1, 0].forEach(function (bright) {
+      var mask = new Uint8Array(n);
+      for (i = 0; i < n; i++) mask[i] = (bright ? g[i] > t : g[i] <= t) ? 1 : 0;
+      mask = erode(mask, w, h);
+      var comp = largest(mask, w, h);
+      if (!comp || comp.count < n * 0.12 || comp.count > n * 0.985) return;
+      var q = extremes(comp.pixels, w), area = polyArea(q);
+      // a quad over (nearly) the whole photo is the background around the page, or no page at all
+      if (area < n * 0.12 || area > n * 0.93) return;
+      var solid = solidMask(comp.label, w, h), filled = 0;
+      for (i = 0; i < n; i++) filled += solid[i];
+      var fill = filled / area, score = 1 - Math.abs(1 - fill);
+      if (!convex(q)) score -= 0.3;
+      q = refine(q, solid, w, h);
+      if (!best || score > best.score) best = { q: q, score: score };
+    });
+    if (!best || best.score < 0.86) return null;
+    return best.q.map(function (p) { return [clamp(p[0] / k, 0, W), clamp(p[1] / k, 0, H)]; });
+  }
+  function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+  function boxBlur(a, w, h, r) {
+    var o = new Float32Array(a.length), tmp = new Float32Array(a.length), x, y, s, j;
+    for (y = 0; y < h; y++) for (x = 0; x < w; x++) { s = 0; j = 0; for (var dx = -r; dx <= r; dx++) { var xx = x + dx; if (xx >= 0 && xx < w) { s += a[y * w + xx]; j++; } } tmp[y * w + x] = s / j; }
+    for (y = 0; y < h; y++) for (x = 0; x < w; x++) { s = 0; j = 0; for (var dy = -r; dy <= r; dy++) { var yy = y + dy; if (yy >= 0 && yy < h) { s += tmp[yy * w + x]; j++; } } o[y * w + x] = s / j; }
+    return o;
+  }
+  function otsu(g) {
+    var hist = new Float64Array(256), n = g.length, i;
+    for (i = 0; i < n; i++) hist[Math.min(255, Math.max(0, g[i] | 0))]++;
+    var sum = 0; for (i = 0; i < 256; i++) sum += i * hist[i];
+    var sB = 0, wB = 0, best = 0, t = 127;
+    for (i = 0; i < 256; i++) {
+      wB += hist[i]; if (!wB) continue; var wF = n - wB; if (!wF) break;
+      sB += i * hist[i]; var mB = sB / wB, mF = (sum - sB) / wF, v = wB * wF * (mB - mF) * (mB - mF);
+      if (v > best) { best = v; t = i; }
+    }
+    return t;
+  }
+  function erode(m, w, h) {
+    var o = new Uint8Array(m.length);
+    for (var y = 1; y < h - 1; y++) for (var x = 1; x < w - 1; x++) { var i = y * w + x; o[i] = m[i] & m[i - 1] & m[i + 1] & m[i - w] & m[i + w]; }
+    return o;
+  }
+  function largest(m, w, h) {
+    var label = new Int32Array(m.length), cur = 0, best = null, stack = new Int32Array(m.length);
+    for (var s = 0; s < m.length; s++) {
+      if (!m[s] || label[s]) continue;
+      cur++; var top = 0, count = 0, pixels = []; stack[top++] = s; label[s] = cur;
+      while (top) {
+        var p = stack[--top]; count++; pixels.push(p);
+        var x = p % w, y = (p / w) | 0;
+        if (x > 0 && m[p - 1] && !label[p - 1]) { label[p - 1] = cur; stack[top++] = p - 1; }
+        if (x < w - 1 && m[p + 1] && !label[p + 1]) { label[p + 1] = cur; stack[top++] = p + 1; }
+        if (y > 0 && m[p - w] && !label[p - w]) { label[p - w] = cur; stack[top++] = p - w; }
+        if (y < h - 1 && m[p + w] && !label[p + w]) { label[p + w] = cur; stack[top++] = p + w; }
+      }
+      if (!best || count > best.count) best = { id: cur, count: count, pixels: pixels };
+    }
+    if (!best) return null;
+    var only = new Uint8Array(m.length); best.pixels.forEach(function (p) { only[p] = 1; });
+    best.label = only; return best;
+  }
+  /** The component with its holes (text, lines) filled: everything not reachable from the border. */
+  function solidMask(comp, w, h) {
+    var out = new Uint8Array(comp.length), stack = [], i;
+    function push(p) { if (!comp[p] && !out[p]) { out[p] = 1; stack.push(p); } }
+    for (i = 0; i < w; i++) { push(i); push((h - 1) * w + i); }
+    for (i = 0; i < h; i++) { push(i * w); push(i * w + w - 1); }
+    while (stack.length) {
+      var p = stack.pop(), x = p % w, y = (p / w) | 0;
+      if (x > 0) push(p - 1); if (x < w - 1) push(p + 1); if (y > 0) push(p - w); if (y < h - 1) push(p + w);
+    }
+    for (i = 0; i < out.length; i++) out[i] = out[i] ? 0 : 1;
+    return out;
+  }
+  /**
+   * Sharper corners: fit a straight line to each side of the page outline (ignoring the rounded
+   * ends near the corners) and intersect neighbouring sides.
+   */
+  function refine(q, solid, w, h) {
+    var sides = [[], [], [], []], x, y, i, j;
+    for (y = 1; y < h - 1; y++) for (x = 1; x < w - 1; x++) {
+      i = y * w + x;
+      if (!solid[i] || (solid[i - 1] && solid[i + 1] && solid[i - w] && solid[i + w])) continue;
+      var bestSide = -1, bestD = 4;
+      for (j = 0; j < 4; j++) {
+        var a = q[j], b = q[(j + 1) % 4], dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1;
+        var t = ((x - a[0]) * dx + (y - a[1]) * dy) / (L * L);
+        if (t < 0.12 || t > 0.88) continue;
+        var d = Math.abs((x - a[0]) * dy - (y - a[1]) * dx) / L;
+        if (d < bestD) { bestD = d; bestSide = j; }
+      }
+      if (bestSide >= 0) sides[bestSide].push([x + 0.5, y + 0.5]);
+    }
+    var cx = (q[0][0] + q[1][0] + q[2][0] + q[3][0]) / 4, cy = (q[0][1] + q[1][1] + q[2][1] + q[3][1]) / 4;
+    var lines = sides.map(function (pts) {
+      if (pts.length < 12) return null;
+      var mx = 0, my = 0; pts.forEach(function (p) { mx += p[0]; my += p[1]; }); mx /= pts.length; my /= pts.length;
+      var sxx = 0, syy = 0, sxy = 0; pts.forEach(function (p) { var ax = p[0] - mx, ay = p[1] - my; sxx += ax * ax; syy += ay * ay; sxy += ax * ay; });
+      var ang = 0.5 * Math.atan2(2 * sxy, sxx - syy), ux = Math.cos(ang), uy = Math.sin(ang), nx = -uy, ny = ux;
+      if ((cx - mx) * nx + (cy - my) * ny > 0) { nx = -nx; ny = -ny; }   // normal points away from the page
+      return { px: mx + nx * 1.2, py: my + ny * 1.2, ux: ux, uy: uy };  // + the pixel lost to erosion and blur
+    });
+    return q.map(function (c, k) {
+      var A = lines[(k + 3) % 4], B = lines[k];
+      if (!A || !B) return c;
+      var den = A.ux * B.uy - A.uy * B.ux;
+      if (Math.abs(den) < 0.2) return c;
+      var t = ((B.px - A.px) * B.uy - (B.py - A.py) * B.ux) / den, p = [A.px + A.ux * t, A.py + A.uy * t];
+      return Math.hypot(p[0] - c[0], p[1] - c[1]) > 12 ? c : [clamp(p[0], 0, w), clamp(p[1], 0, h)];
+    });
+  }
+  function extremes(pixels, w) {
+    var tl = null, tr = null, br = null, bl = null, a, b, c, e;
+    pixels.forEach(function (p) {
+      var x = p % w, y = (p / w) | 0, s = x + y, d = x - y;
+      if (!tl || s < a) { a = s; tl = [x, y]; }
+      if (!br || s > b) { b = s; br = [x, y]; }
+      if (!tr || d > c) { c = d; tr = [x, y]; }
+      if (!bl || d < e) { e = d; bl = [x, y]; }
+    });
+    return [tl, tr, br, bl];
+  }
+  function polyArea(q) { var s = 0; for (var i = 0; i < 4; i++) { var p = q[i], r = q[(i + 1) % 4]; s += p[0] * r[1] - r[0] * p[1]; } return Math.abs(s) / 2; }
+  function convex(q) {
+    var sign = 0;
+    for (var i = 0; i < 4; i++) {
+      var a = q[i], b = q[(i + 1) % 4], c = q[(i + 2) % 4];
+      var z = (b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0]);
+      if (z !== 0) { if (sign && Math.sign(z) !== sign) return false; sign = Math.sign(z); }
+    }
+    return true;
+  }
+
+  /* ---------------- perspective correction ---------------- */
+  function outSize(q) {
+    var w = Math.max(dist(q[0], q[1]), dist(q[3], q[2])), h = Math.max(dist(q[0], q[3]), dist(q[1], q[2]));
+    return [Math.max(8, w), Math.max(8, h)];
+  }
+  /** Homography taking the output rectangle (ow × oh) to the quad in the source. */
+  function homography(q, ow, oh) {
+    var dst = [[0, 0], [ow, 0], [ow, oh], [0, oh]], A = [], B = [];
+    for (var i = 0; i < 4; i++) {
+      var u = dst[i][0], v = dst[i][1], x = q[i][0], y = q[i][1];
+      A.push([u, v, 1, 0, 0, 0, -u * x, -v * x]); B.push(x);
+      A.push([0, 0, 0, u, v, 1, -u * y, -v * y]); B.push(y);
+    }
+    return solve(A, B);
+  }
+  function solve(A, B) {
+    var n = B.length, i, j, k;
+    for (i = 0; i < n; i++) {
+      var piv = i; for (j = i + 1; j < n; j++) if (Math.abs(A[j][i]) > Math.abs(A[piv][i])) piv = j;
+      var t = A[i]; A[i] = A[piv]; A[piv] = t; var tb = B[i]; B[i] = B[piv]; B[piv] = tb;
+      var d = A[i][i] || 1e-12;
+      for (j = i + 1; j < n; j++) { var f = A[j][i] / d; if (!f) continue; for (k = i; k < n; k++) A[j][k] -= f * A[i][k]; B[j] -= f * B[i]; }
+    }
+    var x = new Array(n);
+    for (i = n - 1; i >= 0; i--) { var s = B[i]; for (j = i + 1; j < n; j++) s -= A[i][j] * x[j]; x[i] = s / (A[i][i] || 1e-12); }
+    return x;
+  }
+  /** Straightens the page: output pixels sampled from the quad with bilinear filtering. */
+  function warp(q, maxSide) {
+    var sz = outSize(q), k = Math.min(1, maxSide / Math.max(sz[0], sz[1]));
+    var ow = Math.round(sz[0] * k), oh = Math.round(sz[1] * k);
+    var hm = homography(q, ow, oh), out = new ImageData(ow, oh), o = out.data, s = srcData.data, sw = W, sh = H;
+    for (var v = 0; v < oh; v++) {
+      var bx = hm[1] * v + hm[2], by = hm[4] * v + hm[5], bz = hm[7] * v + 1, row = v * ow * 4;
+      for (var u = 0; u < ow; u++) {
+        var z = hm[6] * u + bz, x = (hm[0] * u + bx) / z - 0.5, y = (hm[3] * u + by) / z - 0.5;
+        if (x < 0) x = 0; else if (x > sw - 1.001) x = sw - 1.001;
+        if (y < 0) y = 0; else if (y > sh - 1.001) y = sh - 1.001;
+        var x0 = x | 0, y0 = y | 0, fx = x - x0, fy = y - y0, i0 = (y0 * sw + x0) * 4, i1 = i0 + sw * 4, di = row + u * 4;
+        for (var c = 0; c < 3; c++) {
+          var top = s[i0 + c] + (s[i0 + 4 + c] - s[i0 + c]) * fx, bot = s[i1 + c] + (s[i1 + 4 + c] - s[i1 + c]) * fx;
+          o[di + c] = top + (bot - top) * fy;
+        }
+        o[di + 3] = 255;
+      }
+    }
+    return out;
+  }
+  /** Without distortion correction: just the rectangle around the four corners. */
+  function cropBox(q, maxSide) {
+    var xs = q.map(function (p) { return p[0]; }), ys = q.map(function (p) { return p[1]; });
+    var x0 = Math.floor(Math.min.apply(0, xs)), y0 = Math.floor(Math.min.apply(0, ys));
+    var x1 = Math.ceil(Math.max.apply(0, xs)), y1 = Math.ceil(Math.max.apply(0, ys));
+    var w = Math.max(8, x1 - x0), h = Math.max(8, y1 - y0), k = Math.min(1, maxSide / Math.max(w, h));
+    var c = canvas(w * k, h * k), x = c.getContext('2d'); x.imageSmoothingQuality = 'high';
+    x.drawImage(src, x0, y0, w, h, 0, 0, c.width, c.height);
+    return x.getImageData(0, 0, c.width, c.height);
+  }
+
+  /* ---------------- filters ---------------- */
+  function lum(d, i) { return 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]; }
+  /** Paper brightness estimated per area (bright max of 8×8 blocks, smoothed): removes shadows. */
+  function background(img) {
+    var w = img.width, h = img.height, d = img.data, B = 8, bw = Math.ceil(w / B), bh = Math.ceil(h / B), m = new Float32Array(bw * bh);
+    for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) { var v = lum(d, (y * w + x) * 4), j = ((y / B) | 0) * bw + ((x / B) | 0); if (v > m[j]) m[j] = v; }
+    var r = Math.max(2, Math.round(Math.min(bw, bh) / 14));
+    m = boxBlur(m, bw, bh, r); m = boxBlur(m, bw, bh, r);
+    return function (x, y) {
+      var fx = clamp(x / B - 0.5, 0, bw - 1), fy = clamp(y / B - 0.5, 0, bh - 1), x0 = fx | 0, y0 = fy | 0, x1 = Math.min(bw - 1, x0 + 1), y1 = Math.min(bh - 1, y0 + 1), ax = fx - x0, ay = fy - y0;
+      var t = m[y0 * bw + x0] * (1 - ax) + m[y0 * bw + x1] * ax, b = m[y1 * bw + x0] * (1 - ax) + m[y1 * bw + x1] * ax;
+      return t * (1 - ay) + b * ay;
+    };
+  }
+  function contrast(v, k, mid) { v = (v - mid) * k + mid; return v < 0 ? 0 : v > 255 ? 255 : v; }
+  function applyFilter(img, name) {
+    if (name === 'none') return img;
+    var w = img.width, h = img.height, d = new Uint8ClampedArray(img.data), n = w * h, i, x, y;
+    if (name === 'photo') {
+      var hist = new Uint32Array(256); for (i = 0; i < n; i++) hist[lum(d, i * 4) | 0]++;
+      var lo = pct(hist, n, 0.005), hi = pct(hist, n, 0.995), sc = 255 / Math.max(30, hi - lo);
+      for (i = 0; i < n * 4; i += 4) {
+        var l = lum(d, i);
+        for (var c = 0; c < 3; c++) { var v = l + (d[i + c] - l) * 1.15; d[i + c] = contrast((v - lo) * sc, 1.06, 128); }
+      }
+    } else {
+      var bg = background(img);
+      for (y = 0; y < h; y++) for (x = 0; x < w; x++) {
+        i = (y * w + x) * 4;
+        var k = Math.min(3, 248 / Math.max(48, bg(x, y)));
+        if (name === 'document') {
+          d[i] = contrast(d[i] * k, 1.18, 150); d[i + 1] = contrast(d[i + 1] * k, 1.18, 150); d[i + 2] = contrast(d[i + 2] * k, 1.18, 150);
+        } else {
+          var g = Math.min(255, lum(d, i) * k);
+          if (name === 'bw') g = g < 178 ? 0 : g < 196 ? (g - 178) * 14 : 255;
+          else g = contrast(g, 1.2, 150);
+          d[i] = d[i + 1] = d[i + 2] = g;
+        }
+      }
+    }
+    return new ImageData(d, w, h);
+  }
+  function pct(hist, n, p) { var acc = 0, target = n * p; for (var i = 0; i < 256; i++) { acc += hist[i]; if (acc >= target) return i; } return 255; }
+  function toCanvas(img, r) {
+    var c = canvas(img.width, img.height); c.getContext('2d').putImageData(img, 0, 0);
+    if (!r) return c;
+    var q = r % 2 ? canvas(c.height, c.width) : canvas(c.width, c.height), x = q.getContext('2d');
+    x.translate(q.width / 2, q.height / 2); x.rotate(r * Math.PI / 2); x.drawImage(c, -c.width / 2, -c.height / 2);
+    return q;
+  }
+  function processed(maxSide, name) {
+    var img = distortion ? warp(quad, maxSide) : cropBox(quad, maxSide);
+    return toCanvas(applyFilter(img, name), rot);
+  }
+
+  /* ---------------- drawing ---------------- */
+  function layout() {
+    var cw = window.innerWidth, ch = window.innerHeight;
+    view.width = Math.round(cw * dpr); view.height = Math.round(ch * dpr);
+    if (!src) return;
+    var pad = 22, s = Math.min((cw - pad * 2) / W, (ch - pad * 2) / H);
+    fit = { s: s, w: W * s, h: H * s, ox: (cw - W * s) / 2, oy: (ch - H * s) / 2 };
+    disp = canvas(fit.w * dpr, fit.h * dpr);
+    var x = disp.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(src, 0, 0, disp.width, disp.height);
+  }
+  function toView(p) { return [fit.ox + p[0] * fit.s, fit.oy + p[1] * fit.s]; }
+  function render() {
+    vctx.setTransform(1, 0, 0, 1, 0, 0);
+    vctx.fillStyle = BG; vctx.fillRect(0, 0, view.width, view.height);
+    if (!src) return;
+    vctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (mode === 'border') drawBorder(); else drawResult();
+  }
+  function drawBorder() {
+    vctx.drawImage(disp, fit.ox, fit.oy, fit.w, fit.h);
+    var v = quad.map(toView);
+    vctx.save();
+    vctx.beginPath(); vctx.rect(fit.ox, fit.oy, fit.w, fit.h);
+    vctx.moveTo(v[0][0], v[0][1]); for (var i = 3; i >= 0; i--) vctx.lineTo(v[i][0], v[i][1]); vctx.closePath();
+    vctx.fillStyle = 'rgba(0,0,0,0.45)'; vctx.fill('evenodd');
+    vctx.setLineDash([5, 5]); vctx.lineWidth = 1; vctx.strokeStyle = 'rgba(255,255,255,0.55)';
+    for (var t = 1; t < 3; t++) {
+      var a = lerp(v[0], v[1], t / 3), b = lerp(v[3], v[2], t / 3), c = lerp(v[0], v[3], t / 3), d = lerp(v[1], v[2], t / 3);
+      vctx.beginPath(); vctx.moveTo(a[0], a[1]); vctx.lineTo(b[0], b[1]); vctx.moveTo(c[0], c[1]); vctx.lineTo(d[0], d[1]); vctx.stroke();
+    }
+    vctx.setLineDash([]); vctx.lineWidth = 2.5; vctx.strokeStyle = ACCENT;
+    vctx.beginPath(); vctx.moveTo(v[0][0], v[0][1]); for (i = 1; i < 4; i++) vctx.lineTo(v[i][0], v[i][1]); vctx.closePath(); vctx.stroke();
+    v.forEach(function (p, j) {
+      vctx.beginPath(); vctx.arc(p[0], p[1], j === drag ? 15 : 12, 0, Math.PI * 2);
+      vctx.fillStyle = j === drag ? ACCENT : '#fff'; vctx.fill(); vctx.lineWidth = 3; vctx.strokeStyle = ACCENT; vctx.stroke();
+    });
+    vctx.restore();
+  }
+  function lerp(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]; }
+  function drawResult() {
+    var key = [quad.join(','), distortion, filter, rot].join('|');
+    if (shownKey !== key) {
+      var bkey = [quad.join(','), distortion].join('|');
+      if (baseKey !== bkey) { base = distortion ? warp(quad, 1500) : cropBox(quad, 1500); baseKey = bkey; }
+      shown = toCanvas(applyFilter(base, filter), rot); shownKey = key;
+    }
+    var cw = window.innerWidth, ch = window.innerHeight, pad = 22, s = Math.min((cw - pad * 2) / shown.width, (ch - pad * 2) / shown.height);
+    var w = shown.width * s, h = shown.height * s, x = (cw - w) / 2, y = (ch - h) / 2;
+    vctx.save(); vctx.shadowColor = 'rgba(0,0,0,.5)'; vctx.shadowBlur = 18; vctx.fillStyle = '#fff'; vctx.fillRect(x, y, w, h); vctx.restore();
+    vctx.imageSmoothingQuality = 'high'; vctx.drawImage(shown, x, y, w, h);
+  }
+  function drawLoupe(i) {
+    var p = quad[i], vp = toView(p), size = 132, z = 2.6;
+    loupe.width = size * dpr; loupe.height = size * dpr;
+    var left = vp[0] < window.innerWidth / 2 ? window.innerWidth - size - 16 : 16;
+    var top = vp[1] < 200 ? window.innerHeight - size - 16 : 16;
+    loupe.style.left = left + 'px'; loupe.style.top = top + 'px'; loupe.style.display = 'block';
+    var c = lctx; c.setTransform(dpr, 0, 0, dpr, 0, 0); c.fillStyle = BG; c.fillRect(0, 0, size, size);
+    var k = fit.s * z;   // screen px per source px inside the loupe
+    c.save(); c.translate(size / 2 - p[0] * k, size / 2 - p[1] * k); c.scale(k, k);
+    c.drawImage(src, 0, 0);
+    c.lineWidth = 2 / k; c.strokeStyle = ACCENT; c.beginPath(); c.moveTo(quad[0][0], quad[0][1]);
+    for (var j = 1; j < 4; j++) c.lineTo(quad[j][0], quad[j][1]); c.closePath(); c.stroke(); c.restore();
+    c.strokeStyle = '#fff'; c.lineWidth = 1.5; c.beginPath();
+    c.moveTo(size / 2 - 12, size / 2); c.lineTo(size / 2 + 12, size / 2); c.moveTo(size / 2, size / 2 - 12); c.lineTo(size / 2, size / 2 + 12); c.stroke();
+  }
+
+  /* ---------------- touch ---------------- */
+  function pos(e) { return [e.clientX, e.clientY]; }
+  view.addEventListener('pointerdown', function (e) {
+    if (mode !== 'border' || !quad) return;
+    var p = pos(e), best = -1, bd = 44;
+    quad.forEach(function (q, i) { var d = dist(toView(q), p); if (d < bd) { bd = d; best = i; } });
+    if (best < 0) return;
+    drag = best; view.setPointerCapture(e.pointerId); render(); drawLoupe(best);
+  });
+  view.addEventListener('pointermove', function (e) {
+    if (drag < 0) return;
+    var p = pos(e);
+    quad[drag] = [clamp((p[0] - fit.ox) / fit.s, 0, W), clamp((p[1] - fit.oy) / fit.s, 0, H)];
+    render(); drawLoupe(drag);
+  });
+  function end() {
+    if (drag < 0) return;
+    drag = -1; loupe.style.display = 'none'; render();
+    post({ t: 'quadChanged', quad: quad });
+  }
+  view.addEventListener('pointerup', end);
+  view.addEventListener('pointercancel', end);
+  window.addEventListener('resize', function () { layout(); render(); });
+
+  /* ---------------- messages ---------------- */
+  function handle(m) {
+    try {
+      if (m.t === 'init') { if (m.bg) BG = m.bg; if (m.accent) ACCENT = m.accent; render(); }
+      else if (m.t === 'load') load(m);
+      else if (m.t === 'mode') { mode = m.mode; render(); }
+      else if (m.t === 'quad') {
+        if (m.which === 'detect') { if (!autoQuad) autoQuad = detect(); detected = !!autoQuad; }
+        quad = m.which === 'detect' && autoQuad ? autoQuad.map(function (p) { return p.slice(); }) : full();
+        render(); post({ t: 'quad', quad: quad, detected: m.which === 'detect' ? detected : true });
+      }
+      else if (m.t === 'set') {
+        if (m.filter) filter = m.filter; if (typeof m.rot === 'number') rot = ((m.rot % 4) + 4) % 4; if (typeof m.distortion === 'boolean') distortion = m.distortion;
+        render();
+      }
+      else if (m.t === 'thumbs') {
+        var b = distortion ? warp(quad, 160) : cropBox(quad, 160), items = {};
+        ['none', 'photo', 'document', 'bw', 'mono'].forEach(function (f) { items[f] = toCanvas(applyFilter(b, f), rot).toDataURL('image/jpeg', 0.75); });
+        post({ t: 'thumbs', id: m.id, items: items });
+      }
+      else if (m.t === 'export') {
+        busy(true);
+        setTimeout(function () {
+          try {
+            var c = processed(m.maxSide || 2400, filter);
+            post({ t: 'exported', id: m.id, url: c.toDataURL('image/jpeg', m.quality || 0.88), w: c.width, h: c.height });
+          } catch (err) { post({ t: 'error', id: m.id, message: String(err && err.message || err) }); }
+          busy(false);
+        }, 30);
+      }
+    } catch (err) { post({ t: 'error', id: m.id, message: String(err && err.message || err) }); }
+  }
+  function onMsg(e) { var m; try { m = typeof e.data === 'string' ? JSON.parse(e.data) : e.data; } catch (x) { return; } if (m && m.t) handle(m); }
+  window.addEventListener('message', onMsg);
+  document.addEventListener('message', onMsg);
+  window.__fileora = { handle: handle, detectOnly: function () { return detect(); } };
+  layout(); render();
+  post({ t: 'ready' });
+})();
+</script>
+</body>
+</html>

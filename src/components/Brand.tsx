@@ -1,10 +1,7 @@
 /** The official Fileora logo and F icon, drawn exactly from the brand SVGs. */
 import React, { useMemo } from 'react';
 import { SvgXml } from 'react-native-svg';
-import { ICON_SVG, LOGO_SVG } from '../assets/brand';
-
-const LOGO_RATIO = 33840 / 8260;
-const ICON_RATIO = 7170 / 8460;
+import { ICON_RATIO, ICON_SVG, LOGO_RATIO, LOGO_SVG } from '../assets/brand';
 
 /** onDark: "File" in white instead of navy (same as the website in dark mode and on the navy footer). */
 export function Logo({ height = 32, onDark = false }: { height?: number; onDark?: boolean }) {

@@ -30,3 +30,12 @@ export const ABOUT_SLUGS = ['about-us', 'about'];
 export const SHARE_URL = SITE;
 
 export const DEVELOPER = { name: 'TechDeployers', handle: '@techdeployers', url: 'https://www.techdeployers.com' };
+
+/**
+ * API-based tools (Word/Excel/PowerPoint ↔ PDF, OCR, PDF/A, Protect, Unlock, Redact, PDF Forms,
+ * Edit PDF, AI tools) need the Fileora processing server. Until it is live they are shown as
+ * temporarily unavailable with MAINTENANCE_MESSAGE. Set to true (and build) when the server is live.
+ */
+export const API_TOOLS_LIVE = false;
+export const MAINTENANCE_MESSAGE =
+  'This service is currently unavailable due to server maintenance. We will enable this feature once the server is live. Thank you for your patience.';

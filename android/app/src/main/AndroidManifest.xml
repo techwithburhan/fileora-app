@@ -9,11 +9,18 @@
     <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove" />
     <uses-permission android:name="android.permission.ACCESS_ADSERVICES_AD_ID" tools:node="remove" />
     <uses-permission android:name="android.permission.ACCESS_ADSERVICES_ATTRIBUTION" tools:node="remove" />
-    <!-- The document scanner runs inside Google Play services (ML Kit), so the app itself needs no
-         camera permission; the scanner library's optional GPS-in-photos feature is not used. -->
+    <!-- Photos are taken by the phone's own camera app (no camera permission needed), so make sure
+         no library adds these. -->
     <uses-permission android:name="android.permission.CAMERA" tools:node="remove" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" tools:node="remove" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" tools:node="remove" />
+
+    <!-- Android 11+: see whether these cloud apps are installed (Files → Cloud Storage). -->
+    <queries>
+        <package android:name="com.google.android.apps.docs" />
+        <package android:name="jio.cloud.drive" />
+        <package android:name="com.microsoft.skydrive" />
+    </queries>
 
     <application
       android:name=".MainApplication"
@@ -34,6 +41,17 @@
         <intent-filter>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
+        <!-- Gallery → Share → Fileora (one or more photos: JPG, PNG, WebP, HEIC…) -->
+        <intent-filter android:label="@string/share_label">
+            <action android:name="android.intent.action.SEND" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <data android:mimeType="image/*" />
+        </intent-filter>
+        <intent-filter android:label="@string/share_label">
+            <action android:name="android.intent.action.SEND_MULTIPLE" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <data android:mimeType="image/*" />
         </intent-filter>
       </activity>
     </application>

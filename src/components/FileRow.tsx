@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import FileThumb from './FileThumb';
-import Icon from './Icon';
+import Icon, { IconName } from './Icon';
 import PressableScale from './PressableScale';
 import { formatBytes, formatDate } from '../store/files';
 import { FileRec } from '../store/store';
@@ -9,19 +9,21 @@ import { toolById } from '../data/tools';
 import { Theme } from '../theme';
 import { type } from '../typography';
 
-const SOURCE: Record<FileRec['source'], string> = { downloaded: 'Downloaded', processed: 'Processed', scan: 'Scanned PDF', 'scan-image': 'Scanned image' };
+const SOURCE: Record<FileRec['source'], string> = { downloaded: 'Downloaded', processed: 'Processed', scan: 'Scanned PDF', 'scan-image': 'Scanned image', convert: 'Converted PDF' };
 
 export default function FileRow({
   file,
   theme,
   onPress,
   onMore,
+  moreIcon = 'more',
   when = 'created',
 }: {
   file: FileRec;
   theme: Theme;
   onPress: () => void;
   onMore?: () => void;
+  moreIcon?: IconName;
   when?: 'created' | 'opened';
 }) {
   const tool = file.tool ? toolById(file.tool)?.name : undefined;
@@ -49,7 +51,7 @@ export default function FileRow({
       </View>
       {onMore ? (
         <PressableScale onPress={onMore} hitSlop={10} accessibilityRole="button" accessibilityLabel={`More actions for ${file.name}`} style={styles.more}>
-          <Icon name="trash" size={19} color={theme.muted} />
+          <Icon name={moreIcon} size={moreIcon === 'more' ? 22 : 19} color={theme.muted} width={moreIcon === 'more' ? 3 : 2} />
         </PressableScale>
       ) : null}
     </PressableScale>

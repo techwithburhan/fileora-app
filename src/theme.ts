@@ -25,6 +25,12 @@ export type Theme = {
   link: string;
   header: string;
   danger: string;
+  /** green text/icons that pass contrast on this background */
+  accentInk: string;
+  /** maintenance / warning notes */
+  warnBg: string;
+  warnLine: string;
+  warnInk: string;
 };
 
 const light: Theme = {
@@ -41,6 +47,10 @@ const light: Theme = {
   link: '#0062E3',
   header: '#FFFFFF',
   danger: '#C42B31',
+  accentInk: '#0F7F49',
+  warnBg: '#FFF6E0',
+  warnLine: '#F2D58A',
+  warnInk: '#8A5A00',
 };
 
 const dark: Theme = {
@@ -57,6 +67,10 @@ const dark: Theme = {
   link: '#6AA8FF',
   header: '#0A1A30',
   danger: '#FF8A8D',
+  accentInk: '#3CC680',
+  warnBg: '#3A2A0B',
+  warnLine: '#7A5A12',
+  warnInk: '#F5C451',
 };
 
 /** Light or dark: the user's choice in Settings, otherwise the phone's setting. */

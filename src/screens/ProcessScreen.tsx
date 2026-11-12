@@ -130,6 +130,7 @@ export default function ProcessScreen({ theme }: { theme: Theme }) {
         rec = await saveResult({ name: r.name, fromPath: r.path, move: true, tool: tool.id, bytesIn });
       }
       setBusy(null);
+      setFiles([]);
       setResult(rec);
     } catch (e) {
       setBusy(null);
@@ -221,8 +222,19 @@ export default function ProcessScreen({ theme }: { theme: Theme }) {
           </PressableScale>
         ) : (
           <View style={styles.list}>
+            {files.length > 1 && (
+              <View style={styles.listHead}>
+                <Text style={[type.caption, styles.flex, { color: theme.muted }]}>
+                  {files.length} files · {formatBytes(files.reduce((a, f) => a + (f.size || 0), 0))}
+                </Text>
+                <PressableScale onPress={() => setFiles([])} hitSlop={8} accessibilityRole="button" style={[styles.clearAll, { borderColor: theme.line }]}>
+                  <Icon name="close" size={14} color={theme.danger} width={2.6} />
+                  <Text style={[type.caption, styles.bold, { color: theme.danger }]}>Clear all</Text>
+                </PressableScale>
+              </View>
+            )}
             {files.map((f, i) => (
-              <Animated.View key={f.key} entering={FadeIn} exiting={FadeOut} layout={LinearTransition.springify().damping(18)}>
+              <Animated.View key={f.key} entering={FadeIn} exiting={FadeOut} layout={LinearTransition.duration(220)}>
                 <View style={[styles.file, { backgroundColor: theme.surface, borderColor: theme.line }]}>
                   <FileThumb path={f.path} mime={f.mime} name={f.name} theme={theme} size={48} />
                   <View style={styles.flex}>
@@ -307,6 +319,9 @@ const styles = StyleSheet.create({
   drop: { borderWidth: 2, borderStyle: 'dashed', borderRadius: 20, padding: 24, alignItems: 'center', gap: 8, minHeight: 200, justifyContent: 'center' },
   dropIcon: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   list: { gap: 10 },
+  listHead: { flexDirection: 'row', alignItems: 'center' },
+  clearAll: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, minHeight: 32 },
+  bold: { fontWeight: '700' },
   file: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 18, padding: 10 },
   order: { gap: 8 },
   x: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
