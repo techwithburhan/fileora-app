@@ -8,6 +8,8 @@ import PressableScale from '../components/PressableScale';
 import { ToolChip } from '../components/ToolCard';
 import { categoryById, toolById, TOOLS } from '../data/tools';
 import { toolUrl } from '../config';
+import { isNative } from '../data/nativeTools';
+import { store } from '../store/store';
 import { RootStackParamList } from '../navigation/types';
 import { trackTool } from '../analytics';
 import { catColor, Theme } from '../theme';
@@ -27,9 +29,15 @@ export default function ToolScreen({ theme }: { theme: Theme }) {
         ? { icon: 'cloud' as IconName, title: 'Phone or Fileora server', text: 'Runs on your phone when it can; otherwise the file goes over HTTPS to the Fileora server and is deleted after the task.' }
         : { icon: 'cloud' as IconName, title: 'Runs on the Fileora server', text: 'The file goes over HTTPS to the Fileora server and is deleted after download, or automatically within 1 hour.' };
 
+  const native = isNative(tool.id);
   const open = () => {
     trackTool(tool.id);
-    nav.navigate('Web', { url: toolUrl(tool.slug), title: tool.name });
+    if (tool.id === 'scan') nav.navigate('Tabs', { screen: 'Scanner' });
+    else if (native) nav.navigate('Process', { tool: tool.id });
+    else {
+      store.logOpen(tool.id);
+      nav.navigate('Web', { url: toolUrl(tool.slug), title: tool.name, tool: tool.id });
+    }
   };
 
   return (

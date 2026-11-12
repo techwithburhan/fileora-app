@@ -20,4 +20,13 @@ export const INFO_PAGES: { key: string; title: string; slugs: string[] }[] = [
   { key: 'accessibility', title: 'Accessibility', slugs: ['accessibility'] },
 ];
 
-export const DEVELOPER = { name: 'TechDeployers', url: 'https://www.techdeployers.com' };
+/** Website pages used by Settings (looked up by slug, so nothing breaks if a page is missing). */
+export const CONTACT_SLUGS = ['contact', 'contact-us'];
+export const TERMS_SLUGS = ['terms-and-conditions', 'terms-of-service', 'terms-of-use', 'terms'];
+export const PRIVACY_SLUGS = ['privacy-policy', 'privacy'];
+export const ABOUT_SLUGS = ['about-us', 'about'];
+
+/** Link people share to get the app (the website, which links to the app). */
+export const SHARE_URL = SITE;
+
+export const DEVELOPER = { name: 'TechDeployers', handle: '@techdeployers', url: 'https://www.techdeployers.com' };

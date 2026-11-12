@@ -1,5 +1,6 @@
 import { useColorScheme } from 'react-native';
 import type { CategoryId } from './data/tools';
+import { useStore } from './store/store';
 
 /** Fileora brand colours (same as the website). */
 export const brand = {
@@ -58,8 +59,12 @@ const dark: Theme = {
   danger: '#FF8A8D',
 };
 
+/** Light or dark: the user's choice in Settings, otherwise the phone's setting. */
 export function useTheme(): Theme {
-  return useColorScheme() === 'dark' ? dark : light;
+  const system = useColorScheme();
+  const pref = useStore(s => s.theme);
+  const isDark = pref === 'system' ? system === 'dark' : pref === 'dark';
+  return isDark ? dark : light;
 }
 
 const CAT: Record<CategoryId, [string, string]> = {
@@ -75,4 +80,23 @@ const CAT: Record<CategoryId, [string, string]> = {
 
 export function catColor(cat: CategoryId, theme: Theme): string {
   return CAT[cat][theme.dark ? 1 : 0];
+}
+
+/**
+ * Chart colours per category (fixed order). Checked with the dataviz palette validator against
+ * the light (#FFFFFF) and dark (#0C1E36) card colours: lightness band, chroma, colour-blind
+ * separation of neighbours, normal-vision separation and 3:1 contrast all pass.
+ */
+const CHART: Record<CategoryId, [string, string]> = {
+  pdf: ['#006DFC', '#3A86FF'],
+  image: ['#129A57', '#1E9E5F'],
+  converter: ['#C96A00', '#C8740F'],
+  optimizer: ['#0E8F86', '#12A398'],
+  security: ['#B23A48', '#E14F5B'],
+  editor: ['#8A4DE0', '#9468F2'],
+  ai: ['#C2357A', '#DD5A9B'],
+};
+
+export function chartColor(cat: CategoryId, theme: Theme): string {
+  return CHART[cat][theme.dark ? 1 : 0];
 }

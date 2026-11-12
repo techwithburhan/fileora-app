@@ -3,6 +3,10 @@ apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 apply plugin: "com.google.gms.google-services"
 
+// App version comes from package.json ("0.3.0" -> versionName 0.3.0, versionCode 300).
+def appVersion = new groovy.json.JsonSlurper().parse(file("../../package.json")).version
+def appVersionCode = appVersion.tokenize('.').collect { it.toInteger() }.with { it[0] * 10000 + it[1] * 100 + it[2] }
+
 /**
  * This is the configuration block to customize your React Native Android app.
  * By default you don't need to apply any configuration, just uncomment the lines you need.
@@ -83,8 +87,8 @@ android {
         applicationId "in.fileora.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 2
-        versionName "0.2"
+        versionCode appVersionCode
+        versionName appVersion
     }
     signingConfigs {
         debug {

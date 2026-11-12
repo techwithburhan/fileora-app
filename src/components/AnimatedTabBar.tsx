@@ -1,5 +1,5 @@
 /**
- * Bottom navigation (Home, Tools, Resume, Blog, Contact) with a pill that slides to the active tab
+ * Bottom navigation (Home, Tools, Scanner, Files, Resume, Settings) with a pill that slides to the active tab
  * and icons that spring up (Reanimated).
  */
 import React, { useEffect } from 'react';
@@ -12,9 +12,10 @@ import { Theme } from '../theme';
 const META: Record<string, { label: string; icon: IconName }> = {
   Home: { label: 'Home', icon: 'home' },
   Tools: { label: 'Tools', icon: 'grid' },
+  Scanner: { label: 'Scanner', icon: 'scan' },
+  Files: { label: 'Files', icon: 'folder' },
   Resume: { label: 'Resume', icon: 'resume' },
-  Blog: { label: 'Blog', icon: 'blog' },
-  Contact: { label: 'Contact', icon: 'mail' },
+  Settings: { label: 'Settings', icon: 'settings' },
 };
 
 function TabItem({ focused, label, icon, theme, onPress }: { focused: boolean; label: string; icon: IconName; theme: Theme; onPress: () => void }) {
@@ -27,9 +28,11 @@ function TabItem({ focused, label, icon, theme, onPress }: { focused: boolean; l
   return (
     <Pressable onPress={onPress} accessibilityRole="tab" accessibilityState={{ selected: focused }} accessibilityLabel={label} style={styles.item}>
       <Animated.View style={iconStyle}>
-        <Icon name={icon} size={23} color={color} width={focused ? 2.3 : 2} />
+        <Icon name={icon} size={22} color={color} width={focused ? 2.3 : 2} />
       </Animated.View>
-      <Text style={[styles.label, focused && styles.labelOn, { color }]}>{label}</Text>
+      <Text style={[styles.label, focused && styles.labelOn, { color }]} numberOfLines={1} maxFontSizeMultiplier={1.3}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -81,8 +84,8 @@ const styles = StyleSheet.create({
   bar: { borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 6 },
   row: { flexDirection: 'row' },
   pillWrap: { position: 'absolute', top: 0, bottom: 0, left: 0, alignItems: 'center', justifyContent: 'center' },
-  pill: { width: 64, height: 52, borderRadius: 18 },
+  pill: { width: '86%', maxWidth: 64, height: 52, borderRadius: 16 },
   item: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2, minHeight: 56 },
-  label: { fontSize: 11.5, fontWeight: '500' },
+  label: { fontSize: 11, fontWeight: '500' },
   labelOn: { fontWeight: '800' },
 });

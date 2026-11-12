@@ -1,6 +1,6 @@
 /**
  * Side menu with every option the website offers today: all tools and the 7 tool categories,
- * Home, ATS Resume, Blog, Contact us, API Status and the information pages.
+ * Home, Scanner, Files, ATS Resume, Blog, Settings, Contact us, API Status and the information pages.
  * Slides in from the right; its rows arrive one after another (Reanimated layout animations).
  */
 import React, { useEffect, useState } from 'react';
@@ -12,10 +12,11 @@ import Icon, { IconName } from './Icon';
 import PressableScale from './PressableScale';
 import { useMenu } from './MenuContext';
 import { CATEGORIES, TOOL_COUNT } from '../data/tools';
-import { DEVELOPER, INFO_PAGES, PAGES, SITE } from '../config';
+import { CONTACT_SLUGS, DEVELOPER, INFO_PAGES, PAGES, SITE } from '../config';
 import { navigationRef, TabParamList } from '../navigation/types';
 import { catColor, Theme } from '../theme';
 import { trackScreen } from '../analytics';
+import { APP_VERSION } from '../version';
 
 type Row = { key: string; label: string; icon: IconName; color?: string; count?: number; go: () => void };
 
@@ -24,6 +25,9 @@ function goTab(tab: keyof TabParamList, params?: TabParamList['Tools']) {
 }
 function goWeb(title: string, url?: string, slugs?: string[]) {
   if (navigationRef.isReady()) navigationRef.navigate('Web', { title, url, slugs });
+}
+function goBlog() {
+  if (navigationRef.isReady()) navigationRef.navigate('Blog');
 }
 
 export default function MenuSheet({ theme }: { theme: Theme }) {
@@ -84,9 +88,12 @@ export default function MenuSheet({ theme }: { theme: Theme }) {
       title: 'Fileora',
       rows: [
         { key: 'home', label: 'Home', icon: 'home', go: () => goTab('Home') },
+        { key: 'scanner', label: 'Scanner', icon: 'scan', go: () => goTab('Scanner') },
+        { key: 'files', label: 'Files', icon: 'folder', go: () => goTab('Files') },
         { key: 'resume', label: 'ATS Resume', icon: 'resume', go: () => goTab('Resume') },
-        { key: 'blog', label: 'Blog', icon: 'blog', go: () => goTab('Blog') },
-        { key: 'contact', label: 'Contact us', icon: 'mail', go: () => goTab('Contact') },
+        { key: 'blog', label: 'Blog', icon: 'blog', go: goBlog },
+        { key: 'settings', label: 'Settings', icon: 'settings', go: () => goTab('Settings') },
+        { key: 'contact', label: 'Contact us', icon: 'mail', go: () => goWeb('Contact us', undefined, CONTACT_SLUGS) },
         { key: 'status', label: 'API Status', icon: 'pulse', go: () => goWeb('API Status', PAGES.apiStatus) },
       ],
     },
@@ -149,7 +156,7 @@ export default function MenuSheet({ theme }: { theme: Theme }) {
             <Text style={[styles.rowLabel, { color: theme.ink }]}>Open fileora.in</Text>
           </PressableScale>
           <Text style={[styles.foot, { color: theme.muted }]}>
-            Fileora app 0.2 · {Platform.OS === 'android' ? 'Android' : Platform.OS}
+            Fileora app {APP_VERSION} · {Platform.OS === 'android' ? 'Android' : Platform.OS}
           </Text>
           <Text style={[styles.foot, { color: theme.muted }]} onPress={() => Linking.openURL(DEVELOPER.url)} accessibilityRole="link">
             Made by <Text style={{ color: theme.link }}>{DEVELOPER.name}</Text>

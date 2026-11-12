@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlatList, Image, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
@@ -15,9 +15,19 @@ import AppHeader from '../components/AppHeader';
 import Icon, { IconName } from '../components/Icon';
 import PressableScale from '../components/PressableScale';
 import { ToolChip } from '../components/ToolCard';
-import { CATEGORIES, DEVICE_TOOL_COUNT, POPULAR, TOOL_COUNT } from '../data/tools';
+import FileRow from '../components/FileRow';
+import Segmented from '../components/Segmented';
+import { UsageDonut, WeekBars } from '../components/UsageCharts';
+import { CATEGORIES, DEVICE_TOOL_COUNT, TOOL_COUNT } from '../data/tools';
 import { getPosts, Post } from '../api/wp';
+import { categoryUsage, dailyBytes, popularTools, recentTools, totals } from '../store/derive';
+import { formatBytes } from '../store/files';
+import { useStore } from '../store/store';
+import { activityFiles } from '../store/activity';
+import { confirmDelete, openRecord } from '../lib/openFile';
+import { ActivityTab } from '../navigation/types';
 import { brand, catColor, Theme } from '../theme';
+import { type } from '../typography';
 
 /** A soft circle that drifts slowly in the hero (endless, UI thread). */
 function Blob({ size, color, x, y, dx, dy, ms }: { size: number; color: string; x: number; y: number; dx: number; dy: number; ms: number }) {
@@ -39,8 +49,8 @@ function Skeleton({ theme }: { theme: Theme }) {
     <Animated.View style={[styles.post, { backgroundColor: theme.surface, borderColor: theme.line }, s]}>
       <View style={[styles.postImg, { backgroundColor: theme.surface2 }]} />
       <View style={styles.postBody}>
-        <View style={[styles.skLine, { backgroundColor: theme.surface2, width: '90%' }]} />
-        <View style={[styles.skLine, { backgroundColor: theme.surface2, width: '60%' }]} />
+        <View style={[styles.skLine, styles.w90, { backgroundColor: theme.surface2 }]} />
+        <View style={[styles.skLine, styles.w60, { backgroundColor: theme.surface2 }]} />
       </View>
     </Animated.View>
   );
@@ -62,10 +72,20 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
   }, []);
   useEffect(load, [load]);
 
+  const events = useStore(st => st.events);
+  const files = useStore(st => st.files);
+  const recent = useMemo(() => recentTools(events), [events]);
+  const popular = useMemo(() => popularTools(events), [events]);
+  const byCat = useMemo(() => categoryUsage(events), [events]);
+  const week = useMemo(() => dailyBytes(events), [events]);
+  const sum = useMemo(() => totals(events), [events]);
+  const [tab, setTab] = useState<ActivityTab>('downloaded');
+  const lists = useMemo(() => activityFiles(files), [files]);
+
   const openTool = (id: string) => nav.navigate('Tool', { id });
   const section = (title: string, action?: { label: string; onPress: () => void }) => (
     <View style={styles.secHead}>
-      <Text style={[styles.secTitle, { color: theme.ink }]} accessibilityRole="header">
+      <Text style={[type.section, { color: theme.ink }]} accessibilityRole="header">
         {title}
       </Text>
       {action && (
@@ -97,12 +117,20 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
             <PressableScale
               onPress={() => nav.navigate('Tabs', { screen: 'Tools', params: { cat: 'all' } })}
               accessibilityRole="button"
-              style={[styles.btn, { backgroundColor: brand.green }]}>
-              <Text style={styles.btnText}>Browse {TOOL_COUNT} tools</Text>
+              style={[styles.btn, styles.btnWide, { backgroundColor: brand.green }]}>
+              <Icon name="grid" size={18} color="#03213F" width={2.3} />
+              <Text style={styles.btnText}>Browse by tools</Text>
             </PressableScale>
-            <PressableScale onPress={() => nav.navigate('Tabs', { screen: 'Resume' })} accessibilityRole="button" style={[styles.btn, styles.btnGhost]}>
-              <Text style={[styles.btnText, styles.btnGhostText]}>ATS Resume</Text>
-            </PressableScale>
+            <View style={styles.btnPair}>
+              <PressableScale onPress={() => nav.navigate('Activity', { tab: 'downloaded' })} accessibilityRole="button" style={[styles.btn, styles.btnGhost, styles.flex]}>
+                <Icon name="download" size={18} color="#FFFFFF" width={2.2} />
+                <Text style={[styles.btnText, styles.btnGhostText]}>Downloads</Text>
+              </PressableScale>
+              <PressableScale onPress={() => nav.navigate('Tabs', { screen: 'Resume' })} accessibilityRole="button" style={[styles.btn, styles.btnGhost, styles.flex]}>
+                <Icon name="resume" size={18} color="#FFFFFF" width={2.2} />
+                <Text style={[styles.btnText, styles.btnGhostText]}>ATS Resume</Text>
+              </PressableScale>
+            </View>
           </Animated.View>
         </View>
 
@@ -116,6 +144,22 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
           <Icon name="search" size={20} color={theme.muted} />
           <Text style={[styles.searchText, { color: theme.muted }]}>Search {TOOL_COUNT} tools…</Text>
         </PressableScale>
+
+        {/* Recently used (from this phone's history) */}
+        {recent.length > 0 && (
+          <>
+            {section('Recently used')}
+            <FlatList
+              horizontal
+              data={recent}
+              keyExtractor={t => t.id}
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.carousel}
+              style={styles.carouselOuter}
+              renderItem={({ item }) => <ToolChip tool={item} theme={theme} onPress={() => openTool(item.id)} />}
+            />
+          </>
+        )}
 
         {/* Categories */}
         {section('Categories')}
@@ -143,10 +187,10 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
         </View>
 
         {/* Popular */}
-        {section('Popular tools', { label: 'See all', onPress: () => nav.navigate('Tabs', { screen: 'Tools', params: { cat: 'all' } }) })}
+        {section(popular.personal ? 'Your most used tools' : 'Popular tools', { label: 'See all', onPress: () => nav.navigate('Tabs', { screen: 'Tools', params: { cat: 'all' } }) })}
         <FlatList
           horizontal
-          data={POPULAR}
+          data={popular.tools}
           keyExtractor={t => t.id}
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.carousel}
@@ -154,13 +198,74 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
           renderItem={({ item }) => <ToolChip tool={item} theme={theme} onPress={() => openTool(item.id)} />}
         />
 
+        {/* Your files: Downloaded / Opened / Processed */}
+        {section('Your files', { label: 'See all', onPress: () => nav.navigate('Activity', { tab }) })}
+        <Segmented
+          theme={theme}
+          value={tab}
+          onChange={setTab}
+          items={[
+            { id: 'downloaded', label: 'Downloaded', count: lists.downloaded.length },
+            { id: 'opened', label: 'Opened', count: lists.opened.length },
+            { id: 'processed', label: 'Processed', count: lists.processed.length },
+          ]}
+        />
+        {lists[tab].length === 0 ? (
+          <View style={[styles.empty, { backgroundColor: theme.surface, borderColor: theme.line }]}>
+            <Icon name={tab === 'opened' ? 'clock' : tab === 'downloaded' ? 'download' : 'check'} size={22} color={theme.muted} />
+            <Text style={[type.bodySm, styles.flex, { color: theme.muted }]}>
+              {tab === 'downloaded'
+                ? 'Files you download from a tool show up here.'
+                : tab === 'opened'
+                  ? 'Files you open from Fileora show up here.'
+                  : 'Files you merge, compress or convert in the app show up here.'}
+            </Text>
+          </View>
+        ) : (
+          lists[tab].slice(0, 3).map(f => (
+            <FileRow key={f.id} file={f} theme={theme} when={tab === 'opened' ? 'opened' : 'created'} onPress={() => openRecord(f)} onMore={() => confirmDelete(f)} />
+          ))
+        )}
+
+        {/* Usage, from this phone's history only */}
+        {section('Your activity')}
+        <View style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.line }]}>
+          {sum.tasks === 0 && byCat.length === 0 ? (
+            <View style={styles.emptyChart}>
+              <Icon name="pulse" size={26} color={theme.muted} />
+              <Text style={[type.heading, { color: theme.ink }]}>No activity yet</Text>
+              <Text style={[type.bodySm, styles.centerText, { color: theme.muted }]}>
+                Use a tool and your charts appear here. They come from the history kept on this phone.
+              </Text>
+            </View>
+          ) : (
+            <>
+              <Text style={[type.overline, { color: theme.muted }]}>TOOLS USED, BY CATEGORY</Text>
+              {byCat.length > 0 ? (
+                <UsageDonut data={byCat} theme={theme} />
+              ) : (
+                <Text style={[type.bodySm, { color: theme.muted }]}>No tools opened yet.</Text>
+              )}
+              <View style={[styles.divider, { backgroundColor: theme.line }]} />
+              <View style={styles.statRow}>
+                <Text style={[type.overline, styles.flex, { color: theme.muted }]}>PROCESSED, LAST 7 DAYS</Text>
+                <Text style={[type.heading, { color: theme.ink }]}>{formatBytes(week.reduce((a, d) => a + d.bytes, 0))}</Text>
+              </View>
+              <WeekBars data={week} theme={theme} />
+              <Text style={[type.caption, { color: theme.muted }]}>
+                All time: {sum.tasks} {sum.tasks === 1 ? 'file' : 'files'} done · {formatBytes(sum.bytes)}
+              </Text>
+            </>
+          )}
+        </View>
+
         {/* Resume promo */}
         <Animated.View entering={FadeInDown.delay(300).duration(450)}>
           <PressableScale
             scaleTo={0.98}
             onPress={() => nav.navigate('Tabs', { screen: 'Resume' })}
             accessibilityRole="button"
-            style={[styles.promo, { backgroundColor: theme.dark ? '#0F3B2A' : '#E3F7EC', borderColor: theme.dark ? '#1C5C42' : '#BDE9D2' }]}>
+            style={[styles.promo, theme.dark ? styles.promoDark : styles.promoLight]}>
             <View style={[styles.catIcon, { backgroundColor: brand.green }]}>
               <Icon name="resume" size={22} color="#fff" />
             </View>
@@ -173,7 +278,7 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
         </Animated.View>
 
         {/* Blog */}
-        {section('From the blog', { label: 'All posts', onPress: () => nav.navigate('Tabs', { screen: 'Blog' }) })}
+        {section('From the blog', { label: 'All posts', onPress: () => nav.navigate('Blog') })}
         {posts === null && !postsError && [0, 1].map(i => <Skeleton key={i} theme={theme} />)}
         {postsError && (
           <Text style={[styles.err, { color: theme.muted }]} onPress={load}>
@@ -211,24 +316,25 @@ const styles = StyleSheet.create({
   hero: { backgroundColor: brand.navy, borderRadius: 24, padding: 20, paddingTop: 22, overflow: 'hidden', gap: 10 },
   blob: { position: 'absolute', opacity: 0.85 },
   kicker: { color: '#9FE3C1', fontSize: 11.5, fontWeight: '800', letterSpacing: 1.1 },
-  heroTitle: { color: '#FFFFFF', fontSize: 25, lineHeight: 31, fontWeight: '800', maxWidth: '88%' },
-  heroText: { color: '#D3E2F5', fontSize: 14.5, lineHeight: 21, maxWidth: '95%' },
-  heroBtns: { flexDirection: 'row', gap: 10, marginTop: 6, flexWrap: 'wrap' },
-  btn: { minHeight: 46, paddingHorizontal: 18, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  btnText: { color: '#03213F', fontSize: 15, fontWeight: '800' },
+  heroTitle: { color: '#FFFFFF', fontSize: 23, lineHeight: 29, fontWeight: '800', maxWidth: '90%' },
+  heroText: { color: '#D3E2F5', fontSize: 14, lineHeight: 20, maxWidth: '95%' },
+  heroBtns: { gap: 10, marginTop: 6 },
+  btnPair: { flexDirection: 'row', gap: 10 },
+  btn: { minHeight: 46, paddingHorizontal: 14, borderRadius: 14, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 },
+  btnWide: { alignSelf: 'stretch' },
+  btnText: { color: '#03213F', fontSize: 14.5, fontWeight: '800' },
   btnGhost: { backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)' },
   btnGhostText: { color: '#FFFFFF' },
   search: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, minHeight: 52 },
   searchText: { fontSize: 15.5 },
   secHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 6 },
-  secTitle: { fontSize: 19, fontWeight: '800' },
   secLink: { fontSize: 14, fontWeight: '700', padding: 4 },
   cats: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   catCell: { width: '48.5%' },
   cat: { borderWidth: 1, borderRadius: 18, padding: 14, gap: 4 },
   catIcon: { width: 42, height: 42, borderRadius: 13, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
-  catName: { fontSize: 15, fontWeight: '800' },
-  catCount: { fontSize: 13, fontWeight: '600' },
+  catName: { fontSize: 14.5, fontWeight: '800' },
+  catCount: { fontSize: 12.5, fontWeight: '600' },
   carouselOuter: { marginHorizontal: -16 },
   carousel: { paddingHorizontal: 16, gap: 10 },
   promo: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 18, padding: 14 },
@@ -240,5 +346,15 @@ const styles = StyleSheet.create({
   postTitle: { fontSize: 14.5, fontWeight: '700', lineHeight: 20 },
   postDate: { fontSize: 12.5, fontWeight: '600' },
   skLine: { height: 12, borderRadius: 6 },
+  w90: { width: '90%' },
+  w60: { width: '60%' },
+  promoLight: { backgroundColor: '#E3F7EC', borderColor: '#BDE9D2' },
+  promoDark: { backgroundColor: '#0F3B2A', borderColor: '#1C5C42' },
   err: { fontSize: 14.5, textAlign: 'center', padding: 8 },
+  empty: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 16, padding: 14 },
+  card: { borderWidth: 1, borderRadius: 20, padding: 16, gap: 12 },
+  emptyChart: { alignItems: 'center', gap: 6, paddingVertical: 10 },
+  centerText: { textAlign: 'center' },
+  divider: { height: StyleSheet.hairlineWidth },
+  statRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
 });

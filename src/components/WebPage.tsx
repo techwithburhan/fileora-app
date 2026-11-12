@@ -24,7 +24,7 @@ function allowedInApp(url: string): boolean {
   return !!m && SITE_HOSTS.includes(m[1].toLowerCase());
 }
 
-export default function WebPage({ url, theme, onBackAtStart }: { url: string; theme: Theme; onBackAtStart?: () => void }) {
+export default function WebPage({ url, theme, onBackAtStart, tool }: { url: string; theme: Theme; onBackAtStart?: () => void; tool?: string }) {
   const ref = useRef<WebView<object>>(null);
   const canGoBack = useRef(false);
   const [error, setError] = useState(false);
@@ -58,7 +58,7 @@ export default function WebPage({ url, theme, onBackAtStart }: { url: string; th
   const onMessage = (e: WebViewMessageEvent) => {
     try {
       const msg = JSON.parse(e.nativeEvent.data) as DownloadMessage;
-      if (msg && typeof msg.type === 'string' && msg.type.startsWith('dl-')) handleDownloadMessage(msg);
+      if (msg && typeof msg.type === 'string' && msg.type.startsWith('dl-')) handleDownloadMessage(msg, tool);
     } catch {
       // not ours
     }

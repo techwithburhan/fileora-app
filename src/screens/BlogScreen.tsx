@@ -1,12 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Image, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown, useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
-import AppHeader from '../components/AppHeader';
+import StackHeader from '../components/StackHeader';
 import PressableScale from '../components/PressableScale';
 import { getPosts, Post } from '../api/wp';
 import { brand, Theme } from '../theme';
-
 
 export default function BlogScreen({ theme }: { theme: Theme }) {
   const nav = useNavigation();
@@ -16,10 +15,6 @@ export default function BlogScreen({ theme }: { theme: Theme }) {
   const [refreshing, setRefreshing] = useState(false);
   const [end, setEnd] = useState(false);
   const [error, setError] = useState(false);
-  const scrollY = useSharedValue(0);
-  const onScroll = useAnimatedScrollHandler(e => {
-    scrollY.value = e.contentOffset.y;
-  });
 
   const load = useCallback(async (p: number, replace: boolean) => {
     setError(false);
@@ -44,12 +39,10 @@ export default function BlogScreen({ theme }: { theme: Theme }) {
 
   return (
     <View style={[styles.flex, { backgroundColor: theme.bg }]}>
-      <AppHeader theme={theme} scrollY={scrollY} />
+      <StackHeader title="Blog" theme={theme} onBack={() => nav.goBack()} />
       <Animated.FlatList
         data={posts}
         keyExtractor={p => String(p.id)}
-        onScroll={onScroll}
-        scrollEventThrottle={16}
         contentContainerStyle={styles.content}
         refreshControl={
           <RefreshControl
@@ -68,7 +61,6 @@ export default function BlogScreen({ theme }: { theme: Theme }) {
             load(page + 1, false);
           }
         }}
-        ListHeaderComponent={<Text style={[styles.title, { color: theme.ink }]}>Blog</Text>}
         ListFooterComponent={
           loading ? (
             <ActivityIndicator color={brand.green} style={styles.footer} />
@@ -111,7 +103,6 @@ export default function BlogScreen({ theme }: { theme: Theme }) {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: { padding: 16, gap: 14, paddingBottom: 28 },
-  title: { fontSize: 26, fontWeight: '800' },
   card: { borderWidth: 1, borderRadius: 20, overflow: 'hidden' },
   img: { width: '100%', aspectRatio: 16 / 9 },
   body: { padding: 14, gap: 6 },

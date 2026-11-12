@@ -79,30 +79,3 @@ export async function pageLink(slugs: string[]): Promise<string | null> {
   }
   return null;
 }
-
-export const CONTACT_TOPICS: { id: string; label: string }[] = [
-  { id: 'general', label: 'General question' },
-  { id: 'tool', label: 'A tool isn’t working' },
-  { id: 'privacy', label: 'Privacy or data request' },
-  { id: 'accessibility', label: 'Accessibility' },
-  { id: 'business', label: 'Business or partnership' },
-  { id: 'other', label: 'Something else' },
-];
-
-export type ContactResult = { ok: boolean; message?: string; errors?: Record<string, string> };
-
-/** The website's own contact form endpoint (Fileora → Messages). */
-export async function sendContact(d: { name: string; email: string; topic: string; message: string; elapsedMs: number }): Promise<ContactResult> {
-  const r = await fetch(SITE + '/wp-json/fileora/v1/contact', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({ name: d.name, email: d.email, topic: d.topic, message: d.message, page: 'Android app', t: d.elapsedMs, website: '' }),
-  });
-  let body: ContactResult;
-  try {
-    body = (await r.json()) as ContactResult;
-  } catch {
-    body = { ok: false, message: 'The server answered with HTTP ' + r.status + '.' };
-  }
-  return body;
-}
