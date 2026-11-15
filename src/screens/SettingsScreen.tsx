@@ -16,6 +16,7 @@ import { store, useStore } from '../store/store';
 import { cmpVersion, remote, TOPIC_LABELS, useRemote } from '../remote/remote';
 import { disableNotifications, enableNotifications, openLink, openSystemSettings, permission, syncTopics } from '../remote/push';
 import { telemetry } from '../remote/telemetry';
+import { setAnalyticsEnabled } from '../analytics';
 import { Theme } from '../theme';
 import { type } from '../typography';
 import { APP_VERSION } from '../version';
@@ -147,9 +148,10 @@ export default function SettingsScreen({ theme }: { theme: Theme }) {
           key: 'usage',
           icon: 'pulse',
           label: 'Share anonymous usage',
-          sub: 'Which tools are used and errors, with a random ID. No names, phone numbers or file names. Helps us fix problems.',
+          sub: 'Which tools are used and errors, with a random ID (also Firebase Analytics). No names, phone numbers or file names. Helps us fix problems.',
           right: sw(prefs.usage, v => {
             remote.setPrefs({ usage: v });
+            setAnalyticsEnabled(v);
             if (!v) telemetry.clear();
           }, 'Share anonymous usage'),
         },

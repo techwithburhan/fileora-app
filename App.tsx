@@ -37,7 +37,7 @@ import ToolsScreen from './src/screens/ToolsScreen';
 import WebScreen from './src/screens/WebScreen';
 import { store } from './src/store/store';
 import { navigationRef, RootStackParamList, TabParamList } from './src/navigation/types';
-import { trackScreen } from './src/analytics';
+import { setAnalyticsEnabled, trackScreen } from './src/analytics';
 import { Theme, useTheme } from './src/theme';
 import RemoteGate from './src/components/RemoteGate';
 import { remote } from './src/remote/remote';
@@ -93,7 +93,10 @@ export default function App() {
     };
     remote
       .load()
-      .then(() => telemetry.load())
+      .then(() => {
+        setAnalyticsEnabled(remote.get().prefs.usage);
+        return telemetry.load();
+      })
       .then(() => refreshConfig(true))
       .then(() => {
         checkin();
