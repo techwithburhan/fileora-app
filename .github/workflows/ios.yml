@@ -134,7 +134,7 @@ jobs:
           if xcrun simctl spawn "$DEV" launchctl list | grep -q "in.fileora.app"; then echo "RUNNING" > out/simulator/status.txt; echo "Fileora is running in the simulator"; else echo "NOT RUNNING" > out/simulator/status.txt; echo "::error::Fileora is not running in the simulator (crash at start?)"; fi
           ls -la ~/Library/Logs/DiagnosticReports 2>/dev/null | grep -i fileora || true
           cd out
-          echo "Fileora iOS simulator run from commit ${GITHUB_SHA::7} ($(date -u +%Y-%m-%d %H:%M))" > README.md
+          echo "Fileora iOS simulator run from commit ${GITHUB_SHA::7} ($(date -u '+%Y-%m-%d %H:%M'))" > README.md
           git init -q -b builds-ios
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
