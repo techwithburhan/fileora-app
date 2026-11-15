@@ -136,7 +136,7 @@ export default function SettingsScreen({ theme }: { theme: Theme }) {
           : []),
       ],
     },
-    ...(Platform.OS === 'android'
+    ...(Platform.OS === 'android' || Platform.OS === 'ios'
       ? [
           {
             title: 'Notifications & privacy',
@@ -161,16 +161,28 @@ export default function SettingsScreen({ theme }: { theme: Theme }) {
                         syncTopics();
                       }, 'Quiet notifications'),
                     },
-                    {
-                      key: 'private',
-                      icon: 'lock' as IconName,
-                      label: 'Notification privacy',
-                      sub: 'Nothing from Fileora on the lock screen: you see notifications after unlocking',
-                      right: sw(prefs.private, v => {
-                        remote.setPrefs({ private: v });
-                        syncTopics();
-                      }, 'Notification privacy'),
-                    },
+                    Platform.OS === 'ios'
+                      ? {
+                          key: 'private',
+                          icon: 'lock' as IconName,
+                          label: 'Notification privacy',
+                          sub: 'On iPhone: Settings → Notifications → Fileora → Show Previews → “When Unlocked” or “Never”',
+                          onPress: () =>
+                            Alert.alert('Notification privacy', 'iPhone decides what shows on the lock screen. Open Settings → Notifications → Fileora → Show Previews and choose “When Unlocked” or “Never”.', [
+                              { text: 'Not now', style: 'cancel' },
+                              { text: 'Open Settings', onPress: openSystemSettings },
+                            ]),
+                        }
+                      : {
+                          key: 'private',
+                          icon: 'lock' as IconName,
+                          label: 'Notification privacy',
+                          sub: 'Nothing from Fileora on the lock screen: you see notifications after unlocking',
+                          right: sw(prefs.private, v => {
+                            remote.setPrefs({ private: v });
+                            syncTopics();
+                          }, 'Notification privacy'),
+                        },
                     ...offered.map(t => ({
                       key: 'topic-' + t.id,
                       icon: 'check' as IconName,
@@ -186,7 +198,7 @@ export default function SettingsScreen({ theme }: { theme: Theme }) {
                 key: 'sound',
                 icon: 'settings' as IconName,
                 label: 'Sound and more',
-                sub: 'Android’s notification settings for Fileora: sound, vibration, lock screen',
+                sub: Platform.OS === 'ios' ? 'iPhone settings for Fileora: sound, banners, lock screen' : 'Android’s notification settings for Fileora: sound, vibration, lock screen',
                 onPress: openNotificationSettings,
               },
               {

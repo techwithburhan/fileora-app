@@ -17,6 +17,7 @@ import { relatedFor } from '../data/nativeTools';
 import { toolById } from '../data/tools';
 import { catColor, Theme } from '../theme';
 import { type } from '../typography';
+import { SAVED_WHERE } from '../store/files';
 
 export default function ResultSheet({
   file,
@@ -57,7 +58,7 @@ export default function ResultSheet({
             <Text style={[type.title, styles.center, { color: theme.ink }]}>Congratulations!</Text>
             <Text style={[type.body, styles.center, { color: theme.ink2 }]}>Your files are completed successfully.</Text>
           </View>
-          <Text style={[type.bodySm, styles.center, { color: theme.muted }]}>{note ?? 'Saved in Files and in Downloads/Fileora on this phone.'}</Text>
+          <Text style={[type.bodySm, styles.center, { color: theme.muted }]}>{note ?? `Saved in Files and in ${SAVED_WHERE} on this phone.`}</Text>
           <View style={[styles.file, { backgroundColor: theme.surface, borderColor: theme.line }]}>
             <FileThumb path={file.path} mime={file.mime} name={file.name} theme={theme} size={46} />
             <View style={styles.flex}>

@@ -17,12 +17,17 @@ import { Alert, Linking, PermissionsAndroid, Platform } from 'react-native';
 import { ANDROID_PACKAGE } from '../config';
 import { getApp } from '@react-native-firebase/app';
 import {
+  AuthorizationStatus,
   deleteToken,
   getInitialNotification,
   getMessaging,
   getToken,
+  hasPermission,
+  isDeviceRegisteredForRemoteMessages,
   onMessage,
   onNotificationOpenedApp,
+  registerDeviceForRemoteMessages,
+  requestPermission,
   subscribeToTopic,
   unsubscribeFromTopic,
   type RemoteMessage,
@@ -49,8 +54,23 @@ const needsRuntimePermission = () => Platform.OS === 'android' && Number(Platfor
 
 export const versionTopic = (v = APP_VERSION) => 'v' + v.replace(/\./g, '-');
 
-/** Whether the system lets this app show notifications (Android 13+ permission). */
+const IOS = Platform.OS === 'ios';
+/** This phone's platform topic ("android" or "ios"). */
+export const platformTopic = IOS ? 'ios' : 'android';
+
+const iosOk = (s: number) => s === AuthorizationStatus.AUTHORIZED || s === AuthorizationStatus.PROVISIONAL;
+
+/** Whether the system lets this app show notifications (Android 13+ permission, iOS permission). */
 export async function permission(): Promise<'granted' | 'denied'> {
+  if (IOS) {
+    const m = messaging();
+    if (!m) return 'denied';
+    try {
+      return iosOk(await hasPermission(m)) ? 'granted' : 'denied';
+    } catch {
+      return 'denied';
+    }
+  }
   if (Platform.OS !== 'android') return 'denied';
   if (!needsRuntimePermission()) return 'granted';
   try {
@@ -60,8 +80,19 @@ export async function permission(): Promise<'granted' | 'denied'> {
   }
 }
 
-/** Asks for the Android 13+ permission (only call after the person chose to turn notifications on). */
+/** Asks for the permission (only call after the person chose to turn notifications on). */
 export async function askPermission(): Promise<Permission> {
+  if (IOS) {
+    const m = messaging();
+    if (!m) return 'denied';
+    try {
+      const before = await hasPermission(m);
+      if (before === AuthorizationStatus.DENIED) return 'blocked'; // iOS asks only once: Settings from here on
+      return iosOk(await requestPermission(m, { alert: true, badge: false, sound: true })) ? 'granted' : 'denied';
+    } catch {
+      return 'denied';
+    }
+  }
   if (Platform.OS !== 'android') return 'denied';
   if (!needsRuntimePermission()) return 'granted';
   try {
@@ -92,7 +123,7 @@ export function openSystemSettings() {
 
 /** Android's notification settings for Fileora (sound, pop-up, lock screen…). */
 export function openNotificationSettings() {
-  if (Platform.OS !== 'android' || Number(Platform.Version) < 26) {
+  if (IOS || Number(Platform.Version) < 26) {
     openSystemSettings();
     return;
   }
@@ -130,8 +161,9 @@ function wanted(perm: 'granted' | 'denied'): string[] {
   if (!s.prefs.notify || perm !== 'granted') return [];
   const offered = s.config?.topics?.length ? s.config.topics : TOPIC_LABELS.map(t => t.id);
   const cats = TOPIC_LABELS.map(t => t.id).filter(id => offered.includes(id) && s.prefs.topics[id] !== false);
-  const modes = [...(s.prefs.quiet ? ['mode-quiet'] : []), ...(s.prefs.private ? ['mode-private'] : [])];
-  return ['all', 'android', versionTopic(), ...cats, ...modes];
+  // iOS: lock-screen privacy is a setting of the iPhone itself ("Show Previews"), not a topic
+  const modes = [...(s.prefs.quiet ? ['mode-quiet'] : []), ...(s.prefs.private && !IOS ? ['mode-private'] : [])];
+  return ['all', platformTopic, versionTopic(), ...cats, ...modes];
 }
 
 /** Brings this phone's FCM topics in line with the person's choices (runs one at a time). */
@@ -151,7 +183,11 @@ async function doSync() {
   if (!add.length && !drop.length) return;
   const done = new Set(have);
   try {
-    if (want.length) await getToken(m); // creates the anonymous FCM token if needed
+    if (want.length) {
+      // iOS: register with Apple's push service first (not automatic, so nothing happens before "Turn on")
+      if (IOS && !isDeviceRegisteredForRemoteMessages(m)) await registerDeviceForRemoteMessages(m);
+      await getToken(m); // creates the anonymous FCM token if needed
+    }
     for (const t of drop) {
       await unsubscribeFromTopic(m, t);
       done.delete(t);

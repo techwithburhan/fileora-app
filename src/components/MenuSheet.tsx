@@ -156,7 +156,7 @@ export default function MenuSheet({ theme }: { theme: Theme }) {
             <Text style={[styles.rowLabel, { color: theme.ink }]}>Open fileora.in</Text>
           </PressableScale>
           <Text style={[styles.foot, { color: theme.muted }]}>
-            Fileora app {APP_VERSION} · {Platform.OS === 'android' ? 'Android' : Platform.OS}
+            Fileora app {APP_VERSION} · {Platform.OS === 'android' ? 'Android' : Platform.OS === 'ios' ? 'iOS' : Platform.OS}
           </Text>
           <Text style={[styles.foot, { color: theme.muted }]} onPress={() => Linking.openURL(DEVELOPER.url)} accessibilityRole="link">
             Made by <Text style={{ color: theme.link }}>{DEVELOPER.name}</Text>

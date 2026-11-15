@@ -7,7 +7,7 @@
  */
 import { useSyncExternalStore } from 'react';
 import BlobUtil from 'react-native-blob-util';
-import { DIRS, ensureDirs, ROOT, sizeOf, uniquePath } from './files';
+import { DATA, DIRS, ensureDirs, sizeOf, uniquePath } from './files';
 import { telemetry } from '../remote/telemetry';
 import { onFlush, readJsonSafe, writeJsonSafe } from '../lib/safeFile';
 
@@ -47,8 +47,8 @@ type State = {
   clouds: Partial<Record<CloudId, { connectedAt: number }>>;
 };
 
-const FILE = `${ROOT}/state.json`;
-const TRASH = `${ROOT}/trash`;
+const FILE = `${DATA}/state.json`;
+const TRASH = `${DATA}/trash`;
 const MAX_EVENTS = 1000;
 let state: State = { v: 2, loaded: false, theme: 'system', files: [], docs: [], bin: [], binDocs: [], events: [], clouds: {} };
 const listeners = new Set<() => void>();

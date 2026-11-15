@@ -14,9 +14,10 @@ import { useFileActions } from '../components/FileActions';
 import { ActivityTab, RootStackParamList } from '../navigation/types';
 import { Theme } from '../theme';
 import { type } from '../typography';
+import { SAVED_WHERE } from '../store/files';
 
 const EMPTY: Record<ActivityTab, string> = {
-  downloaded: 'Nothing downloaded yet. When a tool gives you a file, it is saved to Downloads/Fileora and listed here.',
+  downloaded: `Nothing downloaded yet. When a tool gives you a file, it is saved to ${SAVED_WHERE} and listed here.`,
   opened: 'Nothing opened yet. Files you open from Fileora are listed here.',
   processed: 'Nothing processed yet. Files you merge, number, watermark or convert in the app are listed here.',
 };

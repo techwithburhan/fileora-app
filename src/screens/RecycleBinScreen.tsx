@@ -1,6 +1,6 @@
 /** Recycle Bin: deleted files and scan documents, to restore or delete permanently. */
 import React, { useMemo } from 'react';
-import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, Platform, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, LinearTransition } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import StackHeader from '../components/StackHeader';
@@ -61,7 +61,7 @@ export default function RecycleBinScreen({ theme }: { theme: Theme }) {
           entries.length ? (
             <View style={styles.head}>
               <Text style={[type.bodySm, styles.flex, { color: theme.muted }]}>
-                {entries.length} {entries.length === 1 ? 'item' : 'items'} · {formatBytes(total)}. Copies in Downloads/Fileora are not affected.
+                {entries.length} {entries.length === 1 ? 'item' : 'items'} · {formatBytes(total)}. {Platform.OS === 'android' ? 'Copies in Downloads/Fileora are not affected.' : ''}
               </Text>
               <PressableScale onPress={empty} accessibilityRole="button" style={[styles.emptyBtn, { borderColor: theme.line }]}>
                 <Icon name="trash" size={16} color={theme.danger} />

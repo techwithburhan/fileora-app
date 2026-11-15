@@ -111,9 +111,11 @@ export default function CloudScreen({ theme }: { theme: Theme }) {
                     <Icon name="up" size={18} color={theme.onAccent} />
                     <Text style={[type.button, { color: theme.onAccent }]}>Upload a file</Text>
                   </PressableScale>
-                  <PressableScale onPress={() => native.openApp(c.pkg)} accessibilityRole="button" accessibilityLabel={`Open ${c.name}`} style={[styles.btn, styles.square, { backgroundColor: theme.surface2 }]}>
-                    <Icon name="external" size={19} color={theme.ink} />
-                  </PressableScale>
+                  {native.canOpenApps && (
+                    <PressableScale onPress={() => native.openApp(c.pkg)} accessibilityRole="button" accessibilityLabel={`Open ${c.name}`} style={[styles.btn, styles.square, { backgroundColor: theme.surface2 }]}>
+                      <Icon name="external" size={19} color={theme.ink} />
+                    </PressableScale>
+                  )}
                   <PressableScale onPress={() => disconnect(c)} accessibilityRole="button" accessibilityLabel={`Disconnect ${c.name}`} style={[styles.btn, styles.square, { backgroundColor: theme.surface2 }]}>
                     <Icon name="close" size={19} color={theme.ink} />
                   </PressableScale>

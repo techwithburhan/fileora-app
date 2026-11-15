@@ -7,8 +7,9 @@
  * and the random install ID used for check-ins. Saved in DocumentDir/fileora/remote.json.
  */
 import { useSyncExternalStore } from 'react';
+import { Platform } from 'react-native';
 import { API_TOOLS_LIVE, MAINTENANCE_MESSAGE, SITE } from '../config';
-import { ensureDirs, ROOT } from '../store/files';
+import { DATA, ensureDirs } from '../store/files';
 import { onFlush, readJsonSafe, writeJsonSafe } from '../lib/safeFile';
 
 export type ToolFlag = 'soon' | 'off';
@@ -69,8 +70,10 @@ type State = {
   subscribed: string[]; // FCM topics this install is subscribed to
 };
 
-const FILE = `${ROOT}/remote.json`;
-export const CONFIG_URL = `${SITE}/wp-json/fileora/v1/app-config?platform=android`;
+const FILE = `${DATA}/remote.json`;
+/** This app's platform in App Center: "android" or "ios" (versions, force update, monitoring). */
+export const PLATFORM: 'android' | 'ios' = Platform.OS === 'ios' ? 'ios' : 'android';
+export const CONFIG_URL = `${SITE}/wp-json/fileora/v1/app-config?platform=${PLATFORM}`;
 const listeners = new Set<() => void>();
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 

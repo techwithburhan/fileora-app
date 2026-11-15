@@ -1,6 +1,8 @@
 /**
- * Fileora's own folder in the app's private storage, plus a copy of every result in the phone's
+ * Fileora's own folder in the app's storage, plus (Android) a copy of every result in the phone's
  * public Downloads/Fileora (MediaStore; no storage permission on Android 10+).
+ * On iOS the files folder shows in the Files app (On My iPhone › Fileora); the app's own data
+ * (lists, settings, Recycle Bin) is kept outside it, in DATA, so it can't be removed by mistake.
  */
 import { PermissionsAndroid, Platform } from 'react-native';
 import BlobUtil from 'react-native-blob-util';
@@ -9,9 +11,11 @@ const fs = BlobUtil.fs;
 export const ROOT = `${fs.dirs.DocumentDir}/fileora`;
 export const DIRS = { downloaded: `${ROOT}/downloads`, processed: `${ROOT}/processed`, scan: `${ROOT}/scans` } as const;
 export type Folder = keyof typeof DIRS;
+/** The app's own data files (state, settings, queue, Recycle Bin). Android: unchanged since 0.3. */
+export const DATA = Platform.OS === 'ios' ? `${fs.dirs.LibraryDir}/fileora` : ROOT;
 
 export async function ensureDirs() {
-  for (const d of [ROOT, ...Object.values(DIRS)]) {
+  for (const d of [ROOT, ...Object.values(DIRS), DATA]) {
     if (!(await fs.isDir(d))) await fs.mkdir(d).catch(() => {});
   }
 }
@@ -83,8 +87,15 @@ export async function sizeOf(path: string): Promise<number> {
   }
 }
 
-/** Copies a finished file into Downloads/Fileora so it is visible in the phone's Files app. */
+/** Where finished files can be found outside the app, in words for the person. */
+export const SAVED_WHERE = Platform.OS === 'ios' ? 'the Files app (On My iPhone › Fileora)' : 'Downloads/Fileora';
+
+/**
+ * Android: copies a finished file into Downloads/Fileora so it is visible in the phone's Files app.
+ * iOS: nothing to copy, Fileora's own folder already shows in the Files app (On My iPhone › Fileora).
+ */
 export async function publishToDownloads(path: string, name: string, mime: string): Promise<boolean> {
+  if (Platform.OS === 'ios') return true;
   try {
     if (Platform.OS === 'android' && Number(Platform.Version) < 29) {
       const r = await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE);
@@ -97,8 +108,12 @@ export async function publishToDownloads(path: string, name: string, mime: strin
   }
 }
 
-/** Opens a file with the phone's viewer for its type. */
+/** Opens a file with the phone's viewer for its type (iOS: preview, with the share button to open it elsewhere). */
 export async function openWithViewer(path: string, mime: string): Promise<void> {
+  if (Platform.OS === 'ios') {
+    await BlobUtil.ios.previewDocument(path);
+    return;
+  }
   await BlobUtil.android.actionViewIntent(path, mime);
 }
 

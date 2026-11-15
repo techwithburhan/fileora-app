@@ -4,6 +4,7 @@ name: Build Android APK
 on:
   push:
     branches: [main]
+    paths-ignore: ['ios/**', '.github/workflows/ios.yml', 'scripts/ios-signing.py']
   workflow_dispatch:
 
 jobs:

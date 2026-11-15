@@ -10,16 +10,16 @@
  */
 import { Platform } from 'react-native';
 import { SITE } from '../config';
-import { ROOT } from '../store/files';
+import { DATA } from '../store/files';
 import { APP_VERSION } from '../version';
-import { remote } from './remote';
+import { PLATFORM, remote } from './remote';
 import { onFlush, readJsonSafe, writeJsonSafe } from '../lib/safeFile';
 
 export type EventType = 'start' | 'open' | 'done' | 'failed' | 'error' | 'push';
 type Ev = { t: number; type: EventType; tool?: string; bytes?: number; detail?: string };
 
 const URL = `${SITE}/wp-json/fileora/v1/app-events`;
-const FILE = `${ROOT}/telemetry.json`;
+const FILE = `${DATA}/telemetry.json`;
 const MAX_QUEUE = 200;
 const BATCH = 50; // the website takes up to 50 events per request
 const MIN_GAP = 60 * 1000; // at most one ordinary send a minute (the website limits requests per hour)
@@ -112,16 +112,17 @@ export const telemetry = {
     try {
       const ctl = new AbortController();
       const timer = setTimeout(() => ctl.abort(), 15000);
-      const constants = Platform.constants as { Model?: string; Brand?: string };
+      const constants = Platform.constants as { Model?: string; Brand?: string; interfaceIdiom?: string };
+      const model = Platform.OS === 'ios' ? (constants.interfaceIdiom === 'pad' ? 'iPad' : 'iPhone') : String(constants.Model || '').slice(0, 40);
       const r = await fetch(URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({
-          platform: 'android',
+          platform: PLATFORM,
           install: remote.get().install,
           version: APP_VERSION,
-          os: `Android ${Platform.Version}`,
-          model: String(constants.Model || '').slice(0, 40),
+          os: `${Platform.OS === 'ios' ? 'iOS' : 'Android'} ${Platform.Version}`,
+          model,
           events: batch,
         }),
         signal: ctl.signal,

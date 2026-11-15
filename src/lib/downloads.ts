@@ -5,7 +5,7 @@
  */
 import { Alert } from 'react-native';
 import BlobUtil from 'react-native-blob-util';
-import { openWithViewer, safeName } from '../store/files';
+import { openWithViewer, safeName, SAVED_WHERE } from '../store/files';
 import { store } from '../store/store';
 import { saveResult } from './output';
 import { telemetry } from '../remote/telemetry';
@@ -48,7 +48,7 @@ export function handleDownloadMessage(msg: DownloadMessage, tool?: string) {
   p.chain
     .then(() => saveResult({ name: p.name, fromPath: p.path, move: true, mime: p.mime === 'application/octet-stream' ? undefined : p.mime, tool, source: 'downloaded' }))
     .then(rec => {
-      Alert.alert('Your file is ready', `${rec.name}\nSaved in Files and in Downloads/Fileora.`, [
+      Alert.alert('Your file is ready', `${rec.name}\nSaved in Files and in ${SAVED_WHERE}.`, [
         { text: 'OK', style: 'cancel' },
         {
           text: 'Open',
