@@ -30,6 +30,8 @@ jobs:
   ios:
     runs-on: macos-15
     timeout-minutes: 120
+    permissions:
+      contents: write # only to publish simulator screenshots to the "builds-ios" branch
     steps:
       - uses: actions/checkout@v4
       - uses: maxim-lobanov/setup-xcode@v1
@@ -107,6 +109,38 @@ jobs:
             build > "$RUNNER_TEMP/build.log" 2>&1 || { grep -n "error:" "$RUNNER_TEMP/build.log" | head -60; tail -120 "$RUNNER_TEMP/build.log"; exit 1; }
           tail -5 "$RUNNER_TEMP/build.log"
           cd ios/build/Build/Products/Release-iphonesimulator && zip -qry "$RUNNER_TEMP/Fileora-simulator.zip" FileoraApp.app
+      # Start the app in an iPhone simulator: it must open and keep running (no crash at start).
+      # Screenshots go to the "builds-ios" branch (simulator/home.png).
+      - name: Run in the iPhone simulator
+        if: steps.mode.outputs.mode == 'simulator'
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          APP=ios/build/Build/Products/Release-iphonesimulator/FileoraApp.app
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' -c 'Print :CFBundleIdentifier' -c 'Print :CFBundleShortVersionString' -c 'Print :CFBundleVersion' "$APP/Info.plist"
+          ls -la "$APP/main.jsbundle" "$APP/fileora_notify.caf"
+          DEV=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for k,v in sorted(d.items(), reverse=True) if 'iOS' in k for x in v if x['name'].startswith('iPhone')))")
+          echo "Simulator: $DEV"
+          xcrun simctl boot "$DEV"
+          xcrun simctl bootstatus "$DEV" -b
+          xcrun simctl install "$DEV" "$APP"
+          xcrun simctl launch "$DEV" in.fileora.app
+          mkdir -p out/simulator
+          sleep 12
+          xcrun simctl io "$DEV" screenshot out/simulator/start.png
+          sleep 20
+          xcrun simctl io "$DEV" screenshot out/simulator/home.png
+          xcrun simctl spawn "$DEV" log show --last 2m --style compact --predicate 'process == "FileoraApp"' 2>/dev/null | grep -iE "error|exception|fatal|crash" | grep -v "nw_\|CFNetwork" | tail -40 > out/simulator/log.txt || true
+          if xcrun simctl spawn "$DEV" launchctl list | grep -q "in.fileora.app"; then echo "RUNNING" > out/simulator/status.txt; echo "Fileora is running in the simulator"; else echo "NOT RUNNING" > out/simulator/status.txt; echo "::error::Fileora is not running in the simulator (crash at start?)"; fi
+          ls -la ~/Library/Logs/DiagnosticReports 2>/dev/null | grep -i fileora || true
+          cd out
+          echo "Fileora iOS simulator run from commit ${GITHUB_SHA::7} ($(date -u +%Y-%m-%d %H:%M))" > README.md
+          git init -q -b builds-ios
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A && git commit -q -m "iOS simulator run ${GITHUB_SHA::7}"
+          git push -q -f "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" builds-ios
+          grep -q RUNNING simulator/status.txt && ! grep -q "NOT RUNNING" simulator/status.txt
       - uses: actions/upload-artifact@v4
         if: steps.mode.outputs.mode == 'simulator'
         with:
