@@ -3,7 +3,6 @@
     "google_analytics_adid_collection_enabled": false,
     "analytics_default_allow_ad_personalization_signals": false,
     "messaging_auto_init_enabled": false,
-    "messaging_android_notification_channel_id": "fileora",
-    "messaging_android_notification_color": "@color/brand_green"
+    "messaging_android_notification_channel_id": "fileora"
   }
 }
