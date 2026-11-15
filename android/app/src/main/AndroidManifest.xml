@@ -2,6 +2,8 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Android 13+: show notifications (asked only after the person taps "Turn on"). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Only Android 7–9: saving results in Downloads/Fileora. Android 10+ needs no storage permission. -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" tools:node="replace" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="28" tools:node="replace" />
@@ -31,6 +33,11 @@
       android:theme="@style/AppTheme"
       android:usesCleartextTraffic="${usesCleartextTraffic}"
       android:supportsRtl="true">
+      <!-- Push notifications (Firebase Cloud Messaging): status bar icon. The channel ("fileora") and
+           color come from firebase.json; the channel itself is created in MainApplication. -->
+      <meta-data
+        android:name="com.google.firebase.messaging.default_notification_icon"
+        android:resource="@drawable/ic_notification" />
       <activity
         android:name=".MainActivity"
         android:label="@string/app_name"

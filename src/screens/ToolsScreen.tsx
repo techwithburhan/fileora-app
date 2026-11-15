@@ -6,7 +6,8 @@ import AppHeader from '../components/AppHeader';
 import Icon from '../components/Icon';
 import PressableScale from '../components/PressableScale';
 import { ToolCard } from '../components/ToolCard';
-import { CATEGORIES, CategoryId, TOOLS } from '../data/tools';
+import { CATEGORIES, CategoryId } from '../data/tools';
+import { useVisibleTools } from '../remote/useTools';
 import { TabParamList } from '../navigation/types';
 import { Theme } from '../theme';
 
@@ -32,16 +33,17 @@ export default function ToolsScreen({ theme }: { theme: Theme }) {
     }
   }, [route.params?.focus]);
 
+  const tools = useVisibleTools();
   const list = useMemo(() => {
     const words = q.trim().toLowerCase().split(/\s+/).filter(Boolean);
-    return TOOLS.filter(t => {
+    return tools.filter(t => {
       if (cat !== 'all' && t.cat !== cat) return false;
       const hay = `${t.name} ${t.desc} ${t.keys}`.toLowerCase();
       return words.every(w => hay.includes(w));
     });
-  }, [q, cat]);
+  }, [q, cat, tools]);
 
-  const chips = [{ id: 'all' as const, name: 'All', count: TOOLS.length }, ...CATEGORIES];
+  const chips = [{ id: 'all' as const, name: 'All', count: tools.length }, ...CATEGORIES.map(c => ({ ...c, count: tools.filter(t => t.cat === c.id).length }))];
 
   return (
     <View style={[styles.flex, { backgroundColor: theme.bg }]}>
@@ -64,7 +66,7 @@ export default function ToolsScreen({ theme }: { theme: Theme }) {
                 ref={input}
                 value={q}
                 onChangeText={setQ}
-                placeholder={`Search ${TOOLS.length} tools`}
+                placeholder={`Search ${tools.length} tools`}
                 placeholderTextColor={theme.muted}
                 style={[styles.input, { color: theme.ink }]}
                 accessibilityLabel="Search tools"

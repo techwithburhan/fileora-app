@@ -1,11 +1,14 @@
 /**
  * App state kept on this phone only (DocumentDir/fileora/state.json): Fileora's files, scan
  * documents, the Recycle Bin, the tool-usage history that drives Recently used / Popular / the
- * charts, cloud connections and settings. Nothing here is sent anywhere.
+ * charts, cloud connections and settings. These files and this history stay on the phone; only
+ * anonymous counts (tool name, size, no file names) go to App Monitoring, and only while
+ * Settings → "Share anonymous usage" is on (see src/remote/telemetry.ts).
  */
 import { useSyncExternalStore } from 'react';
 import BlobUtil from 'react-native-blob-util';
 import { DIRS, ensureDirs, ROOT, sizeOf, uniquePath } from './files';
+import { telemetry } from '../remote/telemetry';
 
 /** downloaded/processed: tools · scan + scan-image: Scanned Images tab · convert: Convert PDFs tab */
 export type Source = 'downloaded' | 'processed' | 'scan' | 'scan-image' | 'convert';
@@ -268,9 +271,11 @@ export const store = {
 
   /* ---------- usage ---------- */
   logOpen(tool: string) {
+    telemetry.track('open', tool);
     set({ events: [...state.events, { t: Date.now(), type: 'open' as const, tool }].slice(-MAX_EVENTS) });
   },
   logDone(tool: string, bytes: number) {
+    telemetry.track('done', tool, bytes);
     set({ events: [...state.events, { t: Date.now(), type: 'done' as const, tool, bytes }].slice(-MAX_EVENTS) });
   },
 };

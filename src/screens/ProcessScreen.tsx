@@ -26,6 +26,7 @@ import { FileRec, store } from '../store/store';
 import { RootStackParamList } from '../navigation/types';
 import { Theme } from '../theme';
 import { type } from '../typography';
+import { telemetry } from '../remote/telemetry';
 
 const ACCEPT_NOUN = { pdf: 'PDF', image: 'image', jpgpng: 'JPG or PNG image', word: 'Word document', excel: 'Excel file', ppt: 'PowerPoint file', any: 'file' } as const;
 
@@ -134,7 +135,11 @@ export default function ProcessScreen({ theme }: { theme: Theme }) {
       setResult(rec);
     } catch (e) {
       setBusy(null);
-      if (!signal.cancelled) Alert.alert(`${tool.name} didn’t work`, e instanceof Error ? e.message : String(e));
+      if (!signal.cancelled) {
+        const m = e instanceof Error ? e.message : String(e);
+        telemetry.track('failed', tool.id, bytesIn, m);
+        Alert.alert(`${tool.name} didn’t work`, m);
+      }
     }
   };
 

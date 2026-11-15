@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import Icon, { IconName } from './Icon';
 import PressableScale from './PressableScale';
-import { isAvailable, Tool } from '../data/tools';
+import { isAvailable, Tool, toolState } from '../data/tools';
 import { catColor, Theme } from '../theme';
 
 export function ExecBadge({ tool, theme }: { tool: Tool; theme: Theme }) {
@@ -11,7 +11,7 @@ export function ExecBadge({ tool, theme }: { tool: Tool; theme: Theme }) {
     return (
       <View style={styles.badgeRow}>
         <Icon name="info" size={14} color={theme.warnInk} />
-        <Text style={[styles.where, { color: theme.warnInk }]}>{tool.pending ? 'Coming soon' : 'Unavailable: maintenance'}</Text>
+        <Text style={[styles.where, { color: theme.warnInk }]}>{toolState(tool) === 'soon' ? 'Coming soon' : 'Unavailable: maintenance'}</Text>
       </View>
     );
   const device = tool.exec !== 'server';

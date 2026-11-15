@@ -4,7 +4,7 @@
  *  - server: sent to the Fileora server through the website's REST API (same as the website)
  */
 import type { Accept } from '../lib/pick';
-import { API_TOOLS_LIVE } from '../config';
+import { apiLive } from '../remote/remote';
 import { isAvailable, toolById } from './tools';
 
 export type Choice = { value: string; label: string };
@@ -127,7 +127,7 @@ export const NATIVE: Record<string, NativeTool> = {
 };
 
 /** Runs natively in the app: on the phone always; through the server API only when it is live. */
-export const isNative = (id: string) => id in NATIVE && (NATIVE[id].kind !== 'server' || API_TOOLS_LIVE);
+export const isNative = (id: string) => id in NATIVE && (NATIVE[id].kind !== 'server' || apiLive());
 
 /** What to suggest after a task ("Keep going with this file"). */
 export function relatedFor(toolId: string, mime: string): string[] {

@@ -28,6 +28,7 @@ import { FileRec, store } from '../store/store';
 import { RootStackParamList } from '../navigation/types';
 import { brand, Theme } from '../theme';
 import { type } from '../typography';
+import { telemetry } from '../remote/telemetry';
 
 const WV = WebView<object>;
 type Filter = 'none' | 'photo' | 'document' | 'bw' | 'mono';
@@ -296,6 +297,7 @@ export default function ScanEditorScreen({ theme }: { theme: Theme }) {
     } catch (e) {
       setBusy(null);
       outs.forEach(p => BlobUtil.fs.unlink(p).catch(() => {}));
+      telemetry.track('failed', 'scan', 0, e instanceof Error ? e.message : String(e));
       Alert.alert('The scan couldn’t be saved', e instanceof Error ? e.message : String(e));
     }
   };

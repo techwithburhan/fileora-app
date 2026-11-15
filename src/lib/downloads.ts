@@ -8,6 +8,7 @@ import BlobUtil from 'react-native-blob-util';
 import { openWithViewer, safeName } from '../store/files';
 import { store } from '../store/store';
 import { saveResult } from './output';
+import { telemetry } from '../remote/telemetry';
 
 type Pending = { name: string; mime: string; path: string; chain: Promise<unknown> };
 const pending = new Map<string, Pending>();
@@ -30,6 +31,7 @@ export function handleDownloadMessage(msg: DownloadMessage, tool?: string) {
   const p = pending.get(msg.id);
   if (msg.type === 'dl-error') {
     if (p) pending.delete(msg.id);
+    telemetry.track('failed', tool, 0, 'download failed in the page');
     Alert.alert('Download failed', 'The file could not be saved. Please try again.');
     return;
   }
@@ -53,5 +55,8 @@ export function handleDownloadMessage(msg: DownloadMessage, tool?: string) {
         },
       ]);
     })
-    .catch(() => Alert.alert('Download failed', 'The file could not be saved.'));
+    .catch(e => {
+      telemetry.track('failed', tool, 0, `download not saved: ${e instanceof Error ? e.message : String(e)}`);
+      Alert.alert('Download failed', 'The file could not be saved.');
+    });
 }

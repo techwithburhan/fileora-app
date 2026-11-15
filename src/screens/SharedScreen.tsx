@@ -10,7 +10,7 @@ import StackHeader from '../components/StackHeader';
 import Icon from '../components/Icon';
 import PressableScale from '../components/PressableScale';
 import { toolUrl } from '../config';
-import { Tool, TOOLS, toolById } from '../data/tools';
+import { isAvailable, Tool, TOOLS, toolById } from '../data/tools';
 import { formatBytes } from '../store/files';
 import { store } from '../store/store';
 import { RootStackParamList } from '../navigation/types';
@@ -30,7 +30,7 @@ export default function SharedScreen({ theme }: { theme: Theme }) {
       if (t) list.push(t);
     }
     for (const t of TOOLS) if ((t.cat === 'image' || t.id === 'jpg2pdf') && !list.includes(t)) list.push(t);
-    return list;
+    return list.filter(t => isAvailable(t));
   }, []);
   const total = files.reduce((a, f) => a + (f.size || 0), 0);
 

@@ -3,7 +3,7 @@
  * Edit PDF is still "pending" on the website: it is listed (as unavailable) like the other API tools.
  * The tool page is https://www.fileora.in/<slug>/ (Tool Management can change slugs: update here too).
  */
-import { API_TOOLS_LIVE } from '../config';
+import { apiLive, remote } from '../remote/remote';
 
 export type CategoryId = 'pdf' | 'image' | 'converter' | 'optimizer' | 'security' | 'editor' | 'ai';
 export type Exec = 'browser' | 'server' | 'hybrid';
@@ -696,12 +696,33 @@ export const DEVICE_TOOL_COUNT = TOOLS.filter(t => t.exec !== 'server').length;
 /** API-based: need the Fileora processing server. */
 export const API_TOOL_COUNT = TOOLS.filter(t => t.exec === 'server').length;
 
-/** API-based tools stay switched off (maintenance message) until the server is live: see API_TOOLS_LIVE. */
+/** API-based: needs the Fileora processing server (list from App Center when known). */
 export function isApiTool(t: Tool): boolean {
-  return t.exec === 'server';
+  const c = remote.get().config;
+  return c && c.api_tools.length ? c.api_tools.includes(t.id) : t.exec === 'server';
+}
+/**
+ * What the app should do with a tool, from App Center (Fileora → App Center → App Management):
+ *   ok      works
+ *   api     API tools are switched off: maintenance message
+ *   soon    "Coming soon"
+ *   off     hidden (disabled in the app, or switched off on the website)
+ */
+export type ToolState = 'ok' | 'api' | 'soon' | 'off';
+export function toolState(t: Tool): ToolState {
+  const c = remote.get().config;
+  const flag = c?.tools[t.id];
+  if (flag === 'off' || c?.site_off.includes(t.id)) return t.pending ? 'soon' : 'off';
+  if (flag === 'soon') return 'soon';
+  if (isApiTool(t) && !apiLive()) return 'api';
+  if (t.pending) return 'soon';
+  return 'ok';
 }
 export function isAvailable(t: Tool): boolean {
-  return !t.pending && (!isApiTool(t) || API_TOOLS_LIVE);
+  return toolState(t) === 'ok';
+}
+export function isHidden(t: Tool): boolean {
+  return toolState(t) === 'off';
 }
 
 export function toolById(id: string): Tool | undefined {

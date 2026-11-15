@@ -1,5 +1,5 @@
 /** Numbers for Home (recently used, popular, charts) worked out from the usage history. */
-import { CATEGORIES, CategoryId, POPULAR, Tool, toolById } from '../data/tools';
+import { CATEGORIES, CategoryId, POPULAR, Tool, isHidden, toolById } from '../data/tools';
 import type { UsageEvent } from './store';
 
 export function recentTools(events: UsageEvent[], n = 8): Tool[] {
@@ -10,7 +10,7 @@ export function recentTools(events: UsageEvent[], n = 8): Tool[] {
     if (seen.has(id)) continue;
     seen.add(id);
     const t = toolById(id);
-    if (t) out.push(t);
+    if (t && !isHidden(t)) out.push(t);
   }
   return out;
 }
@@ -20,9 +20,9 @@ export function popularTools(events: UsageEvent[], n = 8): { tools: Tool[]; pers
   const since = Date.now() - 60 * 86400000;
   const score = new Map<string, number>();
   for (const e of events) if (e.t >= since) score.set(e.tool, (score.get(e.tool) ?? 0) + (e.type === 'done' ? 3 : 1));
-  const ranked = [...score.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => toolById(id)).filter((t): t is Tool => !!t);
+  const ranked = [...score.entries()].sort((a, b) => b[1] - a[1]).map(([id]) => toolById(id)).filter((t): t is Tool => !!t && !isHidden(t));
   const tools = [...ranked];
-  for (const t of POPULAR) if (tools.length < n && !tools.includes(t)) tools.push(t);
+  for (const t of POPULAR) if (tools.length < n && !tools.includes(t) && !isHidden(t)) tools.push(t);
   return { tools: tools.slice(0, n), personal: ranked.length > 0 };
 }
 

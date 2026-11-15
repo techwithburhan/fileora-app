@@ -19,7 +19,10 @@ import { ToolChip } from '../components/ToolCard';
 import FileRow from '../components/FileRow';
 import Segmented from '../components/Segmented';
 import { UsageDonut, WeekBars } from '../components/UsageCharts';
-import { CATEGORIES, DEVICE_TOOL_COUNT, TOOL_COUNT } from '../data/tools';
+import { CATEGORIES } from '../data/tools';
+import HomeBanners from '../components/HomeBanners';
+import { useRemotePopular, useVisibleTools } from '../remote/useTools';
+import { useRemote } from '../remote/remote';
 import { getPosts, Post } from '../api/wp';
 import { categoryUsage, dailyBytes, popularTools, recentTools, totals } from '../store/derive';
 import { formatBytes } from '../store/files';
@@ -79,8 +82,15 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
 
   const events = useStore(st => st.events);
   const files = useStore(st => st.files);
-  const recent = useMemo(() => recentTools(events), [events]);
-  const popular = useMemo(() => popularTools(events), [events]);
+  const config = useRemote(s => s.config);
+  const tools = useVisibleTools();
+  const remotePopular = useRemotePopular();
+  const recent = useMemo(() => recentTools(events), [events, config]); // eslint-disable-line react-hooks/exhaustive-deps
+  const own = useMemo(() => popularTools(events), [events, config]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Popular tools chosen in App Center (if any) are shown to everyone; otherwise the person's own most-used.
+  const popular = remotePopular ? { tools: remotePopular, personal: false } : own;
+  const cats = useMemo(() => CATEGORIES.map(c => ({ ...c, count: tools.filter(t => t.cat === c.id).length })).filter(c => c.count > 0), [tools]);
+  const deviceCount = tools.filter(t => t.exec !== 'server').length;
   const byCat = useMemo(() => categoryUsage(events), [events]);
   const week = useMemo(() => dailyBytes(events), [events]);
   const sum = useMemo(() => totals(events), [events]);
@@ -116,7 +126,7 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
             Every PDF & image tool, in your pocket
           </Animated.Text>
           <Animated.Text entering={FadeInDown.delay(350).duration(550)} style={styles.heroText}>
-            Merge, compress, convert and edit. {DEVICE_TOOL_COUNT} tools run on your phone, so your files stay with you.
+            Merge, compress, convert and edit. {deviceCount} tools run on your phone, so your files stay with you.
           </Animated.Text>
           <Animated.View entering={FadeInDown.delay(450).duration(550)} style={styles.heroBtns}>
             <PressableScale
@@ -139,6 +149,9 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
           </Animated.View>
         </View>
 
+        {/* Announcement, update available, notifications (App Center) */}
+        <HomeBanners theme={theme} />
+
         {/* Search */}
         <PressableScale
           scaleTo={0.98}
@@ -147,7 +160,7 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
           accessibilityLabel="Search tools"
           style={[styles.search, { backgroundColor: theme.surface, borderColor: theme.line }]}>
           <Icon name="search" size={20} color={theme.muted} />
-          <Text style={[styles.searchText, { color: theme.muted }]}>Search {TOOL_COUNT} tools…</Text>
+          <Text style={[styles.searchText, { color: theme.muted }]}>Search {tools.length} tools…</Text>
         </PressableScale>
 
         {/* Recently used (from this phone's history) */}
@@ -169,7 +182,7 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
         {/* Categories */}
         {section('Categories')}
         <View style={styles.cats}>
-          {CATEGORIES.map((c, i) => {
+          {cats.map((c, i) => {
             const col = catColor(c.id, theme);
             return (
               <Animated.View key={c.id} entering={FadeInDown.delay(200 + i * 60).duration(420)} style={styles.catCell}>

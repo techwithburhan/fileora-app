@@ -3,8 +3,9 @@ import { useCallback } from 'react';
 import { Alert } from 'react-native';
 import { StackActions, useNavigation } from '@react-navigation/native';
 import { isNative } from '../data/nativeTools';
-import { isAvailable, toolById } from '../data/tools';
-import { MAINTENANCE_MESSAGE, toolUrl } from '../config';
+import { isAvailable, toolById, toolState } from '../data/tools';
+import { maintenanceMessage, soonMessage } from '../remote/remote';
+import { toolUrl } from '../config';
 import { FileRec, store } from '../store/store';
 
 export function useKeepGoing() {
@@ -18,7 +19,7 @@ export function useKeepGoing() {
       const t = toolById(toolId);
       if (!t) return;
       if (!isAvailable(t)) {
-        Alert.alert(t.name, MAINTENANCE_MESSAGE);
+        Alert.alert(t.name, toolState(t) === 'soon' ? soonMessage() : maintenanceMessage());
         return;
       }
       // the tool's page opens with the file already chosen

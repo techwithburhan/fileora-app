@@ -2,9 +2,14 @@
  * Fileora app – animated splash, 6 tabs (Home, Tools, Scanner, Files, Resume, Settings) + side menu,
  * native Merge / Watermark / Page numbers on the phone, server tools through the public fileora.in
  * API, a document scanner, and files and activity kept on this phone.
+ *
+ * Fileora → App Center (WordPress plugin) controls the app without a new APK: API tools, tool
+ * status, maintenance, announcement, force update, links, popular tools (src/remote/remote.ts),
+ * and sends push notifications through Firebase (src/remote/push.ts). Check-ins and anonymous
+ * usage go to App Monitoring (src/remote/telemetry.ts).
  */
-import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, StatusBar, StyleSheet, View } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, AppState, StatusBar, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -34,6 +39,16 @@ import { store } from './src/store/store';
 import { navigationRef, RootStackParamList, TabParamList } from './src/navigation/types';
 import { trackScreen } from './src/analytics';
 import { Theme, useTheme } from './src/theme';
+import RemoteGate from './src/components/RemoteGate';
+import { remote } from './src/remote/remote';
+import { telemetry } from './src/remote/telemetry';
+import { onNavigationReady, startPush, syncTopics } from './src/remote/push';
+
+/** Reads App Center settings; reports only real server answers as errors (not "offline"). */
+async function refreshConfig(force = false) {
+  const err = await remote.refresh(force);
+  if (err && /HTTP|unexpected/.test(err)) telemetry.track('error', undefined, 0, err);
+}
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tabs = createBottomTabNavigator<TabParamList>();
@@ -59,10 +74,56 @@ export default function App() {
   const [splash, setSplash] = useState(true);
   const done = useCallback(() => setSplash(false), []);
   const [navReady, setNavReady] = useState(false);
+  const lastCheckin = useRef(0);
   useEffect(() => {
     // files, activity and the dark-mode choice saved on this phone
     store.load();
+    // App Center settings (cached copy first, so the app works offline), then check in
+    const every = () => (remote.get().config?.checkin_minutes ?? 30) * 60000;
+    const checkin = () => {
+      lastCheckin.current = Date.now();
+      telemetry.checkin();
+    };
+    let timer: ReturnType<typeof setInterval> | null = null;
+    const startTimer = () => {
+      if (timer) clearInterval(timer);
+      timer = setInterval(() => {
+        refreshConfig(true).then(checkin);
+      }, every());
+    };
+    remote
+      .load()
+      .then(() => telemetry.load())
+      .then(() => refreshConfig(true))
+      .then(() => {
+        checkin();
+        syncTopics();
+        startTimer();
+      });
+    const stopPush = startPush();
+    const sub = AppState.addEventListener('change', st => {
+      if (st === 'active') {
+        refreshConfig().then(() => {
+          if (Date.now() - lastCheckin.current >= every()) checkin();
+          syncTopics();
+        });
+        startTimer();
+      } else if (st === 'background') {
+        if (timer) clearInterval(timer);
+        timer = null;
+        telemetry.flush(true);
+      }
+    });
+    return () => {
+      sub.remove();
+      stopPush();
+      if (timer) clearInterval(timer);
+    };
   }, []);
+  // a notification tapped while the app was closed opens its screen once the app is ready
+  useEffect(() => {
+    if (navReady && !splash) onNavigationReady();
+  }, [navReady, splash]);
   // Gallery → Share → Fileora: open the shared images, ready for an image tool
   useEffect(() => {
     if (!navReady || splash) return;
@@ -114,6 +175,7 @@ export default function App() {
             </Stack.Navigator>
             <MenuSheet theme={theme} />
           </NavigationContainer>
+          <RemoteGate />
           {splash && <SplashIntro onDone={done} />}
         </View>
       </MenuProvider>

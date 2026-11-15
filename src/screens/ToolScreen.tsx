@@ -6,8 +6,9 @@ import StackHeader from '../components/StackHeader';
 import Icon, { IconName } from '../components/Icon';
 import PressableScale from '../components/PressableScale';
 import { ToolChip } from '../components/ToolCard';
-import { categoryById, isApiTool, isAvailable, toolById, TOOLS } from '../data/tools';
-import { MAINTENANCE_MESSAGE, toolUrl } from '../config';
+import { categoryById, isApiTool, isAvailable, isHidden, toolById, toolState, TOOLS } from '../data/tools';
+import { toolUrl } from '../config';
+import { apiLive, maintenanceMessage, soonMessage, useRemote } from '../remote/remote';
 import { isNative } from '../data/nativeTools';
 import { store } from '../store/store';
 import { RootStackParamList } from '../navigation/types';
@@ -17,20 +18,22 @@ import { catColor, Theme } from '../theme';
 export default function ToolScreen({ theme }: { theme: Theme }) {
   const nav = useNavigation();
   const { params } = useRoute<RouteProp<RootStackParamList, 'Tool'>>();
+  useRemote(s => s.config); // re-render when App Center settings change
   const tool = toolById(params.id);
   if (!tool) return null;
   const cat = categoryById(tool.cat);
   const c = catColor(tool.cat, theme);
-  const related = TOOLS.filter(t => t.cat === tool.cat && t.id !== tool.id).slice(0, 8);
+  const related = TOOLS.filter(t => t.cat === tool.cat && t.id !== tool.id && !isHidden(t)).slice(0, 8);
   const where =
     tool.exec === 'browser'
       ? { icon: 'phone' as IconName, title: 'Runs on your phone', text: 'The file is processed on this phone and is never uploaded.' }
       : tool.exec === 'hybrid'
-        ? { icon: 'phone' as IconName, title: 'Runs on your phone', text: 'The file is processed on this phone. (Its optional server mode is under maintenance.)' }
+        ? { icon: 'phone' as IconName, title: 'Runs on your phone', text: apiLive() ? 'The file is processed on this phone. An optional server mode is also available on the website.' : 'The file is processed on this phone. (Its optional server mode is under maintenance.)' }
         : { icon: 'cloud' as IconName, title: 'Runs on the Fileora server', text: 'The file goes over HTTPS to the Fileora server and is deleted after download, or automatically within 1 hour.' };
 
   const native = isNative(tool.id);
   const available = isAvailable(tool);
+  const state = toolState(tool);
   const open = () => {
     if (!available) return;
     trackTool(tool.id);
@@ -69,8 +72,8 @@ export default function ToolScreen({ theme }: { theme: Theme }) {
             style={[styles.where, { backgroundColor: theme.warnBg, borderColor: theme.warnLine }]}>
             <Icon name="info" size={22} color={theme.warnInk} />
             <View style={styles.flex}>
-              <Text style={[styles.whereTitle, { color: theme.ink }]}>{tool.pending ? 'Coming soon' : 'Temporarily unavailable'}</Text>
-              <Text style={[styles.whereText, { color: theme.ink2 }]}>{MAINTENANCE_MESSAGE}</Text>
+              <Text style={[styles.whereTitle, { color: theme.ink }]}>{state === 'soon' ? 'Coming soon' : 'Temporarily unavailable'}</Text>
+              <Text style={[styles.whereText, { color: theme.ink2 }]}>{state === 'soon' ? soonMessage() : maintenanceMessage()}</Text>
             </View>
           </Animated.View>
         )}
