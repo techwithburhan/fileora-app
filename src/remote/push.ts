@@ -50,6 +50,11 @@ function messaging() {
   }
 }
 
+/** Whether notifications can work in this build (Firebase configured: always on Android; on iOS when the build has GoogleService-Info.plist). */
+export function pushAvailable(): boolean {
+  return messaging() !== null;
+}
+
 const needsRuntimePermission = () => Platform.OS === 'android' && Number(Platform.Version) >= 33;
 
 export const versionTopic = (v = APP_VERSION) => 'v' + v.replace(/\./g, '-');

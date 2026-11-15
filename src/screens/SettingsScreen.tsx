@@ -21,6 +21,7 @@ import {
   openNotificationSettings,
   openSystemSettings,
   permission,
+  pushAvailable,
   resetNotifications,
   syncTopics,
 } from '../remote/push';
@@ -136,7 +137,7 @@ export default function SettingsScreen({ theme }: { theme: Theme }) {
           : []),
       ],
     },
-    ...(Platform.OS === 'android' || Platform.OS === 'ios'
+    ...((Platform.OS === 'android' || Platform.OS === 'ios') && pushAvailable()
       ? [
           {
             title: 'Notifications & privacy',

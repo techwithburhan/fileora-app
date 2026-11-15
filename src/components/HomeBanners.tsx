@@ -11,7 +11,7 @@ import Icon, { IconName } from './Icon';
 import PressableScale from './PressableScale';
 import { SHARE_URL } from '../config';
 import { cmpVersion, remote, useRemote } from '../remote/remote';
-import { enableNotifications, openLink, openSystemSettings, permission } from '../remote/push';
+import { enableNotifications, openLink, openSystemSettings, permission, pushAvailable } from '../remote/push';
 import { brand, Theme } from '../theme';
 import { type } from '../typography';
 import { APP_VERSION } from '../version';
@@ -83,7 +83,7 @@ export default function HomeBanners({ theme }: { theme: Theme }) {
   const ann = config?.announcement && dismissed.ann !== config.announcement.id ? config.announcement : null;
   const latest = config?.update.latest || '';
   const showUpdate = !!latest && cmpVersion(APP_VERSION, latest) < 0 && dismissed.update !== latest;
-  const showNotify = (Platform.OS === 'android' || Platform.OS === 'ios') && perm === 'denied' && Date.now() - askedAt > ASK_AGAIN;
+  const showNotify = (Platform.OS === 'android' || Platform.OS === 'ios') && pushAvailable() && perm === 'denied' && Date.now() - askedAt > ASK_AGAIN;
 
   const turnOn = async () => {
     const r = await enableNotifications();
