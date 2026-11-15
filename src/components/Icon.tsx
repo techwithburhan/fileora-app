@@ -61,6 +61,7 @@ const P = {
 } as const;
 
 export type IconName = keyof typeof P;
+export const ICON_NAMES = Object.keys(P) as IconName[];
 
 export default function Icon({ name, size = 24, color, width = 2 }: { name: IconName; size?: number; color: string; width?: number }) {
   return (

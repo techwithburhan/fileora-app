@@ -14,7 +14,16 @@ import PressableScale from '../components/PressableScale';
 import { ABOUT_SLUGS, CONTACT_SLUGS, DEVELOPER, PRIVACY_SLUGS, SHARE_URL, TERMS_SLUGS } from '../config';
 import { store, useStore } from '../store/store';
 import { cmpVersion, remote, TOPIC_LABELS, useRemote } from '../remote/remote';
-import { disableNotifications, enableNotifications, openLink, openSystemSettings, permission, syncTopics } from '../remote/push';
+import {
+  disableNotifications,
+  enableNotifications,
+  openLink,
+  openNotificationSettings,
+  openSystemSettings,
+  permission,
+  resetNotifications,
+  syncTopics,
+} from '../remote/push';
 import { telemetry } from '../remote/telemetry';
 import { setAnalyticsEnabled } from '../analytics';
 import { Theme } from '../theme';
@@ -66,6 +75,20 @@ export default function SettingsScreen({ theme }: { theme: Theme }) {
         { text: 'Open settings', onPress: openSystemSettings },
       ]);
   };
+  const confirmReset = () =>
+    Alert.alert('Reset notification settings?', 'Categories, quiet mode and privacy go back to their original settings, and Fileora gets a new anonymous notification ID.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Reset',
+        style: 'destructive',
+        onPress: () => {
+          resetNotifications().then(() => {
+            check();
+            Alert.alert('Done', 'Notification settings were reset.');
+          });
+        },
+      },
+    ]);
   const offered = TOPIC_LABELS.filter(t => !config?.topics?.length || config.topics.includes(t.id));
 
   const checkUpdates = async () => {
@@ -116,27 +139,63 @@ export default function SettingsScreen({ theme }: { theme: Theme }) {
     ...(Platform.OS === 'android'
       ? [
           {
-            title: 'Notifications',
+            title: 'Notifications & privacy',
             rows: [
               {
                 key: 'notif',
                 icon: 'bell' as IconName,
                 label: 'Notifications',
-                sub: blocked ? 'Blocked in your phone’s settings. Tap to open them.' : notifOn ? 'App updates, new tools and news' : 'Off',
+                sub: blocked ? 'Blocked in your phone’s settings. Tap to open them.' : notifOn ? 'On: app updates, new tools and news' : 'Off: no notifications from Fileora',
                 onPress: blocked ? openSystemSettings : undefined,
                 right: blocked ? undefined : sw(notifOn, setNotif, 'Notifications'),
               },
               ...(notifOn
-                ? offered.map(t => ({
-                    key: 'topic-' + t.id,
-                    icon: 'check' as IconName,
-                    label: t.label,
-                    right: sw(prefs.topics[t.id] !== false, v => {
-                      remote.setTopic(t.id, v);
-                      syncTopics();
-                    }, t.label),
-                  }))
+                ? [
+                    {
+                      key: 'quiet',
+                      icon: 'moon' as IconName,
+                      label: 'Quiet notifications',
+                      sub: 'Hide pop-ups and sound: notifications arrive silently in the notification list',
+                      right: sw(prefs.quiet, v => {
+                        remote.setPrefs({ quiet: v });
+                        syncTopics();
+                      }, 'Quiet notifications'),
+                    },
+                    {
+                      key: 'private',
+                      icon: 'lock' as IconName,
+                      label: 'Notification privacy',
+                      sub: 'Nothing from Fileora on the lock screen: you see notifications after unlocking',
+                      right: sw(prefs.private, v => {
+                        remote.setPrefs({ private: v });
+                        syncTopics();
+                      }, 'Notification privacy'),
+                    },
+                    ...offered.map(t => ({
+                      key: 'topic-' + t.id,
+                      icon: 'check' as IconName,
+                      label: t.label,
+                      right: sw(prefs.topics[t.id] !== false, v => {
+                        remote.setTopic(t.id, v);
+                        syncTopics();
+                      }, t.label),
+                    })),
+                  ]
                 : []),
+              {
+                key: 'sound',
+                icon: 'settings' as IconName,
+                label: 'Sound and more',
+                sub: 'Android’s notification settings for Fileora: sound, vibration, lock screen',
+                onPress: openNotificationSettings,
+              },
+              {
+                key: 'reset',
+                icon: 'refresh' as IconName,
+                label: 'Reset notification settings',
+                sub: 'Back to the original choices, with a new anonymous notification ID',
+                onPress: confirmReset,
+              },
             ],
           },
         ]

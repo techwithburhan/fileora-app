@@ -6,13 +6,15 @@
  * the service account on the server, or from the Firebase Console.
  *
  * Topics: all (important, always on while notifications are on), android, v<version> (so the
- * website can reach only older versions), and the categories the person keeps on in Settings:
- * updates, news, tools, offers, blog.
+ * website can reach only older versions), the categories the person keeps on in Settings
+ * (updates, news, tools, offers, blog), and their style: mode-quiet (no sound or pop-up) and
+ * mode-private (nothing on the lock screen). App Center sends each notification once per style.
  *
  * Android 13+ needs the POST_NOTIFICATIONS permission. It is asked only after the person taps
  * "Turn on" (Home card or Settings), never at first launch; a "no" is respected.
  */
 import { Alert, Linking, PermissionsAndroid, Platform } from 'react-native';
+import { ANDROID_PACKAGE } from '../config';
 import { getApp } from '@react-native-firebase/app';
 import {
   deleteToken,
@@ -25,12 +27,13 @@ import {
   unsubscribeFromTopic,
   type RemoteMessage,
 } from '@react-native-firebase/messaging';
-import { SITE_HOSTS } from '../config';
+import { openLink } from '../lib/links';
 import { navigationRef } from '../navigation/types';
 import { toolById } from '../data/tools';
 import { APP_VERSION } from '../version';
-import { remote, TOPIC_LABELS } from './remote';
+import { defaultPrefs, remote, TOPIC_LABELS } from './remote';
 import { telemetry } from './telemetry';
+import { featureMessage, screenState } from '../navigation/nav';
 
 export type Permission = 'granted' | 'denied' | 'blocked';
 
@@ -87,6 +90,37 @@ export function openSystemSettings() {
   Linking.openSettings().catch(() => {});
 }
 
+/** Android's notification settings for Fileora (sound, pop-up, lock screen…). */
+export function openNotificationSettings() {
+  if (Platform.OS !== 'android' || Number(Platform.Version) < 26) {
+    openSystemSettings();
+    return;
+  }
+  Linking.sendIntent('android.settings.APP_NOTIFICATION_SETTINGS', [{ key: 'android.provider.extra.APP_PACKAGE', value: ANDROID_PACKAGE }]).catch(openSystemSettings);
+}
+
+/**
+ * Back to a fresh install's notification choices, with a new anonymous notification ID:
+ * every topic is dropped and the FCM token deleted, then the topics are set up again
+ * (only if notifications are allowed on this phone).
+ */
+export async function resetNotifications() {
+  const m = messaging();
+  const keep = remote.get().prefs.usage;
+  remote.setPrefs({ ...defaultPrefs(), usage: keep });
+  if (m) {
+    chain = chain
+      .then(async () => {
+        for (const t of remote.get().subscribed) await unsubscribeFromTopic(m, t).catch(() => {});
+        remote.setSubscribed([]);
+        await deleteToken(m).catch(() => {});
+      })
+      .catch(() => {});
+    await chain;
+  }
+  await syncTopics();
+}
+
 /* ---------- topics ---------- */
 
 let chain: Promise<void> = Promise.resolve();
@@ -96,7 +130,8 @@ function wanted(perm: 'granted' | 'denied'): string[] {
   if (!s.prefs.notify || perm !== 'granted') return [];
   const offered = s.config?.topics?.length ? s.config.topics : TOPIC_LABELS.map(t => t.id);
   const cats = TOPIC_LABELS.map(t => t.id).filter(id => offered.includes(id) && s.prefs.topics[id] !== false);
-  return ['all', 'android', versionTopic(), ...cats];
+  const modes = [...(s.prefs.quiet ? ['mode-quiet'] : []), ...(s.prefs.private ? ['mode-private'] : [])];
+  return ['all', 'android', versionTopic(), ...cats, ...modes];
 }
 
 /** Brings this phone's FCM topics in line with the person's choices (runs one at a time). */
@@ -136,21 +171,7 @@ async function doSync() {
 type Data = { open?: string; tool?: string; link?: string; id?: string; topic?: string };
 let pending: Data | null = null;
 
-function isSiteLink(url: string) {
-  try {
-    const h = new URL(url).host.toLowerCase();
-    return SITE_HOSTS.includes(h);
-  } catch {
-    return false;
-  }
-}
-
-/** Opens a link inside the app when it is on fileora.in, otherwise in the browser. */
-export function openLink(url: string, title = 'Fileora') {
-  if (!/^(https?:\/\/|mailto:|tel:)/i.test(url)) return;
-  if (isSiteLink(url) && navigationRef.isReady()) navigationRef.navigate('Web', { url, title });
-  else Linking.openURL(url).catch(() => {});
-}
+export { openLink } from '../lib/links';
 
 function go(d: Data) {
   if (!navigationRef.isReady()) {
@@ -159,7 +180,11 @@ function go(d: Data) {
   }
   const open = d.open || 'home';
   if (open === 'tool' && d.tool && toolById(d.tool)) navigationRef.navigate('Tool', { id: d.tool });
-  else if (open === 'scanner') navigationRef.navigate('Tabs', { screen: 'Scanner' });
+  else if (open === 'scanner') {
+    const st = screenState('scanner');
+    if (st === 'soon' || st === 'off') featureMessage('scanner', 'Scanner');
+    else navigationRef.navigate('Tabs', { screen: 'Scanner' });
+  }
   else if (open === 'files') navigationRef.navigate('Tabs', { screen: 'Files' });
   else if (open === 'link' && d.link) openLink(d.link);
   else if (open === 'update') {
@@ -194,6 +219,7 @@ export function startPush(): () => void {
   const offMsg = onMessage(m, msg => {
     const n = msg.notification;
     if (!n?.title && !n?.body) return;
+    if (remote.get().prefs.quiet) return; // quiet notifications: no pop-up inside the app either
     const d = (msg.data || {}) as Data;
     const canOpen = d.open && d.open !== 'home';
     Alert.alert(n?.title || 'Fileora', n?.body || '', canOpen ? [{ text: 'Close', style: 'cancel' }, { text: 'Open', onPress: () => opened(msg) }] : [{ text: 'OK' }]);

@@ -9,6 +9,7 @@ import { useSyncExternalStore } from 'react';
 import BlobUtil from 'react-native-blob-util';
 import { DIRS, ensureDirs, ROOT, sizeOf, uniquePath } from './files';
 import { telemetry } from '../remote/telemetry';
+import { onFlush, readJsonSafe, writeJsonSafe } from '../lib/safeFile';
 
 /** downloaded/processed: tools · scan + scan-image: Scanned Images tab · convert: Convert PDFs tab */
 export type Source = 'downloaded' | 'processed' | 'scan' | 'scan-image' | 'convert';
@@ -56,14 +57,19 @@ let saveTimer: ReturnType<typeof setTimeout> | null = null;
 function emit() {
   listeners.forEach(l => l());
 }
+function save() {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = null;
+  if (!state.loaded) return Promise.resolve(); // never overwrite saved data before it was read
+  const { v, theme, files, docs, bin, binDocs, events, clouds } = state;
+  return writeJsonSafe(FILE, { v, theme, files, docs, bin, binDocs, events, clouds });
+}
 function persist() {
   if (saveTimer) clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    const { v, theme, files, docs, bin, binDocs, events, clouds } = state;
-    const data = { v, theme, files, docs, bin, binDocs, events, clouds };
-    BlobUtil.fs.writeFile(FILE, JSON.stringify(data), 'utf8').catch(() => {});
-  }, 300);
+  saveTimer = setTimeout(save, 300);
 }
+// app going to the background: write pending changes now
+onFlush(() => (saveTimer ? save() : undefined));
 function set(next: Partial<State>) {
   state = { ...state, ...next };
   emit();
@@ -107,8 +113,8 @@ export const store = {
   async load() {
     await ensureDirs();
     try {
-      if (await BlobUtil.fs.exists(FILE)) {
-        const d = JSON.parse(await BlobUtil.fs.readFile(FILE, 'utf8')) as Partial<State> & { v?: number };
+      const d = await readJsonSafe<Partial<State> & { v?: number }>(FILE);
+      if (d) {
         // forget records whose file was removed outside the app
         let files = await existing(d.files);
         const bin = await existing(d.bin);
@@ -141,8 +147,10 @@ export const store = {
         return;
       }
     } catch {
-      // damaged file: start fresh (files on disk stay)
+      // unexpected data: start fresh below (files on disk stay)
     }
+    // Nothing readable: keep the damaged file aside instead of overwriting it, so it can be recovered.
+    if (await BlobUtil.fs.exists(FILE)) await BlobUtil.fs.cp(FILE, `${FILE}.damaged-${Date.now()}`).catch(() => {});
     state = { ...state, loaded: true };
     emit();
   },

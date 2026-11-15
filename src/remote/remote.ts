@@ -7,11 +7,22 @@
  * and the random install ID used for check-ins. Saved in DocumentDir/fileora/remote.json.
  */
 import { useSyncExternalStore } from 'react';
-import BlobUtil from 'react-native-blob-util';
 import { API_TOOLS_LIVE, MAINTENANCE_MESSAGE, SITE } from '../config';
 import { ensureDirs, ROOT } from '../store/files';
+import { onFlush, readJsonSafe, writeJsonSafe } from '../lib/safeFile';
 
 export type ToolFlag = 'soon' | 'off';
+/** One bottom-bar or side-menu item from App Center → Navigation. */
+export type NavItem = {
+  id: string;
+  label: string;
+  icon: string;
+  open: 'screen' | 'cat' | 'tool' | 'url';
+  value: string;
+  status: 'on' | 'soon' | 'off';
+  msg: string;
+};
+export type Nav = { bar: NavItem[]; menu: NavItem[] };
 export type RemoteConfig = {
   v: number;
   api_live: boolean;
@@ -25,6 +36,8 @@ export type RemoteConfig = {
   update: { latest: string; min: string; url: string; notes: string };
   links: { terms: string; privacy: string; contact: string; share: string; share_text: string };
   popular: string[];
+  /** null = App Center has no navigation (older plugin): the app uses its built-in one */
+  nav: Nav | null;
   tracking: boolean;
   checkin_minutes: number;
   cache_seconds: number;
@@ -43,6 +56,8 @@ export type Prefs = {
   topics: Record<string, boolean>;
   askedAt: number; // when we last asked about notifications (0 = never)
   usage: boolean; // share anonymous usage
+  quiet: boolean; // notifications arrive without sound or pop-up
+  private: boolean; // nothing shown on the lock screen
 };
 type State = {
   loaded: boolean;
@@ -66,12 +81,17 @@ function randomId() {
   return s;
 }
 
+/** Choices of a fresh install (also what "Reset notification settings" goes back to). */
+export function defaultPrefs(): Prefs {
+  return { notify: true, topics: Object.fromEntries(TOPIC_LABELS.map(t => [t.id, true])), askedAt: 0, usage: true, quiet: false, private: false };
+}
+
 let state: State = {
   loaded: false,
   config: null,
   fetchedAt: 0,
   install: '',
-  prefs: { notify: true, topics: Object.fromEntries(TOPIC_LABELS.map(t => [t.id, true])), askedAt: 0, usage: true },
+  prefs: defaultPrefs(),
   dismissed: {},
   subscribed: [],
 };
@@ -79,17 +99,57 @@ let state: State = {
 function emit() {
   listeners.forEach(l => l());
 }
+function save() {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = null;
+  if (!state.loaded) return Promise.resolve(); // never overwrite saved choices before they were read
+  const { config, fetchedAt, install, prefs, dismissed, subscribed } = state;
+  return writeJsonSafe(FILE, { config, fetchedAt, install, prefs, dismissed, subscribed });
+}
 function persist() {
   if (saveTimer) clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    const { config, fetchedAt, install, prefs, dismissed, subscribed } = state;
-    BlobUtil.fs.writeFile(FILE, JSON.stringify({ config, fetchedAt, install, prefs, dismissed, subscribed }), 'utf8').catch(() => {});
-  }, 300);
+  saveTimer = setTimeout(save, 300);
 }
+onFlush(() => (saveTimer ? save() : undefined));
 function set(next: Partial<State>) {
   state = { ...state, ...next };
   emit();
   persist();
+}
+
+const NAV_OPEN = ['screen', 'cat', 'tool', 'url'];
+function cleanNavList(v: unknown, max: number): NavItem[] {
+  if (!Array.isArray(v)) return [];
+  const out: NavItem[] = [];
+  for (const x of v) {
+    if (!x || typeof x !== 'object') continue;
+    const i = x as Record<string, unknown>;
+    const open = String(i.open ?? '');
+    const value = String(i.value ?? '');
+    if (!NAV_OPEN.includes(open) || !value) continue;
+    if (open === 'url' && !/^(https:\/\/|mailto:)/i.test(value)) continue;
+    out.push({
+      id: String(i.id ?? '').slice(0, 40) || `${open}-${value}`,
+      label: String(i.label ?? '').slice(0, 24) || value,
+      icon: String(i.icon ?? 'info'),
+      open: open as NavItem['open'],
+      value,
+      status: i.status === 'soon' || i.status === 'off' ? i.status : 'on',
+      msg: String(i.msg ?? '').slice(0, 160),
+    });
+  }
+  return out.slice(0, max);
+}
+/** Navigation from App Center, or null when missing or unusable (Home must be in the bar, Settings somewhere). */
+function cleanNav(v: unknown): Nav | null {
+  if (!v || typeof v !== 'object') return null;
+  const n = v as { bar?: unknown; menu?: unknown };
+  const bar = cleanNavList(n.bar, 6);
+  const menu = cleanNavList(n.menu, 20);
+  const isOn = (screen: string) => (i: NavItem) => i.open === 'screen' && i.value === screen && i.status === 'on';
+  if (!bar.some(isOn('home'))) return null;
+  if (!bar.some(isOn('settings')) && !menu.some(isOn('settings'))) return null;
+  return { bar, menu };
 }
 
 /** Accepts only what the app understands, so a bad answer can't break it. */
@@ -116,6 +176,7 @@ function clean(j: unknown): RemoteConfig | null {
     update: { latest: str(c.update?.latest), min: str(c.update?.min), url: str(c.update?.url), notes: str(c.update?.notes) },
     links: { terms: str(c.links?.terms), privacy: str(c.links?.privacy), contact: str(c.links?.contact), share: str(c.links?.share) || SITE, share_text: str(c.links?.share_text) },
     popular: arr(c.popular),
+    nav: cleanNav(c.nav),
     tracking: c.tracking !== false,
     checkin_minutes: Math.max(5, Math.min(1440, Number(c.checkin_minutes) || 30)),
     cache_seconds: Math.max(0, Math.min(3600, Number(c.cache_seconds) || 60)),
@@ -133,8 +194,8 @@ export const remote = {
   async load() {
     await ensureDirs();
     try {
-      if (await BlobUtil.fs.exists(FILE)) {
-        const d = JSON.parse(await BlobUtil.fs.readFile(FILE, 'utf8'));
+      const d = await readJsonSafe<Record<string, any>>(FILE);
+      if (d) {
         state = {
           ...state,
           config: clean(d.config),

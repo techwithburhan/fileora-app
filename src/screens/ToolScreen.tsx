@@ -9,6 +9,7 @@ import { ToolChip } from '../components/ToolCard';
 import { categoryById, isApiTool, isAvailable, isHidden, toolById, toolState, TOOLS } from '../data/tools';
 import { toolUrl } from '../config';
 import { apiLive, maintenanceMessage, soonMessage, useRemote } from '../remote/remote';
+import { featureMessage, screenState } from '../navigation/nav';
 import { isNative } from '../data/nativeTools';
 import { store } from '../store/store';
 import { RootStackParamList } from '../navigation/types';
@@ -37,7 +38,10 @@ export default function ToolScreen({ theme }: { theme: Theme }) {
   const open = () => {
     if (!available) return;
     trackTool(tool.id);
-    if (tool.id === 'scan') nav.navigate('Tabs', { screen: 'Scanner' });
+    if (tool.id === 'scan') {
+      if (screenState('scanner') === 'on' || screenState('scanner') === 'hidden') nav.navigate('Tabs', { screen: 'Scanner' });
+      else featureMessage('scanner', tool.name); // Scanner is "coming soon" or disabled in App Center
+    }
     else if (native) nav.navigate('Process', { tool: tool.id });
     else {
       store.logOpen(tool.id);

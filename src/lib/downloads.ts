@@ -9,8 +9,9 @@ import { openWithViewer, safeName } from '../store/files';
 import { store } from '../store/store';
 import { saveResult } from './output';
 import { telemetry } from '../remote/telemetry';
+import { busy } from './busy';
 
-type Pending = { name: string; mime: string; path: string; chain: Promise<unknown> };
+type Pending = { name: string; mime: string; path: string; chain: Promise<unknown>; done: () => void };
 const pending = new Map<string, Pending>();
 
 export type DownloadMessage =
@@ -25,12 +26,15 @@ export function handleDownloadMessage(msg: DownloadMessage, tool?: string) {
   if (msg.type === 'dl-start') {
     const name = safeName(msg.name);
     const path = `${fs.dirs.CacheDir}/dl-${msg.id}-${name}`;
-    pending.set(msg.id, { name, mime: msg.mime, path, chain: fs.writeFile(path, '', 'utf8') });
+    pending.set(msg.id, { name, mime: msg.mime, path, chain: fs.writeFile(path, '', 'utf8'), done: busy.start() });
     return;
   }
   const p = pending.get(msg.id);
   if (msg.type === 'dl-error') {
-    if (p) pending.delete(msg.id);
+    if (p) {
+      pending.delete(msg.id);
+      p.done();
+    }
     telemetry.track('failed', tool, 0, 'download failed in the page');
     Alert.alert('Download failed', 'The file could not be saved. Please try again.');
     return;
@@ -58,5 +62,6 @@ export function handleDownloadMessage(msg: DownloadMessage, tool?: string) {
     .catch(e => {
       telemetry.track('failed', tool, 0, `download not saved: ${e instanceof Error ? e.message : String(e)}`);
       Alert.alert('Download failed', 'The file could not be saved.');
-    });
+    })
+    .finally(p.done);
 }

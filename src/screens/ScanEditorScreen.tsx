@@ -29,6 +29,7 @@ import { RootStackParamList } from '../navigation/types';
 import { brand, Theme } from '../theme';
 import { type } from '../typography';
 import { telemetry } from '../remote/telemetry';
+import { busy as task } from '../lib/busy';
 
 const WV = WebView<object>;
 type Filter = 'none' | 'photo' | 'document' | 'bw' | 'mono';
@@ -244,6 +245,14 @@ export default function ScanEditorScreen({ theme }: { theme: Theme }) {
 
   /* ---------- saving ---------- */
   const save = async (name: string, asPdf: boolean) => {
+    const done = task.start();
+    try {
+      await saveScan(name, asPdf);
+    } finally {
+      done();
+    }
+  };
+  const saveScan = async (name: string, asPdf: boolean) => {
     setAsking(false);
     const outs: string[] = [];
     try {

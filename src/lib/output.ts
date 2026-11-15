@@ -18,8 +18,12 @@ export async function saveResult(r: {
   const source: Source = r.source ?? 'processed';
   const folder: Folder = source === 'downloaded' ? 'downloaded' : source === 'processed' ? 'processed' : 'scan';
   const path = await uniquePath(DIRS[folder], r.name);
-  if (r.base64 !== undefined) await BlobUtil.fs.writeFile(path, r.base64, 'base64');
-  else if (r.fromPath) await (r.move ? BlobUtil.fs.mv(r.fromPath, path) : BlobUtil.fs.cp(r.fromPath, path));
+  if (r.base64 !== undefined) {
+    // written under a temporary name first, so an app closed mid-save never leaves a broken file
+    const part = `${path}.part`;
+    await BlobUtil.fs.writeFile(part, r.base64, 'base64');
+    await BlobUtil.fs.mv(part, path);
+  } else if (r.fromPath) await (r.move ? BlobUtil.fs.mv(r.fromPath, path) : BlobUtil.fs.cp(r.fromPath, path));
   const name = path.slice(path.lastIndexOf('/') + 1);
   const mime = r.mime ?? mimeOf(name);
   if (r.publish !== false) await publishToDownloads(path, name, mime);

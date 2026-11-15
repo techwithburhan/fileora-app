@@ -29,6 +29,9 @@ export const ABOUT_SLUGS = ['about-us', 'about'];
 /** Link people share to get the app (the website, which links to the app). */
 export const SHARE_URL = SITE;
 
+/** Android application id (for opening this app's notification settings). */
+export const ANDROID_PACKAGE = 'in.fileora.app';
+
 export const DEVELOPER = { name: 'TechDeployers', handle: '@techdeployers', url: 'https://www.techdeployers.com' };
 
 /**

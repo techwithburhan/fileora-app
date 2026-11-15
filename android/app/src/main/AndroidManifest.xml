@@ -34,7 +34,7 @@
       android:usesCleartextTraffic="${usesCleartextTraffic}"
       android:supportsRtl="true">
       <!-- Push notifications (Firebase Cloud Messaging): status bar icon and brand color. The default
-           channel ("fileora") comes from firebase.json; the channel itself is created in MainApplication.
+           channel ("fileora_alerts") comes from firebase.json; the channels are created in MainApplication.
            The color replaces the Firebase library's default here (a library can't see app colors). -->
       <meta-data
         android:name="com.google.firebase.messaging.default_notification_icon"

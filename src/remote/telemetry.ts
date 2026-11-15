@@ -9,11 +9,11 @@
  * Settings → "Share anonymous usage".
  */
 import { Platform } from 'react-native';
-import BlobUtil from 'react-native-blob-util';
 import { SITE } from '../config';
 import { ROOT } from '../store/files';
 import { APP_VERSION } from '../version';
 import { remote } from './remote';
+import { onFlush, readJsonSafe, writeJsonSafe } from '../lib/safeFile';
 
 export type EventType = 'start' | 'open' | 'done' | 'failed' | 'error' | 'push';
 type Ev = { t: number; type: EventType; tool?: string; bytes?: number; detail?: string };
@@ -38,12 +38,16 @@ function allowed(): boolean {
   return /^[a-z0-9]{16}$/.test(s.install);
 }
 
+function save() {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = null;
+  return writeJsonSafe(FILE, queue);
+}
 function persist() {
   if (saveTimer) clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    BlobUtil.fs.writeFile(FILE, JSON.stringify(queue), 'utf8').catch(() => {});
-  }, 500);
+  saveTimer = setTimeout(save, 500);
 }
+onFlush(() => (saveTimer ? save() : undefined));
 
 /** Error texts can mention a file: keep only the message, without file names or paths. */
 export function cleanDetail(s: string): string {
@@ -61,10 +65,8 @@ export const telemetry = {
     if (loaded) return;
     loaded = true;
     try {
-      if (await BlobUtil.fs.exists(FILE)) {
-        const d = JSON.parse(await BlobUtil.fs.readFile(FILE, 'utf8'));
-        if (Array.isArray(d)) queue = [...d.filter(e => e && typeof e.type === 'string' && typeof e.t === 'number'), ...queue].slice(-MAX_QUEUE);
-      }
+      const d = await readJsonSafe<unknown[]>(FILE);
+      if (Array.isArray(d)) queue = [...(d as Ev[]).filter(e => e && typeof e.type === 'string' && typeof e.t === 'number'), ...queue].slice(-MAX_QUEUE);
     } catch {
       queue = [];
     }

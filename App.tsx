@@ -40,11 +40,15 @@ import { navigationRef, RootStackParamList, TabParamList } from './src/navigatio
 import { setAnalyticsEnabled, trackScreen } from './src/analytics';
 import { Theme, useTheme } from './src/theme';
 import RemoteGate from './src/components/RemoteGate';
+import ErrorBoundary, { installGlobalErrorHandler } from './src/components/ErrorBoundary';
+import { flushAll } from './src/lib/safeFile';
 import { remote } from './src/remote/remote';
 import { telemetry } from './src/remote/telemetry';
 import { onNavigationReady, startPush, syncTopics } from './src/remote/push';
 
 /** Reads App Center settings; reports only real server answers as errors (not "offline"). */
+installGlobalErrorHandler();
+
 async function refreshConfig(force = false) {
   const err = await remote.refresh(force);
   if (err && /HTTP|unexpected/.test(err)) telemetry.track('error', undefined, 0, err);
@@ -111,10 +115,14 @@ export default function App() {
           syncTopics();
         });
         startTimer();
-      } else if (st === 'background') {
-        if (timer) clearInterval(timer);
-        timer = null;
-        telemetry.flush(true);
+      } else {
+        // leaving the app (or it is being closed): write every pending save now
+        flushAll();
+        if (st === 'background') {
+          if (timer) clearInterval(timer);
+          timer = null;
+          telemetry.flush(true);
+        }
       }
     });
     return () => {
@@ -150,37 +158,39 @@ export default function App() {
       {/* Android 15+ draws edge to edge: the headers and the tab bar add the system bar insets themselves. */}
       <StatusBar barStyle={splash || theme.dark ? 'light-content' : 'dark-content'} />
       <MenuProvider>
-        <View style={[styles.root, { backgroundColor: theme.bg }]}>
-          <NavigationContainer
-            ref={navigationRef}
-            theme={navTheme}
-            onReady={() => setNavReady(true)}
-            onStateChange={() => {
-              const r = navigationRef.getCurrentRoute();
-              if (r) trackScreen(r.name);
-            }}>
-            <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', contentStyle: { backgroundColor: theme.bg } }}>
-              <Stack.Screen name="Tabs">{() => <TabsScreen theme={theme} />}</Stack.Screen>
-              <Stack.Screen name="Tool">{() => <ToolScreen theme={theme} />}</Stack.Screen>
-              <Stack.Screen name="Process">{() => <ProcessScreen theme={theme} />}</Stack.Screen>
-              <Stack.Screen name="Activity">{() => <ActivityScreen theme={theme} />}</Stack.Screen>
-              <Stack.Screen name="ScanEditor" options={{ animation: 'fade' }}>
-                {() => <ScanEditorScreen theme={theme} />}
-              </Stack.Screen>
-              <Stack.Screen name="ScanDoc">{() => <ScanDocScreen theme={theme} />}</Stack.Screen>
-              <Stack.Screen name="Shared">{() => <SharedScreen theme={theme} />}</Stack.Screen>
-              <Stack.Screen name="RecycleBin">{() => <RecycleBinScreen theme={theme} />}</Stack.Screen>
-              <Stack.Screen name="Cloud">{() => <CloudScreen theme={theme} />}</Stack.Screen>
-              <Stack.Screen name="Blog">{() => <BlogScreen theme={theme} />}</Stack.Screen>
-              <Stack.Screen name="Web" options={{ animation: 'slide_from_bottom' }}>
-                {() => <WebScreen theme={theme} />}
-              </Stack.Screen>
-            </Stack.Navigator>
-            <MenuSheet theme={theme} />
-          </NavigationContainer>
-          <RemoteGate />
-          {splash && <SplashIntro onDone={done} />}
-        </View>
+        <ErrorBoundary>
+          <View style={[styles.root, { backgroundColor: theme.bg }]}>
+            <NavigationContainer
+              ref={navigationRef}
+              theme={navTheme}
+              onReady={() => setNavReady(true)}
+              onStateChange={() => {
+                const r = navigationRef.getCurrentRoute();
+                if (r) trackScreen(r.name);
+              }}>
+              <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', contentStyle: { backgroundColor: theme.bg } }}>
+                <Stack.Screen name="Tabs">{() => <TabsScreen theme={theme} />}</Stack.Screen>
+                <Stack.Screen name="Tool">{() => <ToolScreen theme={theme} />}</Stack.Screen>
+                <Stack.Screen name="Process">{() => <ProcessScreen theme={theme} />}</Stack.Screen>
+                <Stack.Screen name="Activity">{() => <ActivityScreen theme={theme} />}</Stack.Screen>
+                <Stack.Screen name="ScanEditor" options={{ animation: 'fade' }}>
+                  {() => <ScanEditorScreen theme={theme} />}
+                </Stack.Screen>
+                <Stack.Screen name="ScanDoc">{() => <ScanDocScreen theme={theme} />}</Stack.Screen>
+                <Stack.Screen name="Shared">{() => <SharedScreen theme={theme} />}</Stack.Screen>
+                <Stack.Screen name="RecycleBin">{() => <RecycleBinScreen theme={theme} />}</Stack.Screen>
+                <Stack.Screen name="Cloud">{() => <CloudScreen theme={theme} />}</Stack.Screen>
+                <Stack.Screen name="Blog">{() => <BlogScreen theme={theme} />}</Stack.Screen>
+                <Stack.Screen name="Web" options={{ animation: 'slide_from_bottom' }}>
+                  {() => <WebScreen theme={theme} />}
+                </Stack.Screen>
+              </Stack.Navigator>
+              <MenuSheet theme={theme} />
+            </NavigationContainer>
+            <RemoteGate />
+            {splash && <SplashIntro onDone={done} />}
+          </View>
+        </ErrorBoundary>
       </MenuProvider>
     </SafeAreaProvider>
   );

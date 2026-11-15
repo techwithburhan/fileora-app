@@ -1,7 +1,7 @@
 /**
- * Side menu with every option the website offers today: all tools and the 7 tool categories,
- * Home, Scanner, Files, ATS Resume, Blog, Settings, Contact us, API Status and the information pages.
- * Slides in from the right; its rows arrive one after another (Reanimated layout animations).
+ * Side menu: all tools and the 7 tool categories, the "Fileora" section (from App Center →
+ * Navigation; built-in: Home, Scanner, Files, ATS Resume, Blog, Settings, Contact us, API Status)
+ * and the information pages. Slides in from the right; its rows arrive one after another.
  */
 import React, { useEffect, useState } from 'react';
 import { BackHandler, Linking, Platform, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
@@ -11,23 +11,22 @@ import { Logo } from './Brand';
 import Icon, { IconName } from './Icon';
 import PressableScale from './PressableScale';
 import { useMenu } from './MenuContext';
-import { CATEGORIES, TOOL_COUNT } from '../data/tools';
-import { CONTACT_SLUGS, DEVELOPER, INFO_PAGES, PAGES, SITE } from '../config';
+import { CATEGORIES } from '../data/tools';
+import { DEVELOPER, INFO_PAGES, SITE } from '../config';
+import { navIcon, openNavItem, useNav } from '../navigation/nav';
+import { useVisibleTools } from '../remote/useTools';
 import { navigationRef, TabParamList } from '../navigation/types';
 import { catColor, Theme } from '../theme';
 import { trackScreen } from '../analytics';
 import { APP_VERSION } from '../version';
 
-type Row = { key: string; label: string; icon: IconName; color?: string; count?: number; go: () => void };
+type Row = { key: string; label: string; icon: IconName; color?: string; count?: number; badge?: string; dim?: boolean; go: () => void };
 
 function goTab(tab: keyof TabParamList, params?: TabParamList['Tools']) {
   if (navigationRef.isReady()) navigationRef.navigate('Tabs', { screen: tab, params } as never);
 }
 function goWeb(title: string, url?: string, slugs?: string[]) {
   if (navigationRef.isReady()) navigationRef.navigate('Web', { title, url, slugs });
-}
-function goBlog() {
-  if (navigationRef.isReady()) navigationRef.navigate('Blog');
 }
 
 export default function MenuSheet({ theme }: { theme: Theme }) {
@@ -37,6 +36,8 @@ export default function MenuSheet({ theme }: { theme: Theme }) {
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const panelW = Math.min(360, Math.round(width * 0.88));
+  const menuItems = useNav().menu;
+  const tools = useVisibleTools();
 
   useEffect(() => {
     if (visible) {
@@ -73,29 +74,27 @@ export default function MenuSheet({ theme }: { theme: Theme }) {
     {
       title: 'Tools',
       rows: [
-        { key: 'all', label: 'All tools', icon: 'grid', count: TOOL_COUNT, go: () => goTab('Tools', { cat: 'all' }) },
-        ...CATEGORIES.map(c => ({
+        { key: 'all', label: 'All tools', icon: 'grid', count: tools.length, go: () => goTab('Tools', { cat: 'all' }) },
+        ...CATEGORIES.filter(c => tools.some(t => t.cat === c.id)).map(c => ({
           key: c.id,
           label: c.name,
           icon: c.id as IconName,
           color: catColor(c.id, theme),
-          count: c.count,
+          count: tools.filter(t => t.cat === c.id).length,
           go: () => goTab('Tools', { cat: c.id }),
         })),
       ],
     },
     {
       title: 'Fileora',
-      rows: [
-        { key: 'home', label: 'Home', icon: 'home', go: () => goTab('Home') },
-        { key: 'scanner', label: 'Scanner', icon: 'scan', go: () => goTab('Scanner') },
-        { key: 'files', label: 'Files', icon: 'folder', go: () => goTab('Files') },
-        { key: 'resume', label: 'ATS Resume', icon: 'resume', go: () => goTab('Resume') },
-        { key: 'blog', label: 'Blog', icon: 'blog', go: goBlog },
-        { key: 'settings', label: 'Settings', icon: 'settings', go: () => goTab('Settings') },
-        { key: 'contact', label: 'Contact us', icon: 'mail', go: () => goWeb('Contact us', undefined, CONTACT_SLUGS) },
-        { key: 'status', label: 'API Status', icon: 'pulse', go: () => goWeb('API Status', PAGES.apiStatus) },
-      ],
+      rows: menuItems.map((it, i) => ({
+        key: `nav-${it.id}-${i}`,
+        label: it.label,
+        icon: navIcon(it),
+        badge: it.status === 'soon' ? 'Soon' : undefined,
+        dim: it.status === 'off',
+        go: () => openNavItem(it),
+      })),
     },
     {
       title: 'Help & information',
@@ -130,8 +129,8 @@ export default function MenuSheet({ theme }: { theme: Theme }) {
                     scaleTo={0.98}
                     onPress={pick(r.go)}
                     accessibilityRole="button"
-                    accessibilityLabel={r.count ? `${r.label}, ${r.count} tools` : r.label}
-                    style={[styles.row, { backgroundColor: theme.surface, borderColor: theme.line }]}>
+                    accessibilityLabel={r.count ? `${r.label}, ${r.count} tools` : r.badge ? `${r.label}, ${r.badge}` : r.label}
+                    style={[styles.row, { backgroundColor: theme.surface, borderColor: theme.line }, r.dim && styles.dim]}>
                     <View style={[styles.rowIcon, { backgroundColor: (r.color ?? theme.accent) + '1F' }]}>
                       <Icon name={r.icon} size={19} color={r.color ?? theme.accent} />
                     </View>
@@ -139,6 +138,7 @@ export default function MenuSheet({ theme }: { theme: Theme }) {
                       {r.label}
                     </Text>
                     {r.count ? <Text style={[styles.count, { color: theme.muted, backgroundColor: theme.surface2 }]}>{r.count}</Text> : null}
+                    {r.badge ? <Text style={[styles.count, { color: theme.warnInk, backgroundColor: theme.warnBg }]}>{r.badge}</Text> : null}
                     <Icon name="chevron" size={18} color={theme.muted} />
                   </PressableScale>
                 </Animated.View>
@@ -191,4 +191,5 @@ const styles = StyleSheet.create({
   rowLabel: { flex: 1, fontSize: 15, fontWeight: '600' },
   count: { fontSize: 12, fontWeight: '700', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, overflow: 'hidden' },
   foot: { fontSize: 12.5, textAlign: 'center', marginTop: 10 },
+  dim: { opacity: 0.5 },
 });

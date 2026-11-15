@@ -23,6 +23,7 @@ import { CATEGORIES } from '../data/tools';
 import HomeBanners from '../components/HomeBanners';
 import { useRemotePopular, useVisibleTools } from '../remote/useTools';
 import { useRemote } from '../remote/remote';
+import { useScreenState } from '../navigation/nav';
 import { getPosts, Post } from '../api/wp';
 import { categoryUsage, dailyBytes, popularTools, recentTools, totals } from '../store/derive';
 import { formatBytes } from '../store/files';
@@ -91,6 +92,8 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
   const popular = remotePopular ? { tools: remotePopular, personal: false } : own;
   const cats = useMemo(() => CATEGORIES.map(c => ({ ...c, count: tools.filter(t => t.cat === c.id).length })).filter(c => c.count > 0), [tools]);
   const deviceCount = tools.filter(t => t.exec !== 'server').length;
+  // Resume can be removed from the app in App Center → Navigation: then its Home entries go too
+  const resumeOn = useScreenState('resume') === 'on';
   const byCat = useMemo(() => categoryUsage(events), [events]);
   const week = useMemo(() => dailyBytes(events), [events]);
   const sum = useMemo(() => totals(events), [events]);
@@ -141,10 +144,12 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
                 <Icon name="download" size={18} color="#FFFFFF" width={2.2} />
                 <Text style={[styles.btnText, styles.btnGhostText]}>Downloads</Text>
               </PressableScale>
-              <PressableScale onPress={() => nav.navigate('Tabs', { screen: 'Resume' })} accessibilityRole="button" style={[styles.btn, styles.btnGhost, styles.flex]}>
-                <Icon name="resume" size={18} color="#FFFFFF" width={2.2} />
-                <Text style={[styles.btnText, styles.btnGhostText]}>ATS Resume</Text>
-              </PressableScale>
+              {resumeOn && (
+                <PressableScale onPress={() => nav.navigate('Tabs', { screen: 'Resume' })} accessibilityRole="button" style={[styles.btn, styles.btnGhost, styles.flex]}>
+                  <Icon name="resume" size={18} color="#FFFFFF" width={2.2} />
+                  <Text style={[styles.btnText, styles.btnGhostText]}>ATS Resume</Text>
+                </PressableScale>
+              )}
             </View>
           </Animated.View>
         </View>
@@ -278,22 +283,24 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
         </View>
 
         {/* Resume promo */}
-        <Animated.View entering={FadeInDown.delay(300).duration(450)}>
-          <PressableScale
-            scaleTo={0.98}
-            onPress={() => nav.navigate('Tabs', { screen: 'Resume' })}
-            accessibilityRole="button"
-            style={[styles.promo, theme.dark ? styles.promoDark : styles.promoLight]}>
-            <View style={[styles.catIcon, { backgroundColor: brand.green }]}>
-              <Icon name="resume" size={22} color="#fff" />
-            </View>
-            <View style={styles.flex}>
-              <Text style={[styles.promoTitle, { color: theme.ink }]}>ATS Resume Builder</Text>
-              <Text style={[styles.promoText, { color: theme.ink2 }]}>4 templates, live PDF preview and an ATS check. Nothing is uploaded.</Text>
-            </View>
-            <Icon name="chevron" size={20} color={theme.ink2} />
-          </PressableScale>
-        </Animated.View>
+        {resumeOn && (
+          <Animated.View entering={FadeInDown.delay(300).duration(450)}>
+            <PressableScale
+              scaleTo={0.98}
+              onPress={() => nav.navigate('Tabs', { screen: 'Resume' })}
+              accessibilityRole="button"
+              style={[styles.promo, theme.dark ? styles.promoDark : styles.promoLight]}>
+              <View style={[styles.catIcon, { backgroundColor: brand.green }]}>
+                <Icon name="resume" size={22} color="#fff" />
+              </View>
+              <View style={styles.flex}>
+                <Text style={[styles.promoTitle, { color: theme.ink }]}>ATS Resume Builder</Text>
+                <Text style={[styles.promoText, { color: theme.ink2 }]}>4 templates, live PDF preview and an ATS check. Nothing is uploaded.</Text>
+              </View>
+              <Icon name="chevron" size={20} color={theme.ink2} />
+            </PressableScale>
+          </Animated.View>
+        )}
 
         {/* Blog */}
         {section('From the blog', { label: 'All posts', onPress: () => nav.navigate('Blog') })}

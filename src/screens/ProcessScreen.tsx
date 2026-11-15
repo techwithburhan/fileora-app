@@ -27,6 +27,7 @@ import { RootStackParamList } from '../navigation/types';
 import { Theme } from '../theme';
 import { type } from '../typography';
 import { telemetry } from '../remote/telemetry';
+import { busy as task } from '../lib/busy';
 
 const ACCEPT_NOUN = { pdf: 'PDF', image: 'image', jpgpng: 'JPG or PNG image', word: 'Word document', excel: 'Excel file', ppt: 'PowerPoint file', any: 'file' } as const;
 
@@ -92,6 +93,14 @@ export default function ProcessScreen({ theme }: { theme: Theme }) {
 
   const run = async () => {
     if (missing) return;
+    const done = task.start(); // maintenance / force update wait for this task
+    try {
+      await runTask();
+    } finally {
+      done();
+    }
+  };
+  const runTask = async () => {
     const bytesIn = files.reduce((s, f) => s + (f.size || 0), 0);
     const signal = { cancelled: false };
     cancel.current = signal;
