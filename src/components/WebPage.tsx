@@ -13,6 +13,8 @@ import { WebView, WebViewMessageEvent } from 'react-native-webview';
 const WV = WebView<object>;
 import { useFocusEffect } from '@react-navigation/native';
 import { SITE_HOSTS } from '../config';
+import { toolForUrl } from '../lib/links';
+import { navigationRef } from '../navigation/types';
 import { fileInjection, injectedScript } from '../lib/webBridge';
 import type { InjectFile } from '../navigation/types';
 import { DownloadMessage, handleDownloadMessage } from '../lib/downloads';
@@ -130,6 +132,12 @@ export default function WebPage({
         mixedContentMode="never"
         originWhitelist={['https://*', 'about:*', 'blob:*', 'data:*']}
         onShouldStartLoadWithRequest={req => {
+          // a tool page linked from a blog post opens the tool's own screen, not the website's page
+          const linked = toolForUrl(req.url);
+          if (linked && req.url !== url && navigationRef.isReady()) {
+            navigationRef.navigate('Tool', { id: linked });
+            return false;
+          }
           if (allowedInApp(req.url)) return true;
           if (/^(https?|mailto|tel):/i.test(req.url)) Linking.openURL(req.url).catch(() => {});
           return false;

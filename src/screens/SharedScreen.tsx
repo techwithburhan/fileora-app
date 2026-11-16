@@ -4,18 +4,18 @@
  */
 import React, { useMemo } from 'react';
 import { FlatList, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+
 import { RouteProp, StackActions, useNavigation, useRoute } from '@react-navigation/native';
 import StackHeader from '../components/StackHeader';
 import Icon from '../components/Icon';
 import PressableScale from '../components/PressableScale';
-import { toolUrl } from '../config';
 import { isAvailable, Tool, TOOLS, toolById } from '../data/tools';
 import { formatBytes } from '../store/files';
 import { store } from '../store/store';
 import { RootStackParamList } from '../navigation/types';
 import { catColor, Theme } from '../theme';
 import { type } from '../typography';
+import Appear from '../components/Appear';
 
 const FIRST = ['imgcompress', 'imgresize', 'imgkb', 'imgconvert', 'imgcrop', 'jpg2pdf', 'examphoto', 'passport'];
 
@@ -35,8 +35,7 @@ export default function SharedScreen({ theme }: { theme: Theme }) {
   const total = files.reduce((a, f) => a + (f.size || 0), 0);
 
   const openTool = (t: Tool) => {
-    store.logOpen(t.id);
-    nav.dispatch(StackActions.push('Web', { url: toolUrl(t.slug), title: t.name, tool: t.id, inject: files.map(f => ({ path: f.path, name: f.name, mime: f.mime })) }));
+    nav.dispatch(StackActions.push('Process', { tool: t.id, files: files.map(f => ({ path: f.path, name: f.name, mime: f.mime, size: f.size })) }));
   };
   const scan = () => {
     store.logOpen('scan');
@@ -56,9 +55,9 @@ export default function SharedScreen({ theme }: { theme: Theme }) {
           <View style={styles.head}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.previews}>
               {files.map((f, i) => (
-                <Animated.View key={f.key} entering={FadeIn.delay(i * 40).duration(260)}>
+                <Appear key={f.key} delay={i * 40} duration={260} rise={false}>
                   <Image source={{ uri: `file://${f.path}` }} style={[styles.preview, { backgroundColor: theme.surface2, borderColor: theme.line }]} resizeMode="cover" accessibilityLabel={f.name} />
-                </Animated.View>
+                </Appear>
               ))}
             </ScrollView>
             <Text style={[type.bodySm, { color: theme.muted }]}>
@@ -78,7 +77,7 @@ export default function SharedScreen({ theme }: { theme: Theme }) {
         renderItem={({ item, index }) => {
           const c = catColor(item.cat, theme);
           return (
-            <Animated.View entering={FadeInDown.delay(Math.min(index, 10) * 25).duration(260)} style={styles.cell}>
+            <Appear delay={Math.min(index, 10) * 25} duration={260} style={styles.cell}>
               <PressableScale onPress={() => openTool(item)} accessibilityRole="button" accessibilityLabel={item.name} style={[styles.tool, { backgroundColor: theme.surface, borderColor: theme.line }]}>
                 <View style={[styles.toolIcon, { backgroundColor: c + '1F' }]}>
                   <Icon name={item.cat === 'image' ? 'image' : 'pdf'} size={20} color={c} />
@@ -87,7 +86,7 @@ export default function SharedScreen({ theme }: { theme: Theme }) {
                   {item.name}
                 </Text>
               </PressableScale>
-            </Animated.View>
+            </Appear>
           );
         }}
       />

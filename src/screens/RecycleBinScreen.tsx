@@ -1,7 +1,7 @@
 /** Recycle Bin: deleted files and scan documents, to restore or delete permanently. */
 import React, { useMemo } from 'react';
 import { Alert, FlatList, Platform, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeIn, FadeInDown, LinearTransition } from 'react-native-reanimated';
+import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import StackHeader from '../components/StackHeader';
 import FileThumb from '../components/FileThumb';
@@ -11,6 +11,7 @@ import { formatBytes, formatDate } from '../store/files';
 import { FileRec, ScanDoc, store, useStore } from '../store/store';
 import { Theme } from '../theme';
 import { type } from '../typography';
+import Appear from '../components/Appear';
 
 type Entry = { key: string; name: string; meta: string; at: number; thumb?: FileRec; doc?: ScanDoc; file?: FileRec };
 
@@ -71,11 +72,11 @@ export default function RecycleBinScreen({ theme }: { theme: Theme }) {
           ) : undefined
         }
         ListEmptyComponent={
-          <Animated.View entering={FadeIn.duration(300)} style={styles.empty}>
+          <Appear duration={300} rise={false} style={styles.empty}>
             <Icon name="trash" size={40} color={theme.muted} />
             <Text style={[type.section, { color: theme.ink }]}>Recycle Bin is empty</Text>
             <Text style={[type.bodySm, styles.center, { color: theme.muted }]}>Deleted files and scans wait here until you restore them or delete them permanently.</Text>
-          </Animated.View>
+          </Appear>
         }
         renderItem={({ item, index }) => (
           <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 30).duration(260)} layout={LinearTransition.duration(220)}>

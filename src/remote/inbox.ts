@@ -8,7 +8,8 @@
  * and the categories it keeps on.
  *
  * "Unread" = newer than the last time the Alerts screen was opened. Opening it clears the badge;
- * the history stays. Saved in DocumentDir/fileora/inbox.json.
+ * the history stays until the person deletes alerts (one by one, or all at once with Undo).
+ * Saved in DocumentDir/fileora/inbox.json.
  */
 import { useSyncExternalStore } from 'react';
 import { DATA } from '../store/files';
@@ -20,8 +21,9 @@ const FILE = `${DATA}/inbox.json`;
 const KEEP = 60; // items kept on the phone
 const FRESH_DAYS = 2; // a new install counts only the last 2 days as unread
 
-type State = { loaded: boolean; received: InboxItem[]; seenAt: number };
-let state: State = { loaded: false, received: [], seenAt: 0 };
+/** deleted: ids removed one by one; clearedAt: "Clear all" hides everything up to that time (seconds) */
+type State = { loaded: boolean; received: InboxItem[]; seenAt: number; deleted: string[]; clearedAt: number };
+let state: State = { loaded: false, received: [], seenAt: 0, deleted: [], clearedAt: 0 };
 const listeners = new Set<() => void>();
 let timer: ReturnType<typeof setTimeout> | null = null;
 
@@ -34,6 +36,8 @@ function save() {
   return writeJsonSafe(FILE, {
     received: state.received,
     seenAt: state.seenAt,
+    deleted: state.deleted,
+    clearedAt: state.clearedAt,
   });
 }
 onFlush(() => (timer ? save() : undefined));
@@ -53,34 +57,33 @@ function forMe(i: InboxItem): boolean {
 }
 
 let cache: { cfg: unknown; prefs: unknown; out: InboxItem[] } | null = null;
-/** The history, newest first. */
+/** The history, newest first, without what the person deleted. */
 export function inboxItems(): InboxItem[] {
   const s = remote.get();
-  if (cache && cache.cfg === s.config && cache.prefs === s.prefs)
-    return cache.out;
+  if (cache && cache.cfg === s.config && cache.prefs === s.prefs) return cache.out;
+  const gone = new Set(state.deleted);
   const byId = new Map<string, InboxItem>();
   for (const i of state.received) byId.set(i.id, i);
-  for (const i of s.config?.inbox ?? [])
-    byId.set(i.id, { ...i, at: byId.get(i.id)?.at ?? i.at }); // server copy, first time seen
+  for (const i of s.config?.inbox ?? []) byId.set(i.id, { ...i, at: byId.get(i.id)?.at ?? i.at }); // server copy, first time seen
   const out = [...byId.values()]
-    .filter(forMe)
+    .filter(i => forMe(i) && !gone.has(i.id) && i.at > state.clearedAt)
     .sort((a, b) => b.at - a.at)
     .slice(0, KEEP);
   cache = { cfg: s.config, prefs: s.prefs, out };
   return out;
 }
 
+type Saved = { received?: InboxItem[]; seenAt?: number; deleted?: string[]; clearedAt?: number };
+
 export const inbox = {
   async load() {
-    const d = await readJsonSafe<{ received?: InboxItem[]; seenAt?: number }>(
-      FILE,
-    ).catch(() => null);
+    const d = await readJsonSafe<Saved>(FILE).catch(() => null);
     state = {
       loaded: true,
-      received: Array.isArray(d?.received)
-        ? d!.received.filter(i => i && typeof i.id === 'string').slice(0, KEEP)
-        : [],
+      received: Array.isArray(d?.received) ? d!.received.filter(i => i && typeof i.id === 'string').slice(0, KEEP) : [],
       seenAt: Number(d?.seenAt) || now() - FRESH_DAYS * 86400,
+      deleted: Array.isArray(d?.deleted) ? d!.deleted.filter(x => typeof x === 'string').slice(-300) : [],
+      clearedAt: Number(d?.clearedAt) || 0,
     };
     cache = null;
     listeners.forEach(l => l());
@@ -92,7 +95,21 @@ export const inbox = {
     if (!i.id || !i.title) return;
     const item: InboxItem = { ...i, at: i.at ?? now() };
     const rest = state.received.filter(x => x.id !== item.id);
-    set({ received: [item, ...rest].slice(0, KEEP) });
+    // a notification that arrives again shows again, even if an older copy was deleted
+    set({ received: [item, ...rest].slice(0, KEEP), deleted: state.deleted.filter(x => x !== item.id) });
+  },
+
+  /** Deletes one alert. */
+  remove(id: string) {
+    set({ deleted: [...state.deleted.filter(x => x !== id), id].slice(-300), received: state.received.filter(x => x.id !== id) });
+  },
+
+  /** Deletes every alert so far (one tap). Returns a function that undoes it. */
+  clearAll(): () => void {
+    const before = { deleted: state.deleted, clearedAt: state.clearedAt, received: state.received };
+    const newest = Math.max(now(), ...inboxItems().map(i => i.at));
+    set({ clearedAt: newest, received: [] });
+    return () => set(before);
   },
 
   /** The Alerts screen was opened: everything so far counts as read. */

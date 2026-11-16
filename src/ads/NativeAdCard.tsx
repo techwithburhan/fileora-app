@@ -5,7 +5,7 @@
  */
 import React from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
+
 import {
   NativeAdChoicesPlacement,
   NativeAdView,
@@ -18,6 +18,7 @@ import {
 import { useAdUnit } from './ads';
 import { Theme } from '../theme';
 import { type } from '../typography';
+import Appear from '../components/Appear';
 
 const OPTIONS = {
   adChoicesPlacement: NativeAdChoicesPlacement.TOP_RIGHT,
@@ -69,7 +70,7 @@ export default function NativeAdCard({ theme }: { theme: Theme }) {
     );
   }
   return (
-    <Animated.View entering={FadeIn.duration(300)}>
+    <Appear duration={300} rise={false}>
       <NativeAdView nativeAd={nativeAd} style={box}>
         <View style={styles.top}>
           <AdLabel theme={theme} />
@@ -135,7 +136,7 @@ export default function NativeAdCard({ theme }: { theme: Theme }) {
           </NativeAsset>
         ) : null}
       </NativeAdView>
-    </Animated.View>
+    </Appear>
   );
 }
 

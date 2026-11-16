@@ -11,7 +11,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+
 import { useNavigation } from '@react-navigation/native';
 import StackHeader from '../components/StackHeader';
 import Icon from '../components/Icon';
@@ -20,6 +20,7 @@ import { openLink } from '../lib/links';
 import { remote, useRemote } from '../remote/remote';
 import { Theme } from '../theme';
 import { type } from '../typography';
+import Appear from '../components/Appear';
 
 export default function PromoScreen({ theme }: { theme: Theme }) {
   const nav = useNavigation();
@@ -52,9 +53,8 @@ export default function PromoScreen({ theme }: { theme: Theme }) {
           <Text style={[type.body, { color: theme.ink2 }]}>{promo.intro}</Text>
         ) : null}
         {promo?.items.map((it, i) => (
-          <Animated.View
-            key={it.id}
-            entering={FadeInDown.delay(Math.min(i, 6) * 60).duration(380)}
+          <Appear
+            key={it.id} delay={Math.min(i, 6) * 60} duration={380}
             style={[
               styles.card,
               { backgroundColor: theme.surface, borderColor: theme.line },
@@ -98,7 +98,7 @@ export default function PromoScreen({ theme }: { theme: Theme }) {
                 </PressableScale>
               ) : null}
             </View>
-          </Animated.View>
+          </Appear>
         ))}
         {!promo && (
           <View style={styles.empty}>

@@ -14,6 +14,8 @@ export async function saveResult(r: {
   pages?: number;
   source?: Source;
   publish?: boolean;
+  /** count it in the tool statistics (one count per task, not per file) */
+  log?: boolean;
 }): Promise<FileRec> {
   const source: Source = r.source ?? 'processed';
   const folder: Folder = source === 'downloaded' ? 'downloaded' : source === 'processed' ? 'processed' : 'scan';
@@ -28,7 +30,7 @@ export async function saveResult(r: {
   const mime = r.mime ?? mimeOf(name);
   if (r.publish !== false) await publishToDownloads(path, name, mime);
   const rec = await store.addFile({ name, mime, path, source, tool: r.tool, pages: r.pages });
-  if (r.tool && source !== 'scan-image') store.logDone(r.tool, r.bytesIn ?? rec.size);
+  if (r.tool && source !== 'scan-image' && r.log !== false) store.logDone(r.tool, r.bytesIn ?? rec.size);
   return rec;
 }
 

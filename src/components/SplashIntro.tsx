@@ -9,18 +9,7 @@
  */
 import React, { useEffect } from 'react';
 import { Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
-import Animated, {
-  Easing,
-  interpolate,
-  runOnJS,
-  SharedValue,
-  useAnimatedStyle,
-  useReducedMotion,
-  useSharedValue,
-  withDelay,
-  withSequence,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { Easing, interpolate, runOnJS, SharedValue, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withSequence, withTiming } from 'react-native-reanimated';
 import { FIcon } from './Brand';
 import { brand } from '../theme';
 

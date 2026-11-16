@@ -50,6 +50,8 @@ export type RemoteConfig = {
   v: number;
   api_live: boolean;
   api_tools: string[];
+  /** App Center → API tools: the processing server's public address for the app (https://…); '' = through the website */
+  api_base: string;
   maintenance_msg: string;
   soon_msg: string;
   tools: Record<string, ToolFlag>;
@@ -313,6 +315,7 @@ function clean(j: unknown): RemoteConfig | null {
     v: 1,
     api_live: c.api_live === true,
     api_tools: arr(c.api_tools),
+    api_base: /^https:\/\/[a-z0-9.-]+(:\d+)?(\/[\w./-]*)?$/i.test(str(c.api_base)) ? str(c.api_base).replace(/\/+$/, '') : '',
     maintenance_msg: str(c.maintenance_msg) || MAINTENANCE_MESSAGE,
     soon_msg: str(c.soon_msg) || 'This tool is coming soon.',
     tools,
@@ -408,6 +411,10 @@ export function useRemote<T>(select: (s: State) => T): T {
 
 /* ---------- helpers used across the app ---------- */
 
+/** The processing server the app talks to directly ('' when App Center has no address yet). */
+export function apiBase(): string {
+  return state.config?.api_base ?? '';
+}
 export function apiLive(): boolean {
   return state.config ? state.config.api_live : API_TOOLS_LIVE;
 }

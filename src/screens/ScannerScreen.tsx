@@ -6,7 +6,7 @@
  */
 import React, { useMemo, useState } from 'react';
 import { FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { Easing, FadeIn, FadeInDown, FadeOut, LinearTransition } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeOut, LinearTransition } from 'react-native-reanimated';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
 import AppHeader from '../components/AppHeader';
@@ -20,6 +20,7 @@ import { formatDate } from '../store/files';
 import { FileRec, ScanDoc, store, useStore } from '../store/store';
 import { Theme } from '../theme';
 import { type } from '../typography';
+import Appear from '../components/Appear';
 
 type Tab = 'images' | 'convert';
 type Sort = 'new' | 'old' | 'name';
@@ -124,13 +125,13 @@ export default function ScannerScreen({ theme }: { theme: Theme }) {
   };
 
   const empty = (
-    <Animated.View entering={FadeIn.duration(300)} style={styles.empty}>
+    <Appear duration={300} rise={false} style={styles.empty}>
       <EmptyArt theme={theme} />
       <Text style={[type.section, { color: theme.ink }]}>No files found</Text>
       <Text style={[type.bodySm, styles.centerText, { color: theme.muted }]}>
         {tab === 'images' ? 'Tap the + button to scan with the camera or pick photos from the gallery.' : 'Tap the + button to add a PDF or images and turn them into a clean PDF.'}
       </Text>
-    </Animated.View>
+    </Appear>
   );
 
   const header = (
@@ -204,9 +205,9 @@ export default function ScannerScreen({ theme }: { theme: Theme }) {
       )}
 
       {fab && (
-        <Animated.View entering={FadeIn.duration(160)} exiting={FadeOut.duration(160)} style={styles.dim}>
+        <Appear duration={160} rise={false} exiting={FadeOut.duration(160)} style={styles.dim}>
           <Pressable style={StyleSheet.absoluteFill} onPress={() => setFab(false)} accessibilityLabel="Close" />
-        </Animated.View>
+        </Appear>
       )}
       {fab && (
         <View style={styles.pills} pointerEvents="box-none">
@@ -220,12 +221,12 @@ export default function ScannerScreen({ theme }: { theme: Theme }) {
                 { id: 'images', label: 'Images', icon: 'image' },
               ]
           ).map((o, i) => (
-            <Animated.View key={o.id} entering={FadeInDown.delay(i * 40).duration(220).easing(Easing.out(Easing.cubic))} exiting={FadeOut.duration(120)}>
+            <Appear key={o.id} delay={i * 40} duration={220} exiting={FadeOut.duration(120)}>
               <PressableScale onPress={() => start(o.id as 'camera')} accessibilityRole="button" style={[styles.pill, { backgroundColor: theme.surface, borderColor: theme.line }]}>
                 <Icon name={o.icon as IconName} size={21} color={theme.ink} />
                 <Text style={[type.button, { color: theme.ink }]}>{o.label}</Text>
               </PressableScale>
-            </Animated.View>
+            </Appear>
           ))}
         </View>
       )}

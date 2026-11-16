@@ -1,7 +1,7 @@
 /** Downloads activity: files downloaded from tools, files opened from Fileora, files processed in the app. */
 import React, { useMemo, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import StackHeader from '../components/StackHeader';
 import FileRow from '../components/FileRow';
@@ -15,6 +15,7 @@ import { ActivityTab, RootStackParamList } from '../navigation/types';
 import { Theme } from '../theme';
 import { type } from '../typography';
 import { SAVED_WHERE } from '../store/files';
+import Appear from '../components/Appear';
 
 const EMPTY: Record<ActivityTab, string> = {
   downloaded: `Nothing downloaded yet. When a tool gives you a file, it is saved to ${SAVED_WHERE} and listed here.`,
@@ -57,9 +58,9 @@ export default function ActivityScreen({ theme }: { theme: Theme }) {
           </View>
         }
         renderItem={({ item, index }) => (
-          <Animated.View entering={FadeInDown.delay(Math.min(index, 8) * 35).duration(300)}>
+          <Appear delay={Math.min(index, 8) * 35} duration={300}>
             <FileRow file={item} theme={theme} when={tab === 'opened' ? 'opened' : 'created'} onPress={() => openRecord(item)} onMore={() => showActions(item)} />
-          </Animated.View>
+          </Appear>
         )}
       />
       {actionSheet}

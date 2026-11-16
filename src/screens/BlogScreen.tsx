@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Image, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import StackHeader from '../components/StackHeader';
 import PressableScale from '../components/PressableScale';
 import { getPosts, Post } from '../api/wp';
 import { brand, Theme } from '../theme';
+import Appear from '../components/Appear';
 
 export default function BlogScreen({ theme }: { theme: Theme }) {
   const nav = useNavigation();
@@ -71,7 +72,7 @@ export default function BlogScreen({ theme }: { theme: Theme }) {
           ) : undefined
         }
         renderItem={({ item, index }) => (
-          <Animated.View entering={FadeInDown.delay((index % 10) * 50).duration(400)}>
+          <Appear delay={(index % 10) * 50} duration={400}>
             <PressableScale
               scaleTo={0.98}
               onPress={() => nav.navigate('Web', { url: item.link, title: 'Blog' })}
@@ -93,7 +94,7 @@ export default function BlogScreen({ theme }: { theme: Theme }) {
                 ) : null}
               </View>
             </PressableScale>
-          </Animated.View>
+          </Appear>
         )}
       />
     </View>

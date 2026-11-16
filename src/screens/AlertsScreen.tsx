@@ -9,12 +9,13 @@ import {
   AppState,
   FlatList,
   Image,
+  Pressable,
   RefreshControl,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+
 import {
   useFocusEffect,
   useIsFocused,
@@ -28,6 +29,7 @@ import { effectivePrefs, InboxItem, remote, useRemote } from '../remote/remote';
 import { openInboxItem, permission, pushAvailable } from '../remote/push';
 import { Theme } from '../theme';
 import { type } from '../typography';
+import Appear from '../components/Appear';
 
 const TOPIC_ICON: Record<string, IconName> = {
   all: 'bell',
@@ -86,6 +88,27 @@ export default function AlertsScreen({ theme }: { theme: Theme }) {
     await remote.refresh(true);
     setRefreshing(false);
   };
+
+  // Delete one, or all with one tap; both can be undone for a few seconds
+  const [undo, setUndo] = useState<{ text: string; run: () => void } | null>(null);
+  const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const offer = (text: string, run: () => void) => {
+    if (undoTimer.current) clearTimeout(undoTimer.current);
+    setUndo({ text, run });
+    undoTimer.current = setTimeout(() => setUndo(null), 5000);
+  };
+  useEffect(() => () => {
+    if (undoTimer.current) clearTimeout(undoTimer.current);
+  }, []);
+  const remove = (item: InboxItem) => {
+    inbox.remove(item.id);
+    offer('Alert deleted', () => inbox.add(item));
+  };
+  const clearAll = () => {
+    const n = items.length;
+    const back = inbox.clearAll();
+    offer(n === 1 ? '1 alert deleted' : `${n} alerts deleted`, back);
+  };
   const off =
     pushAvailable() && (perm === 'denied' || !effectivePrefs(prefs).notify);
 
@@ -93,8 +116,7 @@ export default function AlertsScreen({ theme }: { theme: Theme }) {
     const unread = item.at > lastSeen.current;
     const canOpen = item.open !== 'home' || !!item.link;
     return (
-      <Animated.View
-        entering={FadeInDown.delay(Math.min(index, 8) * 40).duration(320)}
+      <Appear delay={Math.min(index, 8) * 40} duration={320}
       >
         <PressableScale
           scaleTo={0.985}
@@ -152,8 +174,17 @@ export default function AlertsScreen({ theme }: { theme: Theme }) {
               {canOpen ? ' · Tap to open' : ''}
             </Text>
           </View>
+          <Pressable
+            onPress={() => remove(item)}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel={`Delete alert: ${item.title}`}
+            style={({ pressed }) => [styles.del, pressed && { backgroundColor: theme.surface2 }]}
+          >
+            <Icon name="trash" size={18} color={theme.muted} />
+          </Pressable>
         </PressableScale>
-      </Animated.View>
+      </Appear>
     );
   };
 
@@ -175,12 +206,25 @@ export default function AlertsScreen({ theme }: { theme: Theme }) {
         }
         ListHeaderComponent={
           <View style={styles.head}>
-            <Text
-              style={[type.title, { color: theme.ink }]}
-              accessibilityRole="header"
-            >
-              Alerts
-            </Text>
+            <View style={styles.headRow}>
+              <Text
+                style={[type.title, styles.flex, { color: theme.ink }]}
+                accessibilityRole="header"
+              >
+                Alerts
+              </Text>
+              {items.length > 0 && (
+                <PressableScale
+                  onPress={clearAll}
+                  accessibilityRole="button"
+                  accessibilityLabel="Delete all alerts"
+                  style={[styles.clear, { borderColor: theme.line, backgroundColor: theme.surface }]}
+                >
+                  <Icon name="trash" size={16} color={theme.ink2} />
+                  <Text style={[type.caption, { color: theme.ink }]}>Clear all</Text>
+                </PressableScale>
+              )}
+            </View>
             <Text style={[type.bodySm, { color: theme.muted }]}>
               Updates, new tools and news from Fileora. Pull down to check for
               new ones.
@@ -224,6 +268,22 @@ export default function AlertsScreen({ theme }: { theme: Theme }) {
           </View>
         }
       />
+      {undo && (
+        <View style={[styles.undo, theme.dark ? { backgroundColor: theme.surface2 } : styles.undoLight]} accessibilityLiveRegion="polite">
+          <Text style={[type.bodySm, styles.flex, styles.undoText]}>{undo.text}</Text>
+          <Pressable
+            onPress={() => {
+              undo.run();
+              setUndo(null);
+            }}
+            hitSlop={8}
+            accessibilityRole="button"
+            style={styles.undoBtn}
+          >
+            <Text style={[type.button, styles.undoAction]}>Undo</Text>
+          </Pressable>
+        </View>
+      )}
     </View>
   );
 }
@@ -231,6 +291,14 @@ export default function AlertsScreen({ theme }: { theme: Theme }) {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: { padding: 16, gap: 10, paddingBottom: 32 },
+  headRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  clear: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40, paddingHorizontal: 12, borderRadius: 12, borderWidth: 1 },
+  del: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginTop: -6, marginRight: -6 },
+  undo: { position: 'absolute', left: 16, right: 16, bottom: 16, borderRadius: 14, paddingLeft: 16, paddingRight: 6, minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 8, elevation: 6, shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 10, shadowOffset: { width: 0, height: 4 } },
+  undoLight: { backgroundColor: '#04336B' },
+  undoText: { color: '#FFFFFF' },
+  undoBtn: { minHeight: 44, paddingHorizontal: 14, justifyContent: 'center' },
+  undoAction: { color: '#7BE3AE' },
   head: { gap: 6, marginBottom: 6 },
   offNote: {
     flexDirection: 'row',

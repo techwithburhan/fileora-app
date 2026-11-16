@@ -48,6 +48,12 @@ jobs:
         run: |
           node scripts/build-editor.js && git diff --exit-code src/scanner/editorHtml.ts
           npx tsc --noEmit && npx eslint App.tsx src
+      - name: Check the offline tool engine is in the app
+        run: |
+          for f in index.html engine.js fonts.css vendor/pdf-lib.min.js vendor/pdf.min.js vendor/pdf.worker.min.js modules/pdf.js modules/image.js; do
+            test -s "assets-shared/engine/$f" || { echo "::error::assets-shared/engine/$f is missing: run scripts/build-engine.sh"; exit 1; }
+          done
+          node --check assets-shared/engine/engine.js
       # Signing: with the repository's private key when its secrets exist (Settings → Secrets and
       # variables → Actions: FILEORA_KEYSTORE_BASE64, FILEORA_KEYSTORE_PASSWORD, FILEORA_KEY_ALIAS,
       # FILEORA_KEY_PASSWORD). Without them the APK uses React Native's public test key (testing only).
@@ -91,3 +97,55 @@ jobs:
           git add fileora-app.apk README.md
           git commit -q -m "APK from ${GITHUB_SHA::7}"
           git push -q -f "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" builds
+
+  # Runs the APK in an Android emulator: start-up, then the offline tool engine's self-test
+  # (fileora://selftest). Screenshots and the result go to the "builds-android-test" branch.
+  emulator:
+    needs: apk
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: fileora-apk
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Run in the emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: |
+            mkdir -p out/emulator
+            adb install -r app-release.apk
+            adb logcat -c
+            adb shell am start -W -n in.fileora.app/.MainActivity
+            sleep 25
+            adb exec-out screencap -p > out/emulator/home.png
+            adb shell am start -W -a android.intent.action.VIEW -d fileora://selftest in.fileora.app
+            sleep 75
+            adb exec-out screencap -p > out/emulator/selftest.png
+            adb logcat -d -s ReactNativeJS:V | grep -E "FILEORA_SELFTEST|Error|error" | tail -40 > out/emulator/selftest.txt || true
+            adb logcat -d | grep -iE "FATAL|AndroidRuntime" | tail -40 > out/emulator/crash.txt || true
+            cat out/emulator/selftest.txt
+      - name: Publish the emulator run
+        if: always() && github.ref == 'refs/heads/main'
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          [ -d out ] || exit 0
+          cd out
+          echo "Fileora Android emulator run from commit ${GITHUB_SHA::7} ($(date -u '+%Y-%m-%d %H:%M'))" > README.md
+          git init -q -b builds-android-test
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A && git commit -q -m "Android emulator run ${GITHUB_SHA::7}"
+          git push -q -f "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" builds-android-test

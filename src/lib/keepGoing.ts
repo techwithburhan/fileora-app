@@ -1,30 +1,24 @@
-/** "Keep going with this file": opens the next tool with the result already chosen when the app can. */
+/** "Keep going with this file": opens the next tool's screen with the result already chosen. */
 import { useCallback } from 'react';
 import { Alert } from 'react-native';
 import { StackActions, useNavigation } from '@react-navigation/native';
 import { isNative } from '../data/nativeTools';
 import { isAvailable, toolById, toolState } from '../data/tools';
 import { maintenanceMessage, soonMessage } from '../remote/remote';
-import { toolUrl } from '../config';
-import { FileRec, store } from '../store/store';
+import { FileRec } from '../store/store';
 
 export function useKeepGoing() {
   const nav = useNavigation();
   return useCallback(
     (toolId: string, f: FileRec) => {
-      if (isNative(toolId)) {
-        nav.dispatch(StackActions.push('Process', { tool: toolId, fileIds: [f.id] }));
-        return;
-      }
       const t = toolById(toolId);
       if (!t) return;
-      if (!isAvailable(t)) {
+      if (!isAvailable(t) || !isNative(toolId)) {
         Alert.alert(t.name, toolState(t) === 'soon' ? soonMessage() : maintenanceMessage());
         return;
       }
-      // the tool's page opens with the file already chosen
-      store.logOpen(t.id);
-      nav.dispatch(StackActions.push('Web', { url: toolUrl(t.slug), title: t.name, tool: t.id, inject: [{ path: f.path, name: f.name, mime: f.mime }] }));
+      // the tool's own screen opens with the file already chosen
+      nav.dispatch(StackActions.push('Process', { tool: toolId, fileIds: [f.id] }));
     },
     [nav],
   );

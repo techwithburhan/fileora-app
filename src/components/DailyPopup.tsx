@@ -9,11 +9,7 @@
  */
 import React, { useEffect, useState } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, {
-  Easing,
-  FadeOutDown,
-  SlideInDown,
-} from 'react-native-reanimated';
+import Animated, { Easing, FadeOutDown, SlideInDown } from 'react-native-reanimated';
 import Icon from './Icon';
 import PressableScale from './PressableScale';
 import { remote, useRemote } from '../remote/remote';

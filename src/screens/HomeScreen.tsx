@@ -1,16 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { FlatList, Image, StyleSheet, Text, View } from 'react-native';
-import Animated, {
-  Easing,
-  FadeInDown,
-  useAnimatedScrollHandler,
-  useAnimatedStyle,
-  useSharedValue,
-  useReducedMotion,
-  withRepeat,
-  withSequence,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { Easing, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, useReducedMotion, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import AppHeader from '../components/AppHeader';
 import Icon, { IconName } from '../components/Icon';
@@ -36,6 +26,7 @@ import { useFileActions } from '../components/FileActions';
 import { ActivityTab } from '../navigation/types';
 import { brand, catColor, Theme } from '../theme';
 import { type } from '../typography';
+import Appear from '../components/Appear';
 
 /** A soft circle that drifts very slowly in the hero (endless, UI thread; still when reduced motion is on). */
 function Blob({ size, color, x, y, dx, dy, ms }: { size: number; color: string; x: number; y: number; dx: number; dy: number; ms: number }) {
@@ -125,16 +116,16 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
         <View style={styles.hero}>
           <Blob size={190} color={brand.green} x={210} y={-70} dx={-10} dy={8} ms={7000} />
           <Blob size={120} color={brand.blue} x={-40} y={150} dx={12} dy={-6} ms={8000} />
-          <Animated.Text entering={FadeInDown.delay(150).duration(500)} style={styles.kicker}>
+          <Appear text delay={150} duration={500} style={styles.kicker}>
             FREE · NO SIGN-UP · PRIVATE
-          </Animated.Text>
-          <Animated.Text entering={FadeInDown.delay(250).duration(550)} style={styles.heroTitle}>
+          </Appear>
+          <Appear text delay={250} duration={550} style={styles.heroTitle}>
             Every PDF & image tool, in your pocket
-          </Animated.Text>
-          <Animated.Text entering={FadeInDown.delay(350).duration(550)} style={styles.heroText}>
+          </Appear>
+          <Appear text delay={350} duration={550} style={styles.heroText}>
             Merge, compress, convert and edit. {deviceCount} tools run on your phone, so your files stay with you.
-          </Animated.Text>
-          <Animated.View entering={FadeInDown.delay(450).duration(550)} style={styles.heroBtns}>
+          </Appear>
+          <Appear delay={450} duration={550} style={styles.heroBtns}>
             <PressableScale
               onPress={() => nav.navigate('Tabs', { screen: 'Tools', params: { cat: 'all' } })}
               accessibilityRole="button"
@@ -154,7 +145,7 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
                 </PressableScale>
               )}
             </View>
-          </Animated.View>
+          </Appear>
         </View>
 
         {/* Announcement, update available, notifications (App Center) */}
@@ -193,7 +184,7 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
           {cats.map((c, i) => {
             const col = catColor(c.id, theme);
             return (
-              <Animated.View key={c.id} entering={FadeInDown.delay(200 + i * 60).duration(420)} style={styles.catCell}>
+              <Appear key={c.id} delay={200 + i * 60} duration={420} style={styles.catCell}>
                 <PressableScale
                   onPress={() => nav.navigate('Tabs', { screen: 'Tools', params: { cat: c.id } })}
                   accessibilityRole="button"
@@ -207,7 +198,7 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
                   </Text>
                   <Text style={[styles.catCount, { color: theme.muted }]}>{c.count} tools</Text>
                 </PressableScale>
-              </Animated.View>
+              </Appear>
             );
           })}
         </View>
@@ -290,7 +281,7 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
 
         {/* Promotions (App Center → Promotions) */}
         {promo && (
-          <Animated.View entering={FadeInDown.delay(300).duration(450)}>
+          <Appear delay={300} duration={450}>
             <PressableScale
               scaleTo={0.98}
               onPress={() => nav.navigate('Promo')}
@@ -309,7 +300,7 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
               </View>
               <Icon name="chevron" size={20} color={theme.ink2} />
             </PressableScale>
-          </Animated.View>
+          </Appear>
         )}
 
         {/* Blog */}
@@ -321,7 +312,7 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
           </Text>
         )}
         {posts?.map((p, i) => (
-          <Animated.View key={p.id} entering={FadeInDown.delay(i * 80).duration(400)}>
+          <Appear key={p.id} delay={i * 80} duration={400}>
             <PressableScale
               scaleTo={0.98}
               onPress={() => nav.navigate('Web', { url: p.link, title: 'Blog' })}
@@ -338,7 +329,7 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
                 </Text>
               </View>
             </PressableScale>
-          </Animated.View>
+          </Appear>
         ))}
       </Animated.ScrollView>
       {actionSheet}

@@ -6,7 +6,7 @@
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import { Alert, AppState, Linking, Platform, ScrollView, Share, StyleSheet, Switch, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+
 import { useNavigation } from '@react-navigation/native';
 import AppHeader from '../components/AppHeader';
 import { Logo } from '../components/Brand';
@@ -34,6 +34,7 @@ import { setAnalyticsEnabled } from '../analytics';
 import { Theme } from '../theme';
 import { type } from '../typography';
 import { APP_VERSION } from '../version';
+import Appear from '../components/Appear';
 
 type Row = { key: string; icon: IconName; label: string; sub?: string; onPress?: () => void; right?: React.ReactNode; external?: boolean };
 
@@ -355,7 +356,7 @@ export default function SettingsScreen({ theme }: { theme: Theme }) {
                 );
                 const border = i > 0 ? { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.line } : null;
                 return (
-                  <Animated.View key={r.key} entering={FadeInDown.delay(40 + n++ * 30).duration(320)}>
+                  <Appear key={r.key} delay={40 + n++ * 30} duration={320}>
                     {r.onPress ? (
                       <PressableScale scaleTo={0.985} onPress={r.onPress} accessibilityRole="button" style={[styles.row, border]}>
                         {body}
@@ -363,7 +364,7 @@ export default function SettingsScreen({ theme }: { theme: Theme }) {
                     ) : (
                       <View style={[styles.row, border]}>{body}</View>
                     )}
-                  </Animated.View>
+                  </Appear>
                 );
               })}
             </View>

@@ -6,7 +6,7 @@
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import { AppState, Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
+import { FadeOut } from 'react-native-reanimated';
 import Icon, { IconName } from './Icon';
 import PressableScale from './PressableScale';
 import { SHARE_URL } from '../config';
@@ -15,6 +15,7 @@ import { enableNotifications, openLink, openSystemSettings, permission, pushAvai
 import { brand, Theme } from '../theme';
 import { type } from '../typography';
 import { APP_VERSION } from '../version';
+import Appear from './Appear';
 
 const ASK_AGAIN = 14 * 86400000;
 
@@ -44,7 +45,7 @@ function Banner({
         ? { bg: theme.dark ? '#0F2E22' : '#E6F7EE', line: theme.dark ? '#1F5A3F' : '#A9E2C5', icon: theme.accentInk }
         : { bg: theme.dark ? '#0E2645' : '#E8F1FE', line: theme.dark ? '#244A7A' : '#B7D3FB', icon: theme.link };
   return (
-    <Animated.View entering={FadeInDown.duration(380)} exiting={FadeOut.duration(200)} style={[styles.banner, { backgroundColor: c.bg, borderColor: c.line }]} accessibilityRole="summary">
+    <Appear duration={380} exiting={FadeOut.duration(200)} style={[styles.banner, { backgroundColor: c.bg, borderColor: c.line }]} accessibilityRole="summary">
       <Icon name={icon} size={22} color={c.icon} />
       <View style={styles.body}>
         <Text style={[type.heading, { color: theme.ink }]}>{title}</Text>
@@ -60,7 +61,7 @@ function Banner({
           <Icon name="close" size={18} color={theme.muted} />
         </Pressable>
       )}
-    </Animated.View>
+    </Appear>
   );
 }
 

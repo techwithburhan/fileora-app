@@ -1,19 +1,41 @@
 /** Android's own file picker (no storage permission). Picked files are copied into the app's cache. */
 import { errorCodes, isErrorWithCode, keepLocalCopy, pick, types } from '@react-native-documents/picker';
+import { Platform } from 'react-native';
 import { mimeOf, stripScheme } from '../store/files';
 
 export type Picked = { key: string; name: string; size: number; path: string; mime: string };
-export type Accept = 'pdf' | 'image' | 'jpgpng' | 'word' | 'excel' | 'ppt' | 'any';
+export type Accept = 'pdf' | 'image' | 'jpgpng' | 'pdfimage' | 'heic' | 'svg' | 'html' | 'word' | 'excel' | 'ppt' | 'any';
 
-const TYPES: Record<Accept, string[]> = {
-  pdf: [types.pdf as string],
-  image: [types.images as string],
-  jpgpng: ['image/jpeg', 'image/png'],
-  word: [types.doc as string, types.docx as string, 'application/vnd.oasis.opendocument.text', 'application/rtf', 'text/rtf'],
-  excel: [types.xls as string, types.xlsx as string, 'text/csv', 'application/vnd.oasis.opendocument.spreadsheet'],
-  ppt: [types.ppt as string, types.pptx as string, 'application/vnd.oasis.opendocument.presentation'],
-  any: [types.allFiles as string],
-};
+const IOS = Platform.OS === 'ios';
+const T = types as unknown as Record<string, string>;
+/* Android takes MIME types; iOS takes UTIs (types.* already gives the right one per system). */
+const TYPES: Record<Accept, string[]> = IOS
+  ? {
+      pdf: [T.pdf],
+      image: [T.images],
+      jpgpng: ['public.jpeg', 'public.png'],
+      pdfimage: [T.pdf, T.images],
+      heic: ['public.heic', 'public.heif', T.images],
+      svg: ['public.svg-image'],
+      html: ['public.html', T.plainText],
+      word: [T.doc, T.docx, 'org.oasis-open.opendocument.text', 'public.rtf', T.plainText],
+      excel: [T.xls, T.xlsx, 'public.comma-separated-values-text', 'org.oasis-open.opendocument.spreadsheet'],
+      ppt: [T.ppt, T.pptx, 'org.openxmlformats.presentationml.slideshow', 'org.oasis-open.opendocument.presentation'],
+      any: [T.allFiles],
+    }
+  : {
+      pdf: [T.pdf],
+      image: [T.images],
+      jpgpng: ['image/jpeg', 'image/png'],
+      pdfimage: [T.pdf, T.images],
+      heic: ['image/heic', 'image/heif', 'image/jpeg', 'image/png', 'image/webp'],
+      svg: ['image/svg+xml'],
+      html: ['text/html', T.plainText],
+      word: [T.doc, T.docx, 'application/vnd.oasis.opendocument.text', 'application/rtf', 'text/rtf', T.plainText],
+      excel: [T.xls, T.xlsx, 'text/csv', 'text/comma-separated-values', 'application/vnd.oasis.opendocument.spreadsheet'],
+      ppt: [T.ppt, T.pptx, 'application/vnd.openxmlformats-officedocument.presentationml.slideshow', 'application/vnd.oasis.opendocument.presentation'],
+      any: [T.allFiles],
+    };
 
 let n = 0;
 

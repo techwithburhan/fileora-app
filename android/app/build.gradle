@@ -83,6 +83,12 @@ android {
     compileSdk rootProject.ext.compileSdkVersion
 
     namespace "in.fileora.app"
+    // The offline tool engine (scripts/build-engine.sh): file:///android_asset/engine/index.html
+    sourceSets {
+        main {
+            assets.srcDirs += ["$rootDir/../assets-shared"]
+        }
+    }
     defaultConfig {
         applicationId "in.fileora.app"
         minSdkVersion rootProject.ext.minSdkVersion

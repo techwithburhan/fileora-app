@@ -1,10 +1,11 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+
 import Icon, { IconName } from './Icon';
 import PressableScale from './PressableScale';
 import { isAvailable, Tool, toolState } from '../data/tools';
 import { catColor, Theme } from '../theme';
+import Appear from './Appear';
 
 export function ExecBadge({ tool, theme }: { tool: Tool; theme: Theme }) {
   if (!isAvailable(tool))
@@ -27,7 +28,7 @@ export function ExecBadge({ tool, theme }: { tool: Tool; theme: Theme }) {
 export function ToolCard({ tool, theme, onPress, index = 0 }: { tool: Tool; theme: Theme; onPress: () => void; index?: number }) {
   const c = catColor(tool.cat, theme);
   return (
-    <Animated.View entering={FadeInDown.delay(Math.min(index, 10) * 45).duration(380)} style={styles.cell}>
+    <Appear delay={Math.min(index, 10) * 45} duration={380} style={styles.cell}>
       <PressableScale
         onPress={onPress}
         accessibilityRole="button"
@@ -44,7 +45,7 @@ export function ToolCard({ tool, theme, onPress, index = 0 }: { tool: Tool; them
         </Text>
         <ExecBadge tool={tool} theme={theme} />
       </PressableScale>
-    </Animated.View>
+    </Appear>
   );
 }
 

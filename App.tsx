@@ -41,6 +41,8 @@ import { navigationRef, RootStackParamList, TabParamList } from './src/navigatio
 import { setAnalyticsEnabled, trackScreen } from './src/analytics';
 import { Theme, useTheme } from './src/theme';
 import RemoteGate from './src/components/RemoteGate';
+import EngineHost from './src/engine/EngineHost';
+import SelfTest from './src/engine/SelfTest';
 import ErrorBoundary, { installGlobalErrorHandler } from './src/components/ErrorBoundary';
 import { flushAll } from './src/lib/safeFile';
 import { effectivePrefs, remote } from './src/remote/remote';
@@ -194,6 +196,9 @@ export default function App() {
               <MenuSheet theme={theme} />
             </NavigationContainer>
             <RemoteGate />
+            {/* the offline tool engine: an invisible page from the app's own files */}
+            <EngineHost />
+            <SelfTest />
             {splash && <SplashIntro onDone={done} />}
           </View>
         </ErrorBoundary>

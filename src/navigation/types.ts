@@ -20,8 +20,8 @@ export type ActivityTab = 'downloaded' | 'opened' | 'processed';
 export type RootStackParamList = {
   Tabs: NavigatorScreenParams<TabParamList> | undefined;
   Tool: { id: string };
-  /** A tool that works natively in the app (on the phone or through the Fileora server API). */
-  Process: { tool: string; fileIds?: string[] };
+  /** A tool's own screen in the app (offline engine on the phone, or the processing server). fileIds = files in Fileora, files = files from elsewhere (Share to Fileora). */
+  Process: { tool: string; fileIds?: string[]; files?: (InjectFile & { size?: number })[] };
   /** url, or slugs of a WordPress page (the first one that exists is opened). `tool` = tool id, for downloads. */
   Web: { title: string; url?: string; slugs?: string[]; tool?: string; inject?: InjectFile[] };
   Activity: { tab?: ActivityTab } | undefined;

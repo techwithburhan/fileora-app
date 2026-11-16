@@ -53,6 +53,12 @@
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
         <!-- Gallery → Share → Fileora (one or more photos: JPG, PNG, WebP, HEIC…) -->
+        <!-- fileora://selftest runs the offline tool engine's self-test (adb / CI); not openable from web pages -->
+        <intent-filter>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <data android:scheme="fileora" android:host="selftest" />
+        </intent-filter>
         <intent-filter android:label="@string/share_label">
             <action android:name="android.intent.action.SEND" />
             <category android:name="android.intent.category.DEFAULT" />

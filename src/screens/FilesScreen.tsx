@@ -4,7 +4,7 @@
  */
 import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+
 import BlobUtil from 'react-native-blob-util';
 import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import AppHeader from '../components/AppHeader';
@@ -20,6 +20,7 @@ import { FileRec, Source, useStore } from '../store/store';
 import { FileFilter, TabParamList } from '../navigation/types';
 import { Theme } from '../theme';
 import { type } from '../typography';
+import Appear from '../components/Appear';
 
 const FOLDERS: { id: Source[]; key: string; label: string; icon: IconName }[] = [
   { id: ['downloaded'], key: 'downloaded', label: 'Downloads', icon: 'download' },
@@ -90,7 +91,7 @@ export default function FilesScreen({ theme }: { theme: Theme }) {
       </Text>
 
       {/* My Storage */}
-      <Animated.View entering={FadeInDown.duration(350)} style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.line }]}>
+      <Appear duration={350} style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.line }]}>
         <View style={styles.row}>
           <View style={[styles.icon, { backgroundColor: theme.accent + '1F' }]}>
             <Icon name="storage" size={21} color={theme.accentInk} />
@@ -134,7 +135,7 @@ export default function FilesScreen({ theme }: { theme: Theme }) {
             <Text style={[type.caption, { color: theme.muted }]}>in the app</Text>
           </View>
         </View>
-      </Animated.View>
+      </Appear>
 
       {/* Cloud Storage + Recycle Bin */}
       <View style={styles.pair}>
