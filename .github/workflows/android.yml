@@ -107,6 +107,7 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: fileora-apk
@@ -123,27 +124,7 @@ jobs:
           arch: x86_64
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: |
-            mkdir -p out/emulator
-            adb install -r app-release.apk
-            adb logcat -c
-            adb shell am start -W -n in.fileora.app/.MainActivity
-            sleep 25
-            adb exec-out screencap -p > out/emulator/home.png
-            adb shell am start -W -a android.intent.action.VIEW -d fileora://selftest in.fileora.app
-            sleep 75
-            adb exec-out screencap -p > out/emulator/selftest.png
-            adb logcat -d -s ReactNativeJS:V | grep -E "FILEORA_SELFTEST|Error|error" | tail -40 > out/emulator/selftest.txt || true
-            adb shell input keyevent 4
-            for t in watermark sign examphoto organize imgblur ocr; do
-              adb shell am start -W -a android.intent.action.VIEW -d "fileora://tool/$t" in.fileora.app
-              sleep 8
-              adb exec-out screencap -p > "out/emulator/tool-$t.png"
-              adb shell input keyevent 4
-              sleep 2
-            done
-            adb logcat -d | grep -iE "FATAL|AndroidRuntime" | tail -40 > out/emulator/crash.txt || true
-            cat out/emulator/selftest.txt
+          script: bash scripts/ci-emulator.sh app-release.apk
       - name: Publish the emulator run
         if: always() && github.ref == 'refs/heads/main'
         env:
