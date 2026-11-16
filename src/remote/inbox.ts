@@ -7,8 +7,9 @@
  * install are listed: its platform (filtered by the server), its version ("only older versions")
  * and the categories it keeps on.
  *
- * "Unread" = newer than the last time the Alerts screen was opened. Opening it clears the badge;
- * the history stays until the person deletes alerts (one by one, or all at once with Undo).
+ * "Unread" = newer than the last time the Alerts screen was opened. Opening it clears the badge.
+ * Alerts are deleted automatically after 72 hours (App Center → Notifications → "Delete alerts
+ * after"), when an admin deletes them (one, or Clear all), or by the person (one, or all with Undo).
  * Saved in DocumentDir/fileora/inbox.json.
  */
 import { useSyncExternalStore } from 'react';
@@ -16,6 +17,7 @@ import { DATA } from '../store/files';
 import { onFlush, readJsonSafe, writeJsonSafe } from '../lib/safeFile';
 import { APP_VERSION } from '../version';
 import { effectivePrefs, InboxItem, remote } from './remote';
+import { alertKept } from './settingsLogic';
 
 const FILE = `${DATA}/inbox.json`;
 const KEEP = 60; // items kept on the phone
@@ -56,24 +58,46 @@ function forMe(i: InboxItem): boolean {
   return effectivePrefs().topics[i.topic] !== false;
 }
 
-let cache: { cfg: unknown; prefs: unknown; out: InboxItem[] } | null = null;
-/** The history, newest first, without what the person deleted. */
+let cache: { cfg: unknown; prefs: unknown; minute: number; out: InboxItem[] } | null = null;
+const DEFAULT_HOURS = 72;
+/** What App Center deleted, and how long alerts are kept. */
+function purge() {
+  const p = remote.get().config?.inbox_purge;
+  return { hours: p?.hours ?? DEFAULT_HOURS, ids: p?.ids ?? [], before: p?.before ?? 0 };
+}
+/** Whether an alert is still kept (not too old, not deleted by an admin): see alertKept. */
+function alive(i: InboxItem, pg: ReturnType<typeof purge>): boolean {
+  return alertKept(i, now(), pg);
+}
+
+/** The history, newest first, without what the person or an admin deleted, and nothing older than 72 hours. */
 export function inboxItems(): InboxItem[] {
   const s = remote.get();
-  if (cache && cache.cfg === s.config && cache.prefs === s.prefs) return cache.out;
+  const minute = Math.floor(Date.now() / 60000); // alerts expire with time, not only with changes
+  if (cache && cache.cfg === s.config && cache.prefs === s.prefs && cache.minute === minute) return cache.out;
+  const pg = purge();
   const gone = new Set(state.deleted);
   const byId = new Map<string, InboxItem>();
   for (const i of state.received) byId.set(i.id, i);
   for (const i of s.config?.inbox ?? []) byId.set(i.id, { ...i, at: byId.get(i.id)?.at ?? i.at }); // server copy, first time seen
   const out = [...byId.values()]
-    .filter(i => forMe(i) && !gone.has(i.id) && i.at > state.clearedAt)
+    .filter(i => forMe(i) && !gone.has(i.id) && i.at > state.clearedAt && alive(i, pg))
     .sort((a, b) => b.at - a.at)
     .slice(0, KEEP);
-  cache = { cfg: s.config, prefs: s.prefs, out };
+  cache = { cfg: s.config, prefs: s.prefs, minute, out };
   return out;
 }
 
+/** Removes expired and admin-deleted alerts from the phone's file too (at start and after each settings check). */
+function prune() {
+  if (!state.loaded) return;
+  const pg = purge();
+  const keep = state.received.filter(i => alive(i, pg));
+  if (keep.length !== state.received.length) set({ received: keep });
+}
+
 type Saved = { received?: InboxItem[]; seenAt?: number; deleted?: string[]; clearedAt?: number };
+let pruneHooked = false;
 
 export const inbox = {
   async load() {
@@ -88,6 +112,18 @@ export const inbox = {
     cache = null;
     listeners.forEach(l => l());
     if (!d) set({}); // first run: remember the starting point
+    prune();
+    if (!pruneHooked) {
+      pruneHooked = true;
+      let lastCfg: unknown = remote.get().config;
+      remote.subscribe(() => {
+        const c = remote.get().config;
+        if (c !== lastCfg) {
+          lastCfg = c;
+          prune();
+        }
+      });
+    }
   },
 
   /** A notification that arrived while the app was open (or was tapped). */

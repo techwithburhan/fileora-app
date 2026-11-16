@@ -1,5 +1,5 @@
-import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,12 +8,15 @@ import Icon, { IconName } from '../components/Icon';
 import PressableScale from '../components/PressableScale';
 import { ToolChip } from '../components/ToolCard';
 import { categoryById, isApiTool, isAvailable, isHidden, toolById, toolState, TOOLS } from '../data/tools';
-import { maintenanceMessage, soonMessage, useRemote } from '../remote/remote';
+import { maintenanceMessage, soonMessage, uiConfig, useRemote } from '../remote/remote';
+import { toolUrl } from '../config';
+import { useToolInfo } from '../lib/toolInfo';
 import { featureMessage, screenState } from '../navigation/nav';
 import { isNative } from '../data/nativeTools';
 import { RootStackParamList } from '../navigation/types';
 import { trackTool } from '../analytics';
 import { catColor, Theme } from '../theme';
+import { type } from '../typography';
 import AdBanner from '../ads/AdBanner';
 import Appear from '../components/Appear';
 
@@ -23,6 +26,10 @@ export default function ToolScreen({ theme }: { theme: Theme }) {
   const { params } = useRoute<RouteProp<RootStackParamList, 'Tool'>>();
   useRemote(s => s.config); // re-render when App Center settings change
   const tool = toolById(params.id);
+  // App Center → Manage → Tool pages: extra sections, the same switches as on the website
+  const ui = uiConfig().tool;
+  const info = useToolInfo(params.id, ui.after_content || ui.faq);
+  const [openQ, setOpenQ] = useState<number | null>(null);
   if (!tool) return null;
   const cat = categoryById(tool.cat);
   const c = catColor(tool.cat, theme);
@@ -49,6 +56,21 @@ export default function ToolScreen({ theme }: { theme: Theme }) {
     <View style={[styles.flex, { backgroundColor: theme.bg }]}>
       <StackHeader title={cat?.name ?? 'Tool'} theme={theme} onBack={() => nav.goBack()} />
       <ScrollView contentContainerStyle={styles.content}>
+        {ui.breadcrumbs && (
+          <View style={styles.crumbs} accessibilityRole="header" accessibilityLabel={`Home, ${cat?.name ?? 'Tools'}, ${tool.name}`}>
+            <Pressable onPress={() => nav.navigate('Tabs', { screen: 'Home' })} hitSlop={6}>
+              <Text style={[type.caption, { color: theme.link }]}>Home</Text>
+            </Pressable>
+            <Icon name="chevron" size={12} color={theme.muted} />
+            <Pressable onPress={() => nav.navigate('Tabs', { screen: 'Tools', params: { cat: tool.cat } })} hitSlop={6}>
+              <Text style={[type.caption, { color: theme.link }]}>{cat?.name ?? 'Tools'}</Text>
+            </Pressable>
+            <Icon name="chevron" size={12} color={theme.muted} />
+            <Text style={[type.caption, styles.flex, { color: theme.muted }]} numberOfLines={1}>
+              {tool.name}
+            </Text>
+          </View>
+        )}
         <Appear duration={320} rise={false} style={[styles.bigIcon, { backgroundColor: c + '1F' }]}>
           <Icon name={tool.cat as IconName} size={40} color={c} />
         </Appear>
@@ -87,7 +109,49 @@ export default function ToolScreen({ theme }: { theme: Theme }) {
             {available && <Icon name="chevron" size={20} color={theme.onAccent} width={2.4} />}
           </PressableScale>
         </Appear>
-        {related.length > 0 && (
+        {ui.website_link && (
+          <PressableScale onPress={() => Linking.openURL(toolUrl(tool.slug)).catch(() => {})} accessibilityRole="link" style={styles.webLink}>
+            <Icon name="external" size={16} color={theme.link} />
+            <Text style={[type.button, { color: theme.link }]}>Open on fileora.in</Text>
+          </PressableScale>
+        )}
+        {ui.after_content && info && info.content.length > 0 && (
+          <View style={styles.about}>
+            {info.content.map((b, i) =>
+              b.t === 'h' ? (
+                <Text key={i} style={[type.section, styles.aboutH, { color: theme.ink }]} accessibilityRole="header">
+                  {b.text}
+                </Text>
+              ) : b.t === 'li' ? (
+                <View key={i} style={styles.li}>
+                  <Text style={[type.body, { color: theme.accentInk }]}>•</Text>
+                  <Text style={[type.body, styles.flex, { color: theme.ink2 }]}>{b.text}</Text>
+                </View>
+              ) : (
+                <Text key={i} style={[type.body, { color: theme.ink2 }]}>
+                  {b.text}
+                </Text>
+              ),
+            )}
+          </View>
+        )}
+        {ui.faq && info && info.faq.length > 0 && (
+          <View style={styles.about}>
+            <Text style={[type.section, styles.aboutH, { color: theme.ink }]} accessibilityRole="header">
+              Questions & answers
+            </Text>
+            {info.faq.map((x, i) => (
+              <View key={i} style={[styles.qa, { backgroundColor: theme.surface, borderColor: theme.line }]}>
+                <Pressable onPress={() => setOpenQ(openQ === i ? null : i)} accessibilityRole="button" accessibilityState={{ expanded: openQ === i }} style={styles.qRow}>
+                  <Text style={[type.heading, styles.flex, { color: theme.ink }]}>{x.q}</Text>
+                  <Icon name={openQ === i ? 'up' : 'down'} size={18} color={theme.ink2} />
+                </Pressable>
+                {openQ === i && <Text style={[type.body, styles.answer, { color: theme.ink2 }]}>{x.a}</Text>}
+              </View>
+            ))}
+          </View>
+        )}
+        {ui.more_tools && related.length > 0 && (
           <>
             <Text style={[styles.secTitle, { color: theme.ink }]}>More {cat?.name ?? 'tools'}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carousel} style={styles.carouselOuter}>
@@ -119,4 +183,12 @@ const styles = StyleSheet.create({
   secTitle: { fontSize: 18, fontWeight: '800', marginTop: 12 },
   carouselOuter: { marginHorizontal: -20 },
   carousel: { paddingHorizontal: 20, gap: 10 },
+  crumbs: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: -4 },
+  webLink: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 44 },
+  about: { gap: 10, marginTop: 6 },
+  aboutH: { marginTop: 6 },
+  li: { flexDirection: 'row', gap: 8 },
+  qa: { borderWidth: 1, borderRadius: 14, overflow: 'hidden' },
+  qRow: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, minHeight: 52 },
+  answer: { paddingHorizontal: 14, paddingBottom: 14 },
 });

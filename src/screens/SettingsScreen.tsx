@@ -14,7 +14,7 @@ import Icon, { IconName } from '../components/Icon';
 import PressableScale from '../components/PressableScale';
 import { ABOUT_SLUGS, CONTACT_SLUGS, DEVELOPER, PRIVACY_SLUGS, SHARE_URL, TERMS_SLUGS } from '../config';
 import { store, useStore } from '../store/store';
-import { cmpVersion, control, effectivePrefs, remote, TOPIC_LABELS, useRemote } from '../remote/remote';
+import { cmpVersion, effectivePrefs, remote, settingCtl, SettingKey, TOPIC_LABELS, useRemote } from '../remote/remote';
 import NotificationCheck from '../components/NotificationCheck';
 import RewardSheet, { untilText } from '../ads/RewardSheet';
 import { rewardHours, showPrivacyOptions, unitFor, useAdFreeUntil, usePrivacyOptions } from '../ads/ads';
@@ -36,7 +36,7 @@ import { type } from '../typography';
 import { APP_VERSION } from '../version';
 import Appear from '../components/Appear';
 
-type Row = { key: string; icon: IconName; label: string; sub?: string; onPress?: () => void; right?: React.ReactNode; external?: boolean };
+type Row = { key: string; icon: IconName; label: string; sub?: string; onPress?: () => void; right?: React.ReactNode; external?: boolean; dim?: boolean };
 
 export default function SettingsScreen({ theme }: { theme: Theme }) {
   const nav = useNavigation();
@@ -70,10 +70,11 @@ export default function SettingsScreen({ theme }: { theme: Theme }) {
   const share = () =>
     Share.share({ title: 'Fileora', message: `${links?.share_text || 'Fileora: free PDF, image and file tools.'} ${shareUrl}` }).catch(() => {});
 
-  // App Center → Notifications → Notification & Privacy settings: locked options are hidden
+  // App Center → Notifications → Notification & Privacy settings: each one is Show (people change it),
+  // Fixed (shown with a lock), Hidden or Disabled (greyed out, off). Changes arrive with the settings check.
   const eff = effectivePrefs(prefs);
-  const can = (k: Parameters<typeof control>[0]) => control(k).allow;
-  const notifLocked = !can('notify');
+  const mode = (k: SettingKey) => settingCtl(k).mode;
+  const notifLocked = mode('notify') !== 'show';
   const notifOn = eff.notify && perm === 'granted';
   const blocked = eff.notify && perm === 'denied' && (prefs.askedAt > 0 || notifLocked);
   const setNotif = async (v: boolean) => {
@@ -118,9 +119,34 @@ export default function SettingsScreen({ theme }: { theme: Theme }) {
       ]);
     else Alert.alert('You’re up to date', `Fileora ${APP_VERSION} is the newest version.`);
   };
-  const sw = (value: boolean, onChange: (v: boolean) => void, label: string) => (
-    <Switch value={value} onValueChange={onChange} trackColor={{ true: theme.accent, false: theme.line }} thumbColor="#fff" accessibilityLabel={label} />
+  const sw = (value: boolean, onChange: (v: boolean) => void, label: string, locked = false) => (
+    <View style={styles.swWrap}>
+      {locked && <Icon name="lock" size={15} color={theme.muted} />}
+      <Switch
+        value={value}
+        onValueChange={onChange}
+        disabled={locked}
+        trackColor={{ true: theme.accent, false: theme.line }}
+        thumbColor="#fff"
+        accessibilityLabel={locked ? `${label}, set by Fileora` : label}
+      />
+    </View>
   );
+  /** A setting with an on/off switch, as App Center wants it: hidden, shown, fixed (lock) or disabled (greyed out). */
+  const toggleRow = (k: SettingKey, row: Omit<Row, 'right'>, value: boolean, onChange: (v: boolean) => void): Row[] => {
+    const m = mode(k);
+    if (m === 'hide') return [];
+    if (m === 'show') return [{ ...row, right: sw(value, onChange, row.label) }];
+    if (m === 'fix') return [{ ...row, sub: `${row.sub ? row.sub + ' ' : ''}Set by Fileora.`, right: sw(value, () => {}, row.label, true) }];
+    return [{ ...row, sub: 'Not available right now.', dim: true, right: sw(false, () => {}, row.label, true) }];
+  };
+  /** A button (Check notifications, Sound…, Reset): hidden, shown or disabled (greyed out). */
+  const actionRow = (k: SettingKey, row: Row): Row[] => {
+    const m = mode(k);
+    if (m === 'hide') return [];
+    if (m === 'disable') return [{ ...row, sub: 'Not available right now.', onPress: undefined, dim: true }];
+    return [row];
+  };
 
   const groups: { title: string; rows: Row[] }[] = [
     {
@@ -155,110 +181,100 @@ export default function SettingsScreen({ theme }: { theme: Theme }) {
           {
             title: 'Notifications & privacy',
             rows: [
-              notifLocked
-                ? {
-                    key: 'notif',
-                    icon: 'bell' as IconName,
-                    label: 'Notifications',
-                    sub: !eff.notify
-                      ? 'Switched off for this app'
-                      : notifOn
-                        ? 'On: app updates, new tools and news'
-                        : 'Allow notifications for Fileora on this phone. Tap to allow.',
-                    onPress: eff.notify && !notifOn ? () => (blocked ? openSystemSettings() : setNotif(true)) : undefined,
-                  }
-                : {
-                    key: 'notif',
-                    icon: 'bell' as IconName,
-                    label: 'Notifications',
-                    sub: blocked ? 'Blocked in your phone’s settings. Tap to open them.' : notifOn ? 'On: app updates, new tools and news' : 'Off: no notifications from Fileora',
-                    onPress: blocked ? openSystemSettings : undefined,
-                    right: blocked ? undefined : sw(notifOn, setNotif, 'Notifications'),
-                  },
+              ...(mode('notify') === 'hide' && !(eff.notify && !notifOn)
+                ? []
+                : mode('notify') === 'disable'
+                  ? [{ key: 'notif', icon: 'bell' as IconName, label: 'Notifications', sub: 'Not available right now.', dim: true, right: sw(false, () => {}, 'Notifications', true) }]
+                  : notifLocked
+                    ? [
+                        {
+                          key: 'notif',
+                          icon: 'bell' as IconName,
+                          label: 'Notifications',
+                          sub: !eff.notify
+                            ? 'Switched off for this app. Set by Fileora.'
+                            : notifOn
+                              ? 'On: app updates, new tools and news. Set by Fileora.'
+                              : 'Allow notifications for Fileora on this phone. Tap to allow.',
+                          onPress: eff.notify && !notifOn ? () => (blocked ? openSystemSettings() : setNotif(true)) : undefined,
+                          right: eff.notify && !notifOn ? undefined : sw(eff.notify, () => {}, 'Notifications', true),
+                        },
+                      ]
+                    : [
+                        {
+                          key: 'notif',
+                          icon: 'bell' as IconName,
+                          label: 'Notifications',
+                          sub: blocked ? 'Blocked in your phone’s settings. Tap to open them.' : notifOn ? 'On: app updates, new tools and news' : 'Off: no notifications from Fileora',
+                          onPress: blocked ? openSystemSettings : undefined,
+                          right: blocked ? undefined : sw(notifOn, setNotif, 'Notifications'),
+                        },
+                      ]),
               ...(notifOn
                 ? [
-                    ...(can('quiet')
-                      ? [
-                          {
-                            key: 'quiet',
-                            icon: 'moon' as IconName,
-                            label: 'Quiet notifications',
-                            sub: 'Hide pop-ups and sound: notifications arrive silently in the notification list',
-                            right: sw(prefs.quiet, v => {
-                              remote.setPrefs({ quiet: v });
-                              syncTopics();
-                            }, 'Quiet notifications'),
-                          },
-                        ]
-                      : []),
-                    ...(can('private')
-                      ? [
-                          Platform.OS === 'ios'
-                            ? {
-                                key: 'private',
-                                icon: 'lock' as IconName,
-                                label: 'Notification privacy',
-                                sub: 'On iPhone: Settings → Notifications → Fileora → Show Previews → “When Unlocked” or “Never”',
-                                onPress: () =>
-                                  Alert.alert('Notification privacy', 'iPhone decides what shows on the lock screen. Open Settings → Notifications → Fileora → Show Previews and choose “When Unlocked” or “Never”.', [
-                                    { text: 'Not now', style: 'cancel' },
-                                    { text: 'Open Settings', onPress: openSystemSettings },
-                                  ]),
-                              }
-                            : {
-                                key: 'private',
-                                icon: 'lock' as IconName,
-                                label: 'Notification privacy',
-                                sub: 'Nothing from Fileora on the lock screen: you see notifications after unlocking',
-                                right: sw(prefs.private, v => {
-                                  remote.setPrefs({ private: v });
-                                  syncTopics();
-                                }, 'Notification privacy'),
-                              },
-                        ]
-                      : []),
-                    ...(can('topics')
-                      ? offered.map(t => ({
-                          key: 'topic-' + t.id,
-                          icon: 'check' as IconName,
-                          label: t.label,
-                          right: sw(prefs.topics[t.id] !== false, v => {
-                            remote.setTopic(t.id, v);
+                    ...toggleRow(
+                      'quiet',
+                      { key: 'quiet', icon: 'moon', label: 'Quiet notifications', sub: 'Hide pop-ups and sound: notifications arrive silently in the notification list' },
+                      eff.quiet,
+                      v => {
+                        remote.choose({ quiet: v });
+                        syncTopics();
+                      },
+                    ),
+                    ...(Platform.OS === 'ios'
+                      ? actionRow('private', {
+                          key: 'private',
+                          icon: 'lock',
+                          label: 'Notification privacy',
+                          sub: 'On iPhone: Settings → Notifications → Fileora → Show Previews → “When Unlocked” or “Never”',
+                          onPress: () =>
+                            Alert.alert('Notification privacy', 'iPhone decides what shows on the lock screen. Open Settings → Notifications → Fileora → Show Previews and choose “When Unlocked” or “Never”.', [
+                              { text: 'Not now', style: 'cancel' },
+                              { text: 'Open Settings', onPress: openSystemSettings },
+                            ]),
+                        })
+                      : toggleRow(
+                          'private',
+                          { key: 'private', icon: 'lock', label: 'Notification privacy', sub: 'Nothing from Fileora on the lock screen: you see notifications after unlocking' },
+                          eff.private,
+                          v => {
+                            remote.choose({ private: v });
                             syncTopics();
-                          }, t.label),
-                        }))
-                      : []),
+                          },
+                        )),
+                    ...offered.flatMap(t =>
+                      toggleRow(t.id as SettingKey, { key: 'topic-' + t.id, icon: 'check', label: t.label }, eff.topics[t.id] !== false, v => {
+                        remote.setTopic(t.id, v);
+                        syncTopics();
+                      }),
+                    ),
                   ]
                 : []),
               ...(eff.notify
                 ? [
-                    {
+                    ...actionRow('check', {
                       key: 'check',
-                      icon: 'pulse' as IconName,
+                      icon: 'pulse',
                       label: 'Check notifications',
                       sub: 'Not arriving, or no sound? See what to change on this phone, and send a test',
                       onPress: () => setCheckOpen(true),
-                    },
-                    {
+                    }),
+                    ...actionRow('sound', {
                       key: 'sound',
-                      icon: 'settings' as IconName,
+                      icon: 'settings',
                       label: 'Sound and more',
                       sub: Platform.OS === 'ios' ? 'iPhone settings for Fileora: sound, banners, lock screen' : 'Android’s notification settings for Fileora: sound, vibration, lock screen',
                       onPress: openNotificationSettings,
-                    },
+                    }),
                   ]
                 : []),
-              ...(can('reset')
-                ? [
-                    {
-                      key: 'reset',
-                      icon: 'refresh' as IconName,
-                      label: 'Reset notification settings',
-                      sub: 'Back to the original choices, with a new anonymous notification ID',
-                      onPress: confirmReset,
-                    },
-                  ]
-                : []),
+              ...actionRow('reset', {
+                key: 'reset',
+                icon: 'refresh',
+                label: 'Reset notification settings',
+                sub: 'Back to the original choices, with a new anonymous notification ID',
+                onPress: confirmReset,
+              }),
             ],
           },
         ]
@@ -297,21 +313,21 @@ export default function SettingsScreen({ theme }: { theme: Theme }) {
       : []),
     {
       title: 'Privacy',
-      rows: can('usage')
-        ? [
-            {
-              key: 'usage',
-              icon: 'pulse',
-              label: 'Share anonymous usage',
-              sub: 'Which tools are used and errors, with a random ID (also Firebase Analytics). No names, phone numbers or file names. Helps us fix problems.',
-              right: sw(prefs.usage, v => {
-                remote.setPrefs({ usage: v });
-                setAnalyticsEnabled(v);
-                if (!v) telemetry.clear();
-              }, 'Share anonymous usage'),
-            },
-          ]
-        : [],
+      rows: toggleRow(
+        'usage',
+        {
+          key: 'usage',
+          icon: 'pulse',
+          label: 'Share anonymous usage',
+          sub: 'Which tools are used and errors, with a random ID (also Firebase Analytics). No names, phone numbers or file names. Helps us fix problems.',
+        },
+        eff.usage,
+        v => {
+          remote.choose({ usage: v });
+          setAnalyticsEnabled(v);
+          if (!v) telemetry.clear();
+        },
+      ),
     },
     {
       title: 'More',
@@ -347,7 +363,7 @@ export default function SettingsScreen({ theme }: { theme: Theme }) {
                     <View style={[styles.icon, { backgroundColor: theme.accent + '1F' }]}>
                       <Icon name={r.icon} size={19} color={theme.accentInk} />
                     </View>
-                    <View style={styles.flex}>
+                    <View style={[styles.flex, r.dim && styles.dim]}>
                       <Text style={[type.heading, { color: theme.ink }]}>{r.label}</Text>
                       {r.sub ? <Text style={[type.bodySm, { color: theme.muted }]}>{r.sub}</Text> : null}
                     </View>
@@ -398,5 +414,7 @@ const styles = StyleSheet.create({
   icon: { width: 36, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
   footer: { alignItems: 'center', gap: 6, marginTop: 12, paddingVertical: 12 },
   link: { textDecorationLine: 'underline' },
+  dim: { opacity: 0.5 },
+  swWrap: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   pill: { minHeight: 40, paddingHorizontal: 16, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
 });

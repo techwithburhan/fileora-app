@@ -1,8 +1,8 @@
 /**
  * Alerts (bottom bar): every notification Fileora sent to this install, newest first, also the
  * ones that arrived while the phone was off or notifications were muted. Opening this screen
- * clears the unread badge; the history stays (the last 60 days from App Center, plus those
- * received on this phone). Tapping an alert opens what it points to.
+ * clears the unread badge. Alerts are deleted automatically after 72 hours (App Center can change
+ * this), and an admin can delete one or all of them. Tapping an alert opens what it points to.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -57,6 +57,7 @@ export default function AlertsScreen({ theme }: { theme: Theme }) {
   const focused = useIsFocused(); // tabs stay mounted: only the visible screen marks alerts as read
   const items = useInbox();
   const prefs = useRemote(s => s.prefs);
+  const hours = useRemote(s => s.config?.inbox_purge.hours ?? 72);
   const [refreshing, setRefreshing] = useState(false);
   const [perm, setPerm] = useState<'granted' | 'denied' | null>(null);
   // what was unread when the screen opened keeps its dot during this visit
@@ -226,8 +227,8 @@ export default function AlertsScreen({ theme }: { theme: Theme }) {
               )}
             </View>
             <Text style={[type.bodySm, { color: theme.muted }]}>
-              Updates, new tools and news from Fileora. Pull down to check for
-              new ones.
+              Updates, new tools and news from Fileora. Alerts are deleted after{' '}
+              {hours === 72 ? '3 days' : `${hours} hours`}. Pull down to check for new ones.
             </Text>
             {off && (
               <PressableScale

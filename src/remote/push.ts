@@ -119,13 +119,13 @@ export async function askPermission(): Promise<Permission> {
 export async function enableNotifications(): Promise<Permission> {
   remote.setPrefs({ askedAt: Date.now() });
   const p = await askPermission();
-  remote.setPrefs({ notify: p === 'granted' });
+  remote.choose({ notify: p === 'granted' });
   await syncTopics();
   return p;
 }
 
 export async function disableNotifications() {
-  remote.setPrefs({ notify: false });
+  remote.choose({ notify: false });
   await syncTopics();
 }
 
@@ -149,8 +149,9 @@ export function openNotificationSettings() {
  */
 export async function resetNotifications() {
   const m = messaging();
-  const keep = remote.get().prefs.usage;
-  remote.setPrefs({ ...defaultPrefs(), usage: keep });
+  const before = remote.get().prefs;
+  // anonymous usage is not a notification setting: the person's choice stays
+  remote.setPrefs({ ...defaultPrefs(), usage: before.usage, touched: before.touched?.includes('usage') ? ['usage'] : [] });
   if (m) {
     chain = chain
       .then(async () => {

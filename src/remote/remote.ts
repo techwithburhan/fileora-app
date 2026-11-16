@@ -8,6 +8,7 @@
  * Also keeps this install's own preferences: notifications, anonymous usage, dismissed banners,
  * and the random install ID used for check-ins. Saved in DocumentDir/fileora/remote.json.
  */
+import { applyCtl, resolveCtl, touchedFromOld } from './settingsLogic';
 import { useSyncExternalStore } from 'react';
 import { Platform } from 'react-native';
 import { API_TOOLS_LIVE, MAINTENANCE_MESSAGE, SITE } from '../config';
@@ -31,6 +32,25 @@ export type InboxItem = { id: string; title: string; body: string; image: string
 /** A Notification & Privacy setting: may people change it, and its value when they may not. */
 export type Control = { allow: boolean; def: boolean | null };
 export type ControlKey = 'notify' | 'topics' | 'quiet' | 'private' | 'usage' | 'test' | 'reset';
+/**
+ * App Center → Notifications → Notification & Privacy settings (plugin 2.16+): per setting
+ *   show     shown, people can change it; value = the starting choice until they do
+ *   fix      shown with a lock at value; people can't change it
+ *   hide     not shown; value is used
+ *   disable  shown greyed out and off (a button can't be used)
+ */
+export type SettingMode = 'show' | 'fix' | 'hide' | 'disable';
+export type SettingCtl = { mode: SettingMode; value: boolean | null };
+export const TOGGLE_SETTINGS = ['notify', 'quiet', 'private', 'updates', 'news', 'tools', 'offers', 'blog', 'usage'] as const;
+export const ACTION_SETTINGS = ['check', 'test', 'sound', 'reset'] as const;
+export type SettingKey = (typeof TOGGLE_SETTINGS)[number] | (typeof ACTION_SETTINGS)[number];
+/** App Center: tool page sections and the menu's "Open fileora.in" (plugin 2.16+). */
+export type UiConfig = {
+  menu_website: boolean;
+  tool: { website_link: boolean; breadcrumbs: boolean; after_content: boolean; more_tools: boolean; faq: boolean };
+};
+/** Alerts deleted automatically after `hours`, or by an admin (ids, or everything up to `before`). */
+export type InboxPurge = { hours: number; ids: string[]; before: number };
 export type AdPlacement = 'home_native' | 'tool_banner' | 'task_interstitial' | 'result_rect' | 'reward_adfree';
 export const AD_PLACEMENTS: AdPlacement[] = ['home_native', 'tool_banner', 'task_interstitial', 'result_rect', 'reward_adfree'];
 export type AdsConfig = {
@@ -70,6 +90,10 @@ export type RemoteConfig = {
   /* app 0.7+ (older plugins send none of these: the defaults below apply) */
   inbox: InboxItem[];
   controls: Record<ControlKey, Control>;
+  /* app 0.9+ (plugin 2.16+) */
+  settings_ctl: Partial<Record<SettingKey, SettingCtl>> | null;
+  ui: UiConfig;
+  inbox_purge: InboxPurge;
   test_push: boolean;
   ads: AdsConfig | null;
   promo: Promo | null;
@@ -90,6 +114,8 @@ export type Prefs = {
   usage: boolean; // share anonymous usage
   quiet: boolean; // notifications arrive without sound or pop-up
   private: boolean; // nothing shown on the lock screen
+  /** settings the person changed themselves (until then App Center's starting value applies) */
+  touched?: string[];
 };
 type State = {
   loaded: boolean;
@@ -118,7 +144,7 @@ function randomId() {
 
 /** Choices of a fresh install (also what "Reset notification settings" goes back to). */
 export function defaultPrefs(): Prefs {
-  return { notify: true, topics: Object.fromEntries(TOPIC_LABELS.map(t => [t.id, true])), askedAt: 0, usage: true, quiet: false, private: false };
+  return { notify: true, topics: Object.fromEntries(TOPIC_LABELS.map(t => [t.id, true])), askedAt: 0, usage: true, quiet: false, private: false, touched: [] };
 }
 
 let state: State = {
@@ -225,6 +251,39 @@ const CONTROL_DEFAULTS: Record<ControlKey, Control> = {
   test: { allow: true, def: null },
   reset: { allow: true, def: null },
 };
+const MODES: SettingMode[] = ['show', 'fix', 'hide', 'disable'];
+function cleanSettingsCtl(v: unknown): Partial<Record<SettingKey, SettingCtl>> | null {
+  if (!v || typeof v !== 'object') return null;
+  const out: Partial<Record<SettingKey, SettingCtl>> = {};
+  for (const k of [...TOGGLE_SETTINGS, ...ACTION_SETTINGS]) {
+    const c = (v as Record<string, unknown>)[k];
+    if (!c || typeof c !== 'object') continue;
+    const o = c as { mode?: unknown; value?: unknown };
+    const mode = MODES.includes(o.mode as SettingMode) ? (o.mode as SettingMode) : 'show';
+    out[k] = { mode, value: typeof o.value === 'boolean' ? o.value : null };
+  }
+  return out;
+}
+/** Older plugins send no "ui": the app keeps its earlier look (website link in the menu, more tools). */
+const UI_DEFAULT: UiConfig = { menu_website: true, tool: { website_link: false, breadcrumbs: false, after_content: false, more_tools: true, faq: false } };
+function cleanUi(v: unknown): UiConfig {
+  if (!v || typeof v !== 'object') return UI_DEFAULT;
+  const u = v as { menu_website?: unknown; tool?: Record<string, unknown> };
+  const t = u.tool && typeof u.tool === 'object' ? u.tool : {};
+  return {
+    menu_website: u.menu_website !== false,
+    tool: { website_link: t.website_link === true, breadcrumbs: t.breadcrumbs === true, after_content: t.after_content === true, more_tools: t.more_tools === true, faq: t.faq === true },
+  };
+}
+function cleanPurge(v: unknown): InboxPurge {
+  const p = v && typeof v === 'object' ? (v as Record<string, unknown>) : {};
+  return {
+    hours: Math.max(1, Math.min(720, Number(p.hours) || 72)),
+    ids: Array.isArray(p.ids) ? p.ids.filter((x): x is string => typeof x === 'string').slice(-300) : [],
+    before: Math.max(0, Number(p.before) || 0),
+  };
+}
+
 function cleanControls(v: unknown): Record<ControlKey, Control> {
   const out = { ...CONTROL_DEFAULTS };
   if (!v || typeof v !== 'object') return out;
@@ -334,6 +393,9 @@ function clean(j: unknown): RemoteConfig | null {
     topics: arr(c.topics),
     inbox: cleanInbox(c.inbox),
     controls: cleanControls(c.controls),
+    settings_ctl: cleanSettingsCtl(c.settings_ctl),
+    ui: cleanUi(c.ui),
+    inbox_purge: cleanPurge(c.inbox_purge),
     test_push: c.test_push === true,
     ads: cleanAds(c.ads),
     promo: cleanPromo(c.promo),
@@ -358,7 +420,12 @@ export const remote = {
           config: clean(d.config),
           fetchedAt: Number(d.fetchedAt) || 0,
           install: typeof d.install === 'string' && /^[a-z0-9]{16}$/.test(d.install) ? d.install : '',
-          prefs: { ...state.prefs, ...(d.prefs || {}), topics: { ...state.prefs.topics, ...(d.prefs?.topics || {}) } },
+          prefs: (() => {
+            const p: Prefs = { ...state.prefs, ...(d.prefs || {}), topics: { ...state.prefs.topics, ...(d.prefs?.topics || {}) } };
+            // saved by app 0.8 or older: what differs from the defaults was the person's own choice
+            if (d.prefs && !Array.isArray(d.prefs.touched)) p.touched = touchedFromOld(p, defaultPrefs());
+            return p;
+          })(),
           dismissed: d.dismissed || {},
           subscribed: Array.isArray(d.subscribed) ? d.subscribed : [],
         };
@@ -394,8 +461,14 @@ export const remote = {
   setPrefs(p: Partial<Prefs>) {
     set({ prefs: { ...state.prefs, ...p } });
   },
+  /** A setting the person changed in Settings: from now on their choice counts, not App Center's starting value. */
+  choose(p: Partial<Pick<Prefs, 'notify' | 'quiet' | 'private' | 'usage'>>) {
+    const touched = [...new Set([...(state.prefs.touched ?? []), ...Object.keys(p)])];
+    set({ prefs: { ...state.prefs, ...p, touched } });
+  },
   setTopic(id: string, on: boolean) {
-    set({ prefs: { ...state.prefs, topics: { ...state.prefs.topics, [id]: on } } });
+    const touched = [...new Set([...(state.prefs.touched ?? []), id])];
+    set({ prefs: { ...state.prefs, topics: { ...state.prefs.topics, [id]: on }, touched } });
   },
   dismiss(kind: 'ann' | 'update' | 'popup', id: string) {
     set({ dismissed: { ...state.dismissed, [kind]: id } });
@@ -443,16 +516,25 @@ export function control(k: ControlKey): Control {
   return state.config?.controls?.[k] ?? CONTROL_DEFAULTS[k];
 }
 
-/**
- * The person's choices with App Center's locks applied: a locked setting uses App Center's
- * default instead of what the person chose earlier.
- */
+/** How App Center wants a setting shown (show / fix / hide / disable) and its value. */
+export function settingCtl(k: SettingKey): SettingCtl {
+  return resolveCtl(k, state.config?.settings_ctl, control);
+}
+/** Whether a setting's row is shown at all. */
+export const settingShown = (k: SettingKey) => settingCtl(k).mode !== 'hide';
+/** Whether people can change it (or use the button). */
+export const settingOpen = (k: SettingKey) => {
+  const m = settingCtl(k).mode;
+  return m === 'show' || ((ACTION_SETTINGS as readonly string[]).includes(k) && m === 'fix');
+};
+
+/** The person's choices with App Center's settings applied (see applyCtl). */
 export function effectivePrefs(p: Prefs = state.prefs): Prefs {
-  const pick = (k: 'notify' | 'quiet' | 'private' | 'usage') => {
-    const c = control(k);
-    return c.allow || c.def === null ? p[k] : c.def;
-  };
-  const topics = control('topics').allow ? p.topics : Object.fromEntries(TOPIC_LABELS.map(t => [t.id, true]));
-  return { ...p, notify: pick('notify'), quiet: pick('quiet'), private: pick('private'), usage: pick('usage'), topics };
+  return applyCtl(p, settingCtl, TOPIC_LABELS.map(t => t.id));
+}
+
+/** App Center's tool page sections and the menu's website link. */
+export function uiConfig(): UiConfig {
+  return state.config?.ui ?? UI_DEFAULT;
 }
 

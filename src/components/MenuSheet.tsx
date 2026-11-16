@@ -15,6 +15,7 @@ import { CATEGORIES } from '../data/tools';
 import { DEVELOPER, INFO_PAGES, SITE } from '../config';
 import { navIcon, openNavItem, useNav } from '../navigation/nav';
 import { useVisibleTools } from '../remote/useTools';
+import { useRemote } from '../remote/remote';
 import { navigationRef, TabParamList } from '../navigation/types';
 import { catColor, Theme } from '../theme';
 import { trackScreen } from '../analytics';
@@ -31,6 +32,7 @@ function goWeb(title: string, url?: string, slugs?: string[]) {
 
 export default function MenuSheet({ theme }: { theme: Theme }) {
   const { visible, close } = useMenu();
+  const menuWebsite = useRemote(s => s.config?.ui.menu_website ?? true);
   const [mounted, setMounted] = useState(false);
   const p = useSharedValue(0);
   const { width } = useWindowDimensions();
@@ -145,6 +147,8 @@ export default function MenuSheet({ theme }: { theme: Theme }) {
               ))}
             </View>
           ))}
+          {/* App Center → Navigation → Open Website: removed completely when switched off */}
+          {menuWebsite && (
           <PressableScale
             scaleTo={0.98}
             onPress={() => Linking.openURL(SITE)}
@@ -155,6 +159,7 @@ export default function MenuSheet({ theme }: { theme: Theme }) {
             </View>
             <Text style={[styles.rowLabel, { color: theme.ink }]}>Open fileora.in</Text>
           </PressableScale>
+          )}
           <Text style={[styles.foot, { color: theme.muted }]}>
             Fileora app {APP_VERSION} · {Platform.OS === 'android' ? 'Android' : Platform.OS === 'ios' ? 'iOS' : Platform.OS}
           </Text>
