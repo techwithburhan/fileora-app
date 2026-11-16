@@ -282,6 +282,24 @@ function cleanPopup(v: unknown): Popup | null {
   return { id: text(p.id, 20) || title, title, text: text(p.text, 240), button: text(p.button, 24) || 'Learn more', link, freq };
 }
 
+/**
+ * A navigation from a plugin older than 2.14 has no Alerts item: add it to the bar (before
+ * Settings), or to the menu when the bar is full, like the plugin's own 2.14 update does.
+ */
+function withAlerts(nav: Nav | null): Nav | null {
+  if (!nav) return null;
+  const has = [...nav.bar, ...nav.menu].some(i => i.open === 'screen' && i.value === 'alerts');
+  if (has) return nav;
+  const alerts: NavItem = { id: 'alerts', label: 'Alerts', icon: 'bell', open: 'screen', value: 'alerts', status: 'on', msg: '' };
+  if (nav.bar.length < 6) {
+    const at = nav.bar.findIndex(i => i.open === 'screen' && i.value === 'settings');
+    const bar = [...nav.bar];
+    bar.splice(at < 0 ? bar.length : at, 0, alerts);
+    return { ...nav, bar };
+  }
+  return { ...nav, menu: [...nav.menu, alerts] };
+}
+
 /** Accepts only what the app understands, so a bad answer can't break it. */
 function clean(j: unknown): RemoteConfig | null {
   if (!j || typeof j !== 'object' || (j as { v?: unknown }).v !== 1) return null;
@@ -306,7 +324,7 @@ function clean(j: unknown): RemoteConfig | null {
     update: { latest: str(c.update?.latest), min: str(c.update?.min), url: str(c.update?.url), notes: str(c.update?.notes) },
     links: { terms: str(c.links?.terms), privacy: str(c.links?.privacy), contact: str(c.links?.contact), share: str(c.links?.share) || SITE, share_text: str(c.links?.share_text) },
     popular: arr(c.popular),
-    nav: cleanNav(c.nav),
+    nav: 'controls' in c ? cleanNav(c.nav) : withAlerts(cleanNav(c.nav)), // "controls" = plugin 2.14+
     tracking: c.tracking !== false,
     checkin_minutes: Math.max(5, Math.min(1440, Number(c.checkin_minutes) || 30)),
     cache_seconds: Math.max(0, Math.min(3600, Number(c.cache_seconds) || 60)),
