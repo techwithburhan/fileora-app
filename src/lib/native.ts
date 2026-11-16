@@ -19,6 +19,26 @@ type Native = {
   appIcon(pkg: string, size: number): Promise<string | null>;
   shareToApp(path: string, mime: string, pkg: string): Promise<boolean>;
   openApp(pkg: string): Promise<boolean>;
+  showNotification(n: ShowNotification): Promise<boolean>;
+  notificationStatus(): Promise<NotifStatus>;
+  openNotificationFix(kind: 'channel' | 'battery' | 'autostart'): Promise<string>;
+  takePushOpen(): Promise<string | null>;
+};
+/** A notification shown by the app itself (one that arrived while Fileora is open). */
+export type ShowNotification = { id: string; title: string; body: string; quiet: boolean; private: boolean; data: string };
+/** What can stop notifications on this Android phone (Settings → Check notifications). */
+export type NotifStatus = {
+  enabled: boolean;
+  sdk: number;
+  maker: string;
+  channel: boolean;
+  /** 4 = pop-up and sound, 3 = sound, 2 = silent, 1 = minimised, 0 = off, -1 = channel missing */
+  importance: number;
+  sound: boolean;
+  batteryOptimized: boolean;
+  backgroundRestricted: boolean;
+  /** the phone has a maker "Autostart" screen Fileora knows how to open */
+  autostart: boolean;
 };
 
 const N: Native | undefined = Platform.OS === 'android' ? NativeModules.FileoraNative : undefined;
@@ -82,6 +102,16 @@ export const native = {
   openApp: (pkg: string): Promise<boolean> => (N ? N.openApp(pkg) : Promise.resolve(false)),
   /** Whether "open the app" works for cloud apps (Android only). */
   canOpenApps: !!N,
+  /** Android: shows a notification that arrived while the app is open (with the Fileora sound). */
+  showNotification: (n: ShowNotification): Promise<boolean> => (N ? N.showNotification(n) : Promise.resolve(false)),
+  notificationStatus: (): Promise<NotifStatus | null> => (N ? N.notificationStatus() : Promise.resolve(null)),
+  openNotificationFix: (kind: 'channel' | 'battery' | 'autostart'): Promise<string> => (N ? N.openNotificationFix(kind) : Promise.resolve('')),
+  /** Data of the in-app notification Fileora was opened from (JSON), once. */
+  takePushOpen: (): Promise<string | null> => (N ? N.takePushOpen() : Promise.resolve(null)),
+  onPushOpen(cb: () => void) {
+    const sub = DeviceEventEmitter.addListener('fileoraPushOpen', cb);
+    return () => sub.remove();
+  },
   /** Fires when images are shared to Fileora while it is already open. */
   onShare(cb: () => void) {
     const sub = DeviceEventEmitter.addListener('fileoraShare', cb);

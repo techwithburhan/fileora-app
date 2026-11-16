@@ -12,7 +12,7 @@ import { Platform } from 'react-native';
 import { SITE } from '../config';
 import { DATA } from '../store/files';
 import { APP_VERSION } from '../version';
-import { PLATFORM, remote } from './remote';
+import { effectivePrefs, PLATFORM, remote } from './remote';
 import { onFlush, readJsonSafe, writeJsonSafe } from '../lib/safeFile';
 
 export type EventType = 'start' | 'open' | 'done' | 'failed' | 'error' | 'push';
@@ -33,7 +33,7 @@ let saveTimer: ReturnType<typeof setTimeout> | null = null;
 
 function allowed(): boolean {
   const s = remote.get();
-  if (!s.prefs.usage) return false;
+  if (!effectivePrefs(s.prefs).usage) return false;
   if (s.config && !s.config.tracking) return false;
   return /^[a-z0-9]{16}$/.test(s.install);
 }

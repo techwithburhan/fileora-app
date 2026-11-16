@@ -1,7 +1,9 @@
 /**
  * Settings managed from WordPress (Fileora → App Center), read from the public endpoint
  * /wp-json/fileora/v1/app-config: API tools on/off, maintenance, per-tool status, banner,
- * force update, links, popular tools. Cached on the phone so the app works offline.
+ * force update, links, popular tools, navigation, ads, promotions, the Daily Update popup,
+ * notification history and which Notification & Privacy settings people may change.
+ * Cached on the phone so the app works offline.
  *
  * Also keeps this install's own preferences: notifications, anonymous usage, dismissed banners,
  * and the random install ID used for check-ins. Saved in DocumentDir/fileora/remote.json.
@@ -24,6 +26,26 @@ export type NavItem = {
   msg: string;
 };
 export type Nav = { bar: NavItem[]; menu: NavItem[] };
+/** One notification in the Alerts history (sent from App Center). `at` = seconds. */
+export type InboxItem = { id: string; title: string; body: string; image: string; open: string; tool: string; link: string; topic: string; older: string; at: number };
+/** A Notification & Privacy setting: may people change it, and its value when they may not. */
+export type Control = { allow: boolean; def: boolean | null };
+export type ControlKey = 'notify' | 'topics' | 'quiet' | 'private' | 'usage' | 'test' | 'reset';
+export type AdPlacement = 'home_native' | 'tool_banner' | 'task_interstitial' | 'result_rect' | 'reward_adfree';
+export const AD_PLACEMENTS: AdPlacement[] = ['home_native', 'tool_banner', 'task_interstitial', 'result_rect', 'reward_adfree'];
+export type AdsConfig = {
+  on: boolean;
+  test: boolean;
+  /** ad unit ID per shown placement, or "test" for Google's test ads */
+  units: Partial<Record<AdPlacement, string>>;
+  every: number;
+  gap: number;
+  skip: number;
+  reward_hours: number;
+};
+export type PromoItem = { id: string; title: string; text: string; image: string; button: string; link: string };
+export type Promo = { title: string; intro: string; items: PromoItem[] };
+export type Popup = { id: string; title: string; text: string; button: string; link: string; freq: 'daily' | 'once' | 'always' };
 export type RemoteConfig = {
   v: number;
   api_live: boolean;
@@ -43,6 +65,13 @@ export type RemoteConfig = {
   checkin_minutes: number;
   cache_seconds: number;
   topics: string[];
+  /* app 0.7+ (older plugins send none of these: the defaults below apply) */
+  inbox: InboxItem[];
+  controls: Record<ControlKey, Control>;
+  test_push: boolean;
+  ads: AdsConfig | null;
+  promo: Promo | null;
+  popup: Popup | null;
 };
 /** Notification categories people can switch off (FCM topics). "all" = important, always on. */
 export const TOPIC_LABELS: { id: string; label: string }[] = [
@@ -66,7 +95,8 @@ type State = {
   fetchedAt: number;
   install: string;
   prefs: Prefs;
-  dismissed: { ann?: string; update?: string };
+  /** popup = "<id>|<YYYY-MM-DD>" of the Daily Update popup last closed */
+  dismissed: { ann?: string; update?: string; popup?: string };
   subscribed: string[]; // FCM topics this install is subscribed to
 };
 
@@ -130,6 +160,7 @@ function cleanNavList(v: unknown, max: number): NavItem[] {
     const open = String(i.open ?? '');
     const value = String(i.value ?? '');
     if (!NAV_OPEN.includes(open) || !value) continue;
+    if (open === 'screen' && value === 'resume') continue; // ATS Resume was removed in app 0.7
     if (open === 'url' && !/^(https:\/\/|mailto:)/i.test(value)) continue;
     out.push({
       id: String(i.id ?? '').slice(0, 40) || `${open}-${value}`,
@@ -153,6 +184,102 @@ function cleanNav(v: unknown): Nav | null {
   if (!bar.some(isOn('home'))) return null;
   if (!bar.some(isOn('settings')) && !menu.some(isOn('settings'))) return null;
   return { bar, menu };
+}
+
+const httpsOnly = (v: unknown) => (typeof v === 'string' && /^https:\/\//i.test(v) ? v : '');
+const text = (v: unknown, max: number) => (typeof v === 'string' ? v.slice(0, max) : '');
+
+function cleanInbox(v: unknown): InboxItem[] {
+  if (!Array.isArray(v)) return [];
+  const out: InboxItem[] = [];
+  for (const x of v.slice(0, 50)) {
+    if (!x || typeof x !== 'object') continue;
+    const i = x as Record<string, unknown>;
+    const id = text(i.id, 40);
+    const title = text(i.title, 120);
+    if (!id || !title) continue;
+    out.push({
+      id,
+      title,
+      body: text(i.body, 400),
+      image: httpsOnly(i.image),
+      open: text(i.open, 12) || 'home',
+      tool: text(i.tool, 40),
+      link: httpsOnly(i.link),
+      topic: text(i.topic, 20) || 'all',
+      older: text(i.older, 16),
+      at: Math.max(0, Number(i.at) || 0),
+    });
+  }
+  return out;
+}
+
+const CONTROL_DEFAULTS: Record<ControlKey, Control> = {
+  notify: { allow: true, def: true },
+  topics: { allow: true, def: null },
+  quiet: { allow: true, def: false },
+  private: { allow: true, def: false },
+  usage: { allow: true, def: true },
+  test: { allow: true, def: null },
+  reset: { allow: true, def: null },
+};
+function cleanControls(v: unknown): Record<ControlKey, Control> {
+  const out = { ...CONTROL_DEFAULTS };
+  if (!v || typeof v !== 'object') return out;
+  for (const k of Object.keys(CONTROL_DEFAULTS) as ControlKey[]) {
+    const c = (v as Record<string, unknown>)[k];
+    if (!c || typeof c !== 'object') continue;
+    const o = c as { allow?: unknown; def?: unknown };
+    out[k] = { allow: o.allow !== false, def: CONTROL_DEFAULTS[k].def === null ? null : typeof o.def === 'boolean' ? o.def : (CONTROL_DEFAULTS[k].def as boolean) };
+  }
+  return out;
+}
+
+const UNIT_RE = /^ca-app-pub-\d{10,20}\/\d{6,12}$/;
+function cleanAds(v: unknown): AdsConfig | null {
+  if (!v || typeof v !== 'object') return null;
+  const a = v as Record<string, unknown>;
+  const units: Partial<Record<AdPlacement, string>> = {};
+  if (a.units && typeof a.units === 'object')
+    for (const p of AD_PLACEMENTS) {
+      const u = (a.units as Record<string, unknown>)[p];
+      if (u === 'test' || (typeof u === 'string' && UNIT_RE.test(u))) units[p] = u;
+    }
+  const num = (x: unknown, min: number, max: number, d: number) => Math.max(min, Math.min(max, Number.isFinite(Number(x)) && x !== null && x !== '' ? Number(x) : d));
+  return {
+    on: a.on === true && Object.keys(units).length > 0,
+    test: a.test === true,
+    units,
+    every: num(a.every, 1, 20, 3),
+    gap: num(a.gap, 0, 120, 3),
+    skip: num(a.skip, 0, 20, 2),
+    reward_hours: num(a.reward_hours, 1, 72, 24),
+  };
+}
+
+function cleanPromo(v: unknown): Promo | null {
+  if (!v || typeof v !== 'object') return null;
+  const p = v as Record<string, unknown>;
+  const items: PromoItem[] = [];
+  if (Array.isArray(p.items))
+    for (const x of p.items.slice(0, 20)) {
+      if (!x || typeof x !== 'object') continue;
+      const i = x as Record<string, unknown>;
+      const title = text(i.title, 80);
+      if (!title) continue;
+      items.push({ id: text(i.id, 16) || title, title, text: text(i.text, 400), image: httpsOnly(i.image), button: text(i.button, 30), link: httpsOnly(i.link) });
+    }
+  return items.length ? { title: text(p.title, 60) || 'Offers & updates', intro: text(p.intro, 300), items } : null;
+}
+
+function cleanPopup(v: unknown): Popup | null {
+  if (!v || typeof v !== 'object') return null;
+  const p = v as Record<string, unknown>;
+  const title = text(p.title, 80);
+  const link = httpsOnly(p.link);
+  if (!title || !link) return null;
+  const freq = p.freq === 'once' || p.freq === 'always' ? p.freq : 'daily';
+  return { id: text(p.id, 20) || title, title, text: text(p.text, 240), button: text(p.button, 24) || 'Learn more', link, freq };
 }
 
 /** Accepts only what the app understands, so a bad answer can't break it. */
@@ -184,6 +311,12 @@ function clean(j: unknown): RemoteConfig | null {
     checkin_minutes: Math.max(5, Math.min(1440, Number(c.checkin_minutes) || 30)),
     cache_seconds: Math.max(0, Math.min(3600, Number(c.cache_seconds) || 60)),
     topics: arr(c.topics),
+    inbox: cleanInbox(c.inbox),
+    controls: cleanControls(c.controls),
+    test_push: c.test_push === true,
+    ads: cleanAds(c.ads),
+    promo: cleanPromo(c.promo),
+    popup: cleanPopup(c.popup),
   };
 }
 
@@ -243,7 +376,7 @@ export const remote = {
   setTopic(id: string, on: boolean) {
     set({ prefs: { ...state.prefs, topics: { ...state.prefs.topics, [id]: on } } });
   },
-  dismiss(kind: 'ann' | 'update', id: string) {
+  dismiss(kind: 'ann' | 'update' | 'popup', id: string) {
     set({ dismissed: { ...state.dismissed, [kind]: id } });
   },
   setSubscribed(list: string[]) {
@@ -277,3 +410,24 @@ export function cmpVersion(a: string, b: string): number {
   }
   return 0;
 }
+
+/* ---------- Notification & Privacy settings managed from App Center ---------- */
+
+/** A setting's rule from App Center (everything allowed with an older plugin or offline). */
+export function control(k: ControlKey): Control {
+  return state.config?.controls?.[k] ?? CONTROL_DEFAULTS[k];
+}
+
+/**
+ * The person's choices with App Center's locks applied: a locked setting uses App Center's
+ * default instead of what the person chose earlier.
+ */
+export function effectivePrefs(p: Prefs = state.prefs): Prefs {
+  const pick = (k: 'notify' | 'quiet' | 'private' | 'usage') => {
+    const c = control(k);
+    return c.allow || c.def === null ? p[k] : c.def;
+  };
+  const topics = control('topics').allow ? p.topics : Object.fromEntries(TOPIC_LABELS.map(t => [t.id, true]));
+  return { ...p, notify: pick('notify'), quiet: pick('quiet'), private: pick('private'), usage: pick('usage'), topics };
+}
+

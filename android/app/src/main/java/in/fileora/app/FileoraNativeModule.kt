@@ -19,6 +19,7 @@ import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
+import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.WritableArray
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -32,6 +33,7 @@ import kotlin.math.roundToInt
  *  - images shared to Fileora from the Gallery (Android share sheet, ACTION_SEND / SEND_MULTIPLE)
  *  - PDF pages as images for the scanner (Android's PdfRenderer)
  *  - handing a file to a cloud app installed on the phone (Google Drive, JioAICloud, OneDrive)
+ *  - notifications while the app is open, the notification check and its phone settings (FileoraNotify)
  */
 class FileoraNativeModule(private val ctx: ReactApplicationContext) : ReactContextBaseJavaModule(ctx) {
 
@@ -225,9 +227,57 @@ class FileoraNativeModule(private val ctx: ReactApplicationContext) : ReactConte
     promise.resolve(true)
   }
 
+  /** A notification that arrived while the app is open: shown like one from Firebase (sound, channel). */
+  @ReactMethod
+  fun showNotification(n: ReadableMap, promise: Promise) {
+    try {
+      val str = { k: String -> if (n.hasKey(k) && !n.isNull(k)) n.getString(k) ?: "" else "" }
+      val flag = { k: String -> n.hasKey(k) && !n.isNull(k) && n.getBoolean(k) }
+      promise.resolve(FileoraNotify.show(ctx, str("id"), str("title"), str("body"), flag("quiet"), flag("private"), str("data")))
+    } catch (e: Exception) {
+      promise.reject("notify", e.message, e)
+    }
+  }
+
+  /** What can stop notifications on this phone (Settings → Check notifications). */
+  @ReactMethod
+  fun notificationStatus(promise: Promise) {
+    try {
+      val m = Arguments.createMap()
+      for ((k, v) in FileoraNotify.status(ctx)) {
+        when (v) {
+          is Boolean -> m.putBoolean(k, v)
+          is Int -> m.putInt(k, v)
+          else -> m.putString(k, v.toString())
+        }
+      }
+      promise.resolve(m)
+    } catch (e: Exception) {
+      promise.reject("status", e.message, e)
+    }
+  }
+
+  /** Opens the phone setting that fixes a notification problem: "channel", "battery" or "autostart". */
+  @ReactMethod
+  fun openNotificationFix(kind: String, promise: Promise) {
+    val opened = when (kind) {
+      "channel" -> if (FileoraNotify.start(ctx, FileoraNotify.channelSettings(ctx))) "channel" else ""
+      "autostart" -> FileoraNotify.openAutostart(ctx)
+      else -> if (FileoraNotify.start(ctx, FileoraNotify.appDetails(ctx))) "app" else ""
+    }
+    promise.resolve(opened)
+  }
+
+  /** Data of the notification (shown while the app was open) that Fileora was opened from, once. */
+  @ReactMethod
+  fun takePushOpen(promise: Promise) {
+    promise.resolve(PushInbox.take())
+  }
+
   companion object {
     const val NAME = "FileoraNative"
     const val EVENT_SHARE = "fileoraShare"
+    const val EVENT_PUSH = "fileoraPushOpen"
     private const val MAX_FILES = 20
     private const val MAX_BYTES = 60L * 1024 * 1024
     private const val MAX_PAGES = 30

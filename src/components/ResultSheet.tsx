@@ -18,6 +18,7 @@ import { toolById } from '../data/tools';
 import { catColor, Theme } from '../theme';
 import { type } from '../typography';
 import { SAVED_WHERE } from '../store/files';
+import AdBanner from '../ads/AdBanner';
 
 export default function ResultSheet({
   file,
@@ -102,6 +103,8 @@ export default function ResultSheet({
           <PressableScale onPress={onClose} accessibilityRole="button" style={[styles.btn, { backgroundColor: theme.surface2 }]}>
             <Text style={[type.button, { color: theme.ink }]}>Done</Text>
           </PressableScale>
+          {/* App Center → Ads: 300×250 at the very bottom, apart from the buttons */}
+          <AdBanner placement="result_rect" theme={theme} />
         </ScrollView>
       </Animated.View>
       <Confetti play={!!file} />

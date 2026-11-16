@@ -13,6 +13,7 @@ import FileThumb from '../components/FileThumb';
 import Icon from '../components/Icon';
 import PressableScale from '../components/PressableScale';
 import ResultSheet from '../components/ResultSheet';
+import { afterTask, prepareInterstitial } from '../ads/ads';
 import { NATIVE, OptionDef } from '../data/nativeTools';
 import { toolById } from '../data/tools';
 import { mergePdfs, numberPages, watermarkPdf, PageNumberOptions, WatermarkOptions } from '../lib/pdf';
@@ -48,6 +49,10 @@ export default function ProcessScreen({ theme }: { theme: Theme }) {
   const cancel = useRef({ cancelled: false });
   const keepGoing = useKeepGoing();
 
+  // a full-screen ad (if App Center shows one after tasks) loads in the background meanwhile
+  useEffect(() => {
+    prepareInterstitial();
+  }, []);
   useEffect(() => {
     if (tool) store.logOpen(tool.id);
     return () => {
@@ -141,6 +146,7 @@ export default function ProcessScreen({ theme }: { theme: Theme }) {
       }
       setBusy(null);
       setFiles([]);
+      await afterTask(); // App Center → Ads: maybe a full-screen ad first, within its limits
       setResult(rec);
     } catch (e) {
       setBusy(null);

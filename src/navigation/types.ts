@@ -7,7 +7,7 @@ export type TabParamList = {
   Tools: { cat?: CategoryId | 'all'; focus?: number } | undefined;
   Scanner: undefined;
   Files: { filter?: FileFilter } | undefined;
-  Resume: undefined;
+  Alerts: undefined;
   Settings: undefined;
 };
 
@@ -34,6 +34,8 @@ export type RootStackParamList = {
   RecycleBin: undefined;
   Cloud: undefined;
   Blog: undefined;
+  /** App Center → Promotions */
+  Promo: undefined;
 };
 
 declare global {

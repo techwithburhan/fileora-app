@@ -26,6 +26,24 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - name: Install JavaScript packages
         run: npm ci
+      # AdMob: Fileora's own App ID from the repository variable ADMOB_ANDROID_APP_ID (Settings →
+      # Secrets and variables → Actions → Variables). Without it the APK keeps Google's sample App ID,
+      # which can only show test ads (App Center → Ads → "Test ads").
+      - name: AdMob App ID
+        env:
+          ADMOB_ID: ${{ vars.ADMOB_ANDROID_APP_ID }}
+        run: |
+          if [ -n "$ADMOB_ID" ]; then
+            if ! echo "$ADMOB_ID" | grep -Eq '^ca-app-pub-[0-9]{10,20}~[0-9]{6,12}$'; then
+              echo "::error::ADMOB_ANDROID_APP_ID must be an AdMob App ID like ca-app-pub-1234567890123456~1234567890"
+              exit 1
+            fi
+            node -e "const fs=require('fs');const j=JSON.parse(fs.readFileSync('app.json','utf8'));j['react-native-google-mobile-ads'].android_app_id=process.env.ADMOB_ID;fs.writeFileSync('app.json',JSON.stringify(j,null,2)+'\n')"
+            sed -i 's/ADMOB_APP_ID_LIVE = false/ADMOB_APP_ID_LIVE = true/' src/ads/build.ts
+            echo "AdMob: Fileora's App ID"
+          else
+            echo "::notice::No ADMOB_ANDROID_APP_ID variable: Google's sample AdMob App ID, test ads only"
+          fi
       - name: Check the code (TypeScript + ESLint, scanner page up to date)
         run: |
           node scripts/build-editor.js && git diff --exit-code src/scanner/editorHtml.ts

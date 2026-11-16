@@ -23,14 +23,14 @@ export const DEFAULT_NAV: Nav = {
     item('tools', 'Tools', 'grid', 'tools'),
     item('scanner', 'Scanner', 'scan', 'scanner'),
     item('files', 'Files', 'folder', 'files'),
-    item('resume', 'Resume', 'resume', 'resume'),
+    item('alerts', 'Alerts', 'bell', 'alerts'),
     item('settings', 'Settings', 'settings', 'settings'),
   ],
   menu: [
     item('home', 'Home', 'home', 'home'),
     item('scanner', 'Scanner', 'scan', 'scanner'),
     item('files', 'Files', 'folder', 'files'),
-    item('resume', 'ATS Resume', 'resume', 'resume'),
+    item('promo', 'Promotions', 'party', 'promo'),
     item('blog', 'Blog', 'blog', 'blog'),
     item('settings', 'Settings', 'settings', 'settings'),
     item('contact', 'Contact us', 'mail', 'contact'),
@@ -44,17 +44,26 @@ export const TAB_OF: Record<string, keyof TabParamList> = {
   tools: 'Tools',
   scanner: 'Scanner',
   files: 'Files',
-  resume: 'Resume',
+  alerts: 'Alerts',
   settings: 'Settings',
 };
 
+/** Promotions only while App Center has something to show (an older plugin never does). */
+function withoutEmptyPromo(nav: Nav, hasPromo: boolean): Nav {
+  if (hasPromo) return nav;
+  const keep = (i: NavItem) => !(i.open === 'screen' && i.value === 'promo');
+  return { bar: nav.bar.filter(keep), menu: nav.menu.filter(keep) };
+}
+
 export function currentNav(): Nav {
-  return remote.get().config?.nav ?? DEFAULT_NAV;
+  const c = remote.get().config;
+  return withoutEmptyPromo(c?.nav ?? DEFAULT_NAV, !!c?.promo);
 }
 
 export function useNav(): Nav {
   const nav = useRemote(s => s.config?.nav ?? null);
-  return useMemo(() => nav ?? DEFAULT_NAV, [nav]);
+  const hasPromo = useRemote(s => !!s.config?.promo);
+  return useMemo(() => withoutEmptyPromo(nav ?? DEFAULT_NAV, hasPromo), [nav, hasPromo]);
 }
 
 export function navIcon(i: NavItem): IconName {
@@ -102,6 +111,10 @@ export function openNavItem(i: NavItem) {
     if (tab === 'Tools') nav.navigate('Tabs', { screen: 'Tools', params: { cat: 'all' } });
     else if (tab) nav.navigate('Tabs', { screen: tab } as never);
     else if (i.value === 'blog') nav.navigate('Blog');
+    else if (i.value === 'promo') {
+      if (remote.get().config?.promo) nav.navigate('Promo');
+      else Alert.alert(i.label, 'There are no promotions right now.');
+    }
     else if (i.value === 'activity') nav.navigate('Activity', { tab: 'downloaded' });
     else if (i.value === 'cloud') nav.navigate('Cloud');
     else if (i.value === 'bin') nav.navigate('RecycleBin');

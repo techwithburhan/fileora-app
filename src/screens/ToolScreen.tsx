@@ -2,6 +2,7 @@ import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import StackHeader from '../components/StackHeader';
 import Icon, { IconName } from '../components/Icon';
 import PressableScale from '../components/PressableScale';
@@ -15,9 +16,11 @@ import { store } from '../store/store';
 import { RootStackParamList } from '../navigation/types';
 import { trackTool } from '../analytics';
 import { catColor, Theme } from '../theme';
+import AdBanner from '../ads/AdBanner';
 
 export default function ToolScreen({ theme }: { theme: Theme }) {
   const nav = useNavigation();
+  const insets = useSafeAreaInsets();
   const { params } = useRoute<RouteProp<RootStackParamList, 'Tool'>>();
   useRemote(s => s.config); // re-render when App Center settings change
   const tool = toolById(params.id);
@@ -103,6 +106,8 @@ export default function ToolScreen({ theme }: { theme: Theme }) {
           </>
         )}
       </ScrollView>
+      {/* App Center → Ads: anchored banner under a divider, below the page's content */}
+      <AdBanner placement="tool_banner" theme={theme} style={{ paddingBottom: insets.bottom }} />
     </View>
   );
 }

@@ -5,7 +5,6 @@ export const SITE_HOSTS = ['www.fileora.in', 'fileora.in'];
 export const toolUrl = (slug: string) => `${SITE}/${slug}/`;
 
 export const PAGES = {
-  resume: `${SITE}/ats-resume-builder/`,
   blog: `${SITE}/blog/`,
   apiStatus: `${SITE}/api-status/`,
 };

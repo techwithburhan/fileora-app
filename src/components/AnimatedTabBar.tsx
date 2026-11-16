@@ -1,7 +1,8 @@
 /**
  * Bottom navigation with a pill that slides to the active item and icons that spring up (Reanimated).
  * The items come from App Center → Navigation (built-in defaults: Home, Tools, Scanner, Files,
- * Resume, Settings). Items for app tabs switch tabs; tools, categories and web pages open on top.
+ * Alerts, Settings). Items for app tabs switch tabs; tools, categories and web pages open on top.
+ * Alerts shows the number of unread notifications.
  */
 import React, { useEffect } from 'react';
 import { LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -10,6 +11,7 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import Icon, { IconName } from './Icon';
 import { navIcon, openNavItem, TAB_OF, useNav } from '../navigation/nav';
 import { Theme } from '../theme';
+import { useUnread } from '../remote/inbox';
 
 const SMOOTH = { duration: 260, easing: Easing.out(Easing.cubic) };
 
@@ -18,6 +20,7 @@ function TabItem({
   label,
   icon,
   badge,
+  count,
   dim,
   theme,
   onPress,
@@ -26,6 +29,8 @@ function TabItem({
   label: string;
   icon: IconName;
   badge?: string;
+  /** unread notifications (Alerts) */
+  count?: number;
   dim?: boolean;
   theme: Theme;
   onPress: () => void;
@@ -41,7 +46,7 @@ function TabItem({
       onPress={onPress}
       accessibilityRole="tab"
       accessibilityState={{ selected: focused, disabled: dim }}
-      accessibilityLabel={badge ? `${label}, ${badge}` : label}
+      accessibilityLabel={badge ? `${label}, ${badge}` : count ? `${label}, ${count} unread` : label}
       style={[styles.item, dim && styles.dim]}>
       <Animated.View style={iconStyle}>
         <Icon name={icon} size={22} color={color} width={focused ? 2.3 : 2} />
@@ -49,6 +54,12 @@ function TabItem({
           <Text style={[styles.badge, { backgroundColor: theme.warnBg, color: theme.warnInk, borderColor: theme.warnLine }]} maxFontSizeMultiplier={1.1}>
             {badge}
           </Text>
+        ) : count ? (
+          <View style={[styles.count, { borderColor: theme.header }]}>
+            <Text style={styles.countText} maxFontSizeMultiplier={1.1}>
+              {count > 99 ? '99+' : count}
+            </Text>
+          </View>
         ) : null}
       </Animated.View>
       <Text style={[styles.label, focused && styles.labelOn, { color }]} numberOfLines={1} maxFontSizeMultiplier={1.3}>
@@ -60,6 +71,7 @@ function TabItem({
 
 export default function AnimatedTabBar({ state, navigation, insets, theme }: BottomTabBarProps & { theme: Theme }) {
   const items = useNav().bar;
+  const unread = useUnread();
   const w = useSharedValue(0);
   const x = useSharedValue(0);
   const count = Math.max(1, items.length);
@@ -95,6 +107,7 @@ export default function AnimatedTabBar({ state, navigation, insets, theme }: Bot
               label={it.label}
               icon={navIcon(it)}
               badge={it.status === 'soon' ? 'Soon' : undefined}
+              count={tab === 'Alerts' && it.status === 'on' ? unread : undefined}
               dim={it.status === 'off'}
               theme={theme}
               onPress={() => {
@@ -124,5 +137,7 @@ const styles = StyleSheet.create({
   dim: { opacity: 0.45 },
   label: { fontSize: 11, fontWeight: '500' },
   labelOn: { fontWeight: '800' },
+  count: { position: 'absolute', top: -5, left: 13, minWidth: 18, height: 18, paddingHorizontal: 4, borderRadius: 9, backgroundColor: '#D92D20', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#FFFFFF' },
+  countText: { color: '#FFFFFF', fontSize: 10.5, fontWeight: '800' },
   badge: { position: 'absolute', top: -6, left: 14, fontSize: 8.5, fontWeight: '800', paddingHorizontal: 4, paddingVertical: 1, borderRadius: 6, overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth },
 });

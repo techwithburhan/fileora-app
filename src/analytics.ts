@@ -5,7 +5,7 @@
  */
 import { getApp } from '@react-native-firebase/app';
 import { getAnalytics, logEvent, setAnalyticsCollectionEnabled } from '@react-native-firebase/analytics';
-import { remote } from './remote/remote';
+import { effectivePrefs } from './remote/remote';
 
 /** Follows Settings → "Share anonymous usage". */
 export function setAnalyticsEnabled(on: boolean) {
@@ -25,7 +25,7 @@ function getAnalytics0() {
 }
 
 function analytics() {
-  if (!remote.get().prefs.usage) return null;
+  if (!effectivePrefs().usage) return null;
   try {
     return getAnalytics(getApp());
   } catch {

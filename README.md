@@ -1,6 +1,18 @@
-# Fileora app (React Native) – version 0.4
+# Fileora app (React Native) – version 0.7
 
 Package `in.fileora.app` · React Native 0.88 (New Architecture) · Android 7+ · light/dark mode (phone setting or your choice in Settings)
+
+## What's new in 0.7
+| Part | Details |
+|---|---|
+| **Ads** | Google AdMob, placed as in the approved designs and managed in WordPress (App Center → Ads): a native card on Home, a banner at the bottom of a tool's page, a full-screen ad after a finished task (limits: every N tasks, N minutes apart, not in a new install's first tasks), a 300×250 at the bottom of the result sheet, and an opt-in rewarded video for ad-free hours (Settings → Ads & privacy). Google's consent form where required; "Privacy choices" in Settings. Builds use Google's sample App IDs (test ads only) until the repository variables `ADMOB_ANDROID_APP_ID` / `ADMOB_IOS_APP_ID` are set (Settings → Secrets and variables → Actions → Variables). Code: `src/ads/`. |
+| **Alerts** | New bottom-bar tab with the notification history (App Center sends the last 60 days; notifications received while the app is open are kept too) and an unread badge that clears when Alerts is opened. `src/remote/inbox.ts`, `src/screens/AlertsScreen.tsx`. |
+| **Notifications** | While the app is open, Android now shows a real notification with the Fileora sound (it used to show a plain pop-up without sound); iOS shows a banner with sound. **Check notifications** in Settings shows what can stop notifications (permission, the channel's sound and pop-up, battery limits, the phone maker's Autostart) with buttons to the right phone settings, and **Send a test notification** (arrives after 10 seconds, so the app can be closed first). |
+| **Notification & Privacy** | App Center can lock each setting (notifications on/off, categories, quiet, lock-screen privacy, anonymous usage, test button, reset): a locked option is hidden and uses App Center's default. |
+| **Promotions** | Promotions screen (☰ menu by default; App Center → Navigation can move it to the bar) with cards from App Center → Promotions, and a Home card linking to it. Hidden while App Center has none. |
+| **Daily Update** | A card that slides up at the bottom of Home with a bold heading, a paragraph and a button to a web page (App Center → Promotions): once a day, once, or every time; × closes it; it never blocks Home. |
+| **ATS Resume** | Removed: tab, screen, menu item and Home entries. The Home hero's second button is now Scanner. |
+| **Advertising ID** | Allowed for the ads (the Google Mobile Ads SDK adds it). Firebase Analytics still doesn't collect it. Update the Play Console Data safety form and the App Store privacy answers before publishing. |
 
 ## What's new in 0.4
 | Part | Details |
@@ -57,7 +69,8 @@ Node 22, JDK 17, Android Studio. `npm ci`, then `npx react-native run-android` w
 | Path | What |
 |---|---|
 | `App.tsx` | Native stack (Tabs, Tool, Process, Web, Activity, ScanReview, Blog) + 6 bottom tabs, splash, menu |
-| `src/screens/` | Home, Tools, Tool, Process (native tools), Scanner, ScanEditor, ScanDoc, Shared, Files, Cloud, RecycleBin, Activity, Resume, Settings, Blog, Web |
+| `src/screens/` | Home, Tools, Tool, Process (native tools), Scanner, ScanEditor, ScanDoc, Shared, Files, Cloud, RecycleBin, Activity, Alerts, Promo, Settings, Blog, Web |
+| `src/ads/` | AdMob placements (native card, banners, full-screen after tasks, rewarded ad-free hours), consent, limits |
 | `src/scanner/editor.html` | Scanner editor page (edge detection, perspective, filters); `npm run editor` regenerates `editorHtml.ts` |
 | `android/app/src/main/java/in/fileora/app/FileoraNativeModule.kt` | Share-to-Fileora, PDF pages as images, cloud app hand-off |
 | `src/store/` | On-phone state (files, usage history, theme), derived numbers for Home, file helpers |

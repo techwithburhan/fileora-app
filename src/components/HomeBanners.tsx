@@ -83,7 +83,8 @@ export default function HomeBanners({ theme }: { theme: Theme }) {
   const ann = config?.announcement && dismissed.ann !== config.announcement.id ? config.announcement : null;
   const latest = config?.update.latest || '';
   const showUpdate = !!latest && cmpVersion(APP_VERSION, latest) < 0 && dismissed.update !== latest;
-  const showNotify = (Platform.OS === 'android' || Platform.OS === 'ios') && pushAvailable() && perm === 'denied' && Date.now() - askedAt > ASK_AGAIN;
+  const lockedOff = config?.controls && !config.controls.notify.allow && config.controls.notify.def === false; // App Center: notifications off
+  const showNotify = (Platform.OS === 'android' || Platform.OS === 'ios') && pushAvailable() && !lockedOff && perm === 'denied' && Date.now() - askedAt > ASK_AGAIN;
 
   const turnOn = async () => {
     const r = await enableNotifications();

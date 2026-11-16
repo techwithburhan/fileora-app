@@ -5,7 +5,6 @@ import Svg, { Path } from 'react-native-svg';
 const P = {
   home: 'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
   grid: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
-  resume: 'M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h5M9 8h2',
   blog: 'M4 5h16M4 10h16M4 15h10M4 20h7',
   mail: 'M3 6h18v12H3zM3 7l9 6 9-6',
   search: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4',

@@ -1,6 +1,6 @@
 /**
  * Side menu: all tools and the 7 tool categories, the "Fileora" section (from App Center →
- * Navigation; built-in: Home, Scanner, Files, ATS Resume, Blog, Settings, Contact us, API Status)
+ * Navigation; built-in: Home, Scanner, Files, Promotions, Blog, Settings, Contact us, API Status)
  * and the information pages. Slides in from the right; its rows arrive one after another.
  */
 import React, { useEffect, useState } from 'react';

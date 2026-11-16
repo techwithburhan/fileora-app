@@ -18,8 +18,11 @@ class MainActivity : ReactActivity() {
   /** react-native-screens: don't restore old fragments after the process was killed (avoids a crash). */
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(null)
-    // opened from the share sheet (Gallery → Share → Fileora)
-    if (savedInstanceState == null) ShareInbox.offer(intent)
+    // opened from the share sheet (Gallery → Share → Fileora), or from a notification shown while open
+    if (savedInstanceState == null) {
+      ShareInbox.offer(intent)
+      PushInbox.offer(intent)
+    }
   }
 
   /** Fileora was already open: keep the new share and tell JavaScript. */
@@ -28,6 +31,9 @@ class MainActivity : ReactActivity() {
     setIntent(intent)
     if (ShareInbox.offer(intent)) {
       reactHost?.currentReactContext?.emitDeviceEvent(FileoraNativeModule.EVENT_SHARE)
+    }
+    if (PushInbox.offer(intent)) {
+      reactHost?.currentReactContext?.emitDeviceEvent(FileoraNativeModule.EVENT_PUSH)
     }
   }
 

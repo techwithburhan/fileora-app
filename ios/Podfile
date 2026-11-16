@@ -11,8 +11,12 @@ prepare_react_native_project!
 # React Native Firebase (notifications, analytics) gets the Firebase iOS SDK through Swift Package
 # Manager, which needs dynamic frameworks (see rnfirebase.io/ios-spm).
 use_frameworks! :linkage => :dynamic
-# Firebase Analytics without the advertising identifier (IDFA): Fileora shows no ads.
+# Firebase Analytics without the advertising identifier (IDFA): analytics doesn't need it. The ads
+# (react-native-google-mobile-ads, App Center → Ads) don't ask for tracking permission either.
 $RNFirebaseAnalyticsWithoutAdIdSupport = true
+# Google's ads SDK ships as a static binary: build its React Native module as a static framework
+# so it links inside the dynamic-frameworks setup above.
+$RNGoogleMobileAdsAsStaticFramework = true
 
 target 'FileoraApp' do
   config = use_native_modules!

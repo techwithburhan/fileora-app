@@ -1,5 +1,5 @@
 /**
- * Fileora app – animated splash, 6 tabs (Home, Tools, Scanner, Files, Resume, Settings) + side menu,
+ * Fileora app – animated splash, 6 tabs (Home, Tools, Scanner, Files, Alerts, Settings) + side menu,
  * native Merge / Watermark / Page numbers on the phone, server tools through the public fileora.in
  * API, a document scanner, and files and activity kept on this phone.
  *
@@ -23,7 +23,8 @@ import BlogScreen from './src/screens/BlogScreen';
 import FilesScreen from './src/screens/FilesScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import ProcessScreen from './src/screens/ProcessScreen';
-import ResumeScreen from './src/screens/ResumeScreen';
+import AlertsScreen from './src/screens/AlertsScreen';
+import PromoScreen from './src/screens/PromoScreen';
 import ScannerScreen from './src/screens/ScannerScreen';
 import ScanEditorScreen from './src/screens/ScanEditorScreen';
 import ScanDocScreen from './src/screens/ScanDocScreen';
@@ -42,9 +43,11 @@ import { Theme, useTheme } from './src/theme';
 import RemoteGate from './src/components/RemoteGate';
 import ErrorBoundary, { installGlobalErrorHandler } from './src/components/ErrorBoundary';
 import { flushAll } from './src/lib/safeFile';
-import { remote } from './src/remote/remote';
+import { effectivePrefs, remote } from './src/remote/remote';
 import { telemetry } from './src/remote/telemetry';
 import { onNavigationReady, startPush, syncTopics } from './src/remote/push';
+import { inbox } from './src/remote/inbox';
+import { loadAds } from './src/ads/ads';
 
 /** Reads App Center settings; reports only real server answers as errors (not "offline"). */
 installGlobalErrorHandler();
@@ -67,7 +70,7 @@ function TabsScreen({ theme }: { theme: Theme }) {
       <Tabs.Screen name="Tools">{() => <ToolsScreen theme={theme} />}</Tabs.Screen>
       <Tabs.Screen name="Scanner">{() => <ScannerScreen theme={theme} />}</Tabs.Screen>
       <Tabs.Screen name="Files">{() => <FilesScreen theme={theme} />}</Tabs.Screen>
-      <Tabs.Screen name="Resume">{() => <ResumeScreen theme={theme} />}</Tabs.Screen>
+      <Tabs.Screen name="Alerts">{() => <AlertsScreen theme={theme} />}</Tabs.Screen>
       <Tabs.Screen name="Settings">{() => <SettingsScreen theme={theme} />}</Tabs.Screen>
     </Tabs.Navigator>
   );
@@ -80,8 +83,10 @@ export default function App() {
   const [navReady, setNavReady] = useState(false);
   const lastCheckin = useRef(0);
   useEffect(() => {
-    // files, activity and the dark-mode choice saved on this phone
+    // files, activity and the dark-mode choice saved on this phone; the Alerts history
     store.load();
+    inbox.load();
+    loadAds();
     // App Center settings (cached copy first, so the app works offline), then check in
     const every = () => (remote.get().config?.checkin_minutes ?? 30) * 60000;
     const checkin = () => {
@@ -98,7 +103,7 @@ export default function App() {
     remote
       .load()
       .then(() => {
-        setAnalyticsEnabled(remote.get().prefs.usage);
+        setAnalyticsEnabled(effectivePrefs().usage);
         return telemetry.load();
       })
       .then(() => refreshConfig(true))
@@ -181,6 +186,7 @@ export default function App() {
                 <Stack.Screen name="RecycleBin">{() => <RecycleBinScreen theme={theme} />}</Stack.Screen>
                 <Stack.Screen name="Cloud">{() => <CloudScreen theme={theme} />}</Stack.Screen>
                 <Stack.Screen name="Blog">{() => <BlogScreen theme={theme} />}</Stack.Screen>
+                <Stack.Screen name="Promo">{() => <PromoScreen theme={theme} />}</Stack.Screen>
                 <Stack.Screen name="Web" options={{ animation: 'slide_from_bottom' }}>
                   {() => <WebScreen theme={theme} />}
                 </Stack.Screen>

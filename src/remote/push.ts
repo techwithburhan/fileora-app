@@ -12,9 +12,14 @@
  *
  * Android 13+ needs the POST_NOTIFICATIONS permission. It is asked only after the person taps
  * "Turn on" (Home card or Settings), never at first launch; a "no" is respected.
+ *
+ * While the app is open: Android shows nothing by itself, so the app shows the notification
+ * (native FileoraNotify, same channel and Fileora sound); iOS shows it with sound because of
+ * firebase.json ("messaging_ios_foreground_presentation_options"). Either way it goes into the
+ * Alerts history. App Center can lock settings (Notification & Privacy): effectivePrefs().
  */
-import { Alert, Linking, PermissionsAndroid, Platform } from 'react-native';
-import { ANDROID_PACKAGE } from '../config';
+import { Linking, PermissionsAndroid, Platform } from 'react-native';
+import { ANDROID_PACKAGE, SITE } from '../config';
 import { getApp } from '@react-native-firebase/app';
 import {
   AuthorizationStatus,
@@ -36,7 +41,9 @@ import { openLink } from '../lib/links';
 import { navigationRef } from '../navigation/types';
 import { toolById } from '../data/tools';
 import { APP_VERSION } from '../version';
-import { defaultPrefs, remote, TOPIC_LABELS } from './remote';
+import { defaultPrefs, effectivePrefs, PLATFORM, remote, TOPIC_LABELS } from './remote';
+import { inbox } from './inbox';
+import { native } from '../lib/native';
 import { telemetry } from './telemetry';
 import { featureMessage, screenState } from '../navigation/nav';
 
@@ -163,11 +170,12 @@ let chain: Promise<void> = Promise.resolve();
 
 function wanted(perm: 'granted' | 'denied'): string[] {
   const s = remote.get();
-  if (!s.prefs.notify || perm !== 'granted') return [];
+  const p = effectivePrefs(); // App Center may lock some choices
+  if (!p.notify || perm !== 'granted') return [];
   const offered = s.config?.topics?.length ? s.config.topics : TOPIC_LABELS.map(t => t.id);
-  const cats = TOPIC_LABELS.map(t => t.id).filter(id => offered.includes(id) && s.prefs.topics[id] !== false);
+  const cats = TOPIC_LABELS.map(t => t.id).filter(id => offered.includes(id) && p.topics[id] !== false);
   // iOS: lock-screen privacy is a setting of the iPhone itself ("Show Previews"), not a topic
-  const modes = [...(s.prefs.quiet ? ['mode-quiet'] : []), ...(s.prefs.private && !IOS ? ['mode-private'] : [])];
+  const modes = [...(p.quiet ? ['mode-quiet'] : []), ...(p.private && !IOS ? ['mode-private'] : [])];
   return ['all', platformTopic, versionTopic(), ...cats, ...modes];
 }
 
@@ -209,7 +217,7 @@ async function doSync() {
 
 /* ---------- opening a notification ---------- */
 
-type Data = { open?: string; tool?: string; link?: string; id?: string; topic?: string };
+type Data = { open?: string; tool?: string; link?: string; id?: string; topic?: string; title?: string; body?: string };
 let pending: Data | null = null;
 
 export { openLink } from '../lib/links';
@@ -227,6 +235,11 @@ function go(d: Data) {
     else navigationRef.navigate('Tabs', { screen: 'Scanner' });
   }
   else if (open === 'files') navigationRef.navigate('Tabs', { screen: 'Files' });
+  else if (open === 'alerts') navigationRef.navigate('Tabs', { screen: 'Alerts' });
+  else if (open === 'promo') {
+    if (remote.get().config?.promo) navigationRef.navigate('Promo');
+    else navigationRef.navigate('Tabs', { screen: 'Alerts' });
+  }
   else if (open === 'link' && d.link) openLink(d.link);
   else if (open === 'update') {
     const url = remote.get().config?.update.url || d.link;
@@ -234,10 +247,46 @@ function go(d: Data) {
   } else navigationRef.navigate('Tabs', { screen: 'Home' });
 }
 
+/** Keeps a notification in the Alerts history (those sent from App Center are there anyway). */
+function remember(msg: RemoteMessage) {
+  const d = (msg.data || {}) as Data;
+  const title = msg.notification?.title || d.title || '';
+  if (!title) return;
+  inbox.add({
+    id: String(d.id || msg.messageId || `${Date.now()}`).slice(0, 40),
+    title: title.slice(0, 120),
+    body: String(msg.notification?.body || d.body || '').slice(0, 400),
+    image: '',
+    open: d.open || 'home',
+    tool: d.tool || '',
+    link: d.link || '',
+    topic: d.topic || 'all',
+    older: '',
+  });
+}
+
 function opened(msg: RemoteMessage | null) {
   if (!msg) return;
   const d = (msg.data || {}) as Data;
+  remember(msg);
   telemetry.track('push', undefined, 0, d.id ? `opened ${String(d.id).slice(0, 40)}` : 'opened');
+  go(d);
+}
+
+/** Android: a notification shown by the app (while it was open) was tapped. */
+function openedLocal(json: string | null) {
+  if (!json) return;
+  try {
+    const d = JSON.parse(json) as Data;
+    telemetry.track('push', undefined, 0, d.id ? `opened ${String(d.id).slice(0, 40)}` : 'opened');
+    go(d);
+  } catch {
+    // damaged data: nothing to open
+  }
+}
+
+/** Opens what a history item points to (Alerts screen). */
+export function openInboxItem(d: Data) {
   go(d);
 }
 
@@ -255,18 +304,72 @@ export function startPush(): () => void {
   const m = messaging();
   if (!m) return () => {};
   getInitialNotification(m).then(opened).catch(() => {});
+  native.takePushOpen().then(openedLocal).catch(() => {});
+  const offLocal = native.onPushOpen(() => native.takePushOpen().then(openedLocal).catch(() => {}));
   const offOpen = onNotificationOpenedApp(m, opened);
-  // While the app is open Android doesn't show the notification, so show it here.
-  const offMsg = onMessage(m, msg => {
+  // While the app is open: keep it in Alerts, and on Android show it like any other notification
+  // (Fileora sound, pop-up, lock-screen privacy). iOS shows it itself (firebase.json).
+  const offMsg = onMessage(m, async msg => {
     const n = msg.notification;
-    if (!n?.title && !n?.body) return;
-    if (remote.get().prefs.quiet) return; // quiet notifications: no pop-up inside the app either
     const d = (msg.data || {}) as Data;
-    const canOpen = d.open && d.open !== 'home';
-    Alert.alert(n?.title || 'Fileora', n?.body || '', canOpen ? [{ text: 'Close', style: 'cancel' }, { text: 'Open', onPress: () => opened(msg) }] : [{ text: 'OK' }]);
+    const title = n?.title || d.title;
+    const body = n?.body || d.body || '';
+    if (!title && !body) return;
+    remember(msg);
+    if (IOS) return;
+    const p = effectivePrefs();
+    if (!p.notify || (await permission()) !== 'granted') return;
+    native
+      .showNotification({
+        id: String(d.id || msg.messageId || Date.now()),
+        title: title || 'Fileora',
+        body,
+        quiet: p.quiet,
+        private: p.private,
+        data: JSON.stringify({ open: d.open || 'home', tool: d.tool || '', link: d.link || '', id: d.id || '' }),
+      })
+      .catch(() => {});
   });
   return () => {
     offOpen();
     offMsg();
+    offLocal();
   };
+}
+
+/* ---------- Settings → Check notifications ---------- */
+
+/**
+ * Asks the website to send one notification to this phone after a few seconds (App Center →
+ * Notifications → "Send a test notification" must be allowed). Returns an error text or null.
+ */
+export async function requestTestPush(delay = 10): Promise<string | null> {
+  const m = messaging();
+  if (!m) return 'Notifications aren’t available in this build.';
+  if ((await permission()) !== 'granted') return 'Allow notifications for Fileora first.';
+  let token = '';
+  try {
+    if (IOS && !isDeviceRegisteredForRemoteMessages(m)) await registerDeviceForRemoteMessages(m);
+    token = await getToken(m);
+  } catch {
+    return 'This phone couldn’t get a notification ID. Check the internet connection and try again.';
+  }
+  const p = effectivePrefs();
+  try {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 30000);
+    const r = await fetch(`${SITE}/wp-json/fileora/v1/app-test-push`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ token, platform: PLATFORM, quiet: p.quiet, private: p.private, delay }),
+      signal: ctl.signal,
+    });
+    clearTimeout(timer);
+    if (r.ok) return null;
+    const j = (await r.json().catch(() => null)) as { message?: string } | null;
+    return j?.message || `The website answered ${r.status}.`;
+  } catch (e) {
+    // the app may have been left before the website answered: the notification is still sent
+    return e instanceof Error && e.name === 'AbortError' ? null : 'No connection to the website. Try again.';
+  }
 }
