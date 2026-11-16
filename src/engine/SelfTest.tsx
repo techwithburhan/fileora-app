@@ -6,13 +6,18 @@
  * 1. the app → engine → app path: a picture file goes in, a PDF comes back to a file
  * 2. the engine runs a set of tools on files it makes itself
  * The result is shown on screen and written to the log as one "FILEORA_SELFTEST {…}" line.
+ *
+ * fileora://tool/<id> opens a tool's screen (CI screenshots). On iOS the simulator asks before it
+ * opens a link, so CI starts the app with launch arguments instead: -FileoraSelfTest 1, -FileoraTool <id>.
  */
 import React, { useEffect, useState } from 'react';
-import { Linking, Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Modal, Platform, ScrollView, Settings, StyleSheet, Text, View } from 'react-native';
 import BlobUtil from 'react-native-blob-util';
 import { call, readOutput, sendFile, ToolState, Output } from './engine';
 import PressableScale from '../components/PressableScale';
 import { brand } from '../theme';
+import { navigationRef } from '../navigation/types';
+import { toolById } from '../data/tools';
 
 const PNG =
   'iVBORw0KGgoAAAANSUhEUgAAAEAAAAAwCAIAAAAuKetIAAAAeElEQVR4Xu3ZsQ2AIBQGYTFuwgRW7mYsjTOxBSsZGweA4vIn9/WQ93J0lHq0JdmaPPzHBWgWoFmAZgGaBWjbzAD9vGaO//bnHr7HJ0SzAM0CNAvQLECzAM0CNAvQLECzAM0CtPgCxT8yWPwTcgGaBWgWoFmAFl/gBeCDBYUf80jsAAAAAElFTkSuQmCC';
@@ -67,7 +72,16 @@ export default function SelfTest() {
   const [running, setRunning] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => {
+    const openTool = (id: string) => {
+      if (!toolById(id)) return;
+      setRep(null);
+      setErr(null);
+      const nav = () => (navigationRef.isReady() ? navigationRef.navigate('Process', { tool: id }) : setTimeout(nav, 300));
+      nav();
+    };
     const go = (url?: string | null) => {
+      const tool = url ? /^fileora:\/\/tool\/([a-z0-9]+)/i.exec(url) : null;
+      if (tool) return openTool(tool[1].toLowerCase());
       if (!url || !/^fileora:\/\/selftest/i.test(url)) return;
       setRunning(true);
       setErr(null);
@@ -82,6 +96,11 @@ export default function SelfTest() {
     Linking.getInitialURL()
       .then(go)
       .catch(() => {});
+    if (Platform.OS === 'ios') {
+      if (Settings.get('FileoraSelfTest')) go('fileora://selftest');
+      const t = Settings.get('FileoraTool');
+      if (typeof t === 'string' && t) go(`fileora://tool/${t}`);
+    }
     const sub = Linking.addEventListener('url', e => go(e.url));
     return () => sub.remove();
   }, []);

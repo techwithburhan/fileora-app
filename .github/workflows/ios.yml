@@ -149,9 +149,17 @@ jobs:
           sleep 20
           xcrun simctl io "$DEV" screenshot out/simulator/home.png
           # the offline tool engine in WKWebView: its self-test (fileora://selftest)
-          xcrun simctl openurl "$DEV" "fileora://selftest" || true
-          sleep 60
+          # (started with a launch argument: a link would first ask "Open in Fileora?")
+          xcrun simctl terminate "$DEV" in.fileora.app || true
+          xcrun simctl launch "$DEV" in.fileora.app -FileoraSelfTest 1
+          sleep 50
           xcrun simctl io "$DEV" screenshot out/simulator/selftest.png
+          for t in watermark sign examphoto; do
+            xcrun simctl terminate "$DEV" in.fileora.app || true
+            xcrun simctl launch "$DEV" in.fileora.app -FileoraTool "$t"
+            sleep 18
+            xcrun simctl io "$DEV" screenshot "out/simulator/tool-$t.png"
+          done
           xcrun simctl spawn "$DEV" log show --last 2m --style compact --predicate 'process == "FileoraApp"' 2>/dev/null | grep -iE "error|exception|fatal|crash" | grep -v "nw_\|CFNetwork" | tail -40 > out/simulator/log.txt || true
           if xcrun simctl spawn "$DEV" launchctl list | grep -q "in.fileora.app"; then echo "RUNNING" > out/simulator/status.txt; echo "Fileora is running in the simulator"; else echo "NOT RUNNING" > out/simulator/status.txt; echo "::error::Fileora is not running in the simulator (crash at start?)"; fi
           ls -la ~/Library/Logs/DiagnosticReports 2>/dev/null | grep -i fileora || true

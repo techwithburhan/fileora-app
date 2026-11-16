@@ -134,6 +134,14 @@ jobs:
             sleep 75
             adb exec-out screencap -p > out/emulator/selftest.png
             adb logcat -d -s ReactNativeJS:V | grep -E "FILEORA_SELFTEST|Error|error" | tail -40 > out/emulator/selftest.txt || true
+            adb shell input keyevent 4
+            for t in watermark sign examphoto organize imgblur ocr; do
+              adb shell am start -W -a android.intent.action.VIEW -d "fileora://tool/$t" in.fileora.app
+              sleep 8
+              adb exec-out screencap -p > "out/emulator/tool-$t.png"
+              adb shell input keyevent 4
+              sleep 2
+            done
             adb logcat -d | grep -iE "FATAL|AndroidRuntime" | tail -40 > out/emulator/crash.txt || true
             cat out/emulator/selftest.txt
       - name: Publish the emulator run
