@@ -323,7 +323,7 @@ export default function ProcessScreen({ theme }: { theme: Theme }) {
         </View>
       );
     if (!items.length) {
-      const what = def.dropText || (def.slots ? `${def.slots.length} ${def.nouns}` : def.multi ? def.nouns : `a ${def.noun}`);
+      const what = def.dropText || (def.slots ? `${def.slots.length} ${def.nouns}` : def.multi ? def.nouns : `${/^[aeiou]/i.test(def.noun) ? 'an' : 'a'} ${def.noun}`);
       return (
         <View style={styles.block}>
           <PressableScale onPress={pickMore} accessibilityRole="button" style={[styles.drop, { borderColor: theme.accent, backgroundColor: theme.accent + '12' }]}>

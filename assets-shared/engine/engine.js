@@ -1466,6 +1466,7 @@ function plainOpts(o) {
   return out;
 }
 const goodOf = S => S.items.filter(i => !i.err);
+const aN = w => (/^[aeiou]/i.test(w) ? 'an ' : 'a ') + w;
 const isUrlish = v => { try { const u = new URL(/^https?:\/\//i.test(v) ? v : 'https://' + v); return /\./.test(u.hostname); } catch (e) { return false; } };
 /* the website's updateCta(), without the DOM */
 function ctaOf(S) {
@@ -1478,7 +1479,7 @@ function ctaOf(S) {
     const skip = T.regions && T.regions.skip && T.regions.skip(S);
     const regOk = !T.regions || skip || !!(S.source && S.source.canvas);
     ok = n >= T.min && (!T.pages || (S.pages && S.pages.length)) && regOk;
-    if (!n) h = T.min > 1 ? `Add at least ${T.min} ${acc.nouns} to start.` : `Add ${T.multi ? acc.nouns : 'a ' + acc.noun} to start.`;
+    if (!n) h = T.min > 1 ? `Add at least ${T.min} ${acc.nouns} to start.` : `Add ${T.multi ? acc.nouns : aN(acc.noun)} to start.`;
     else if (n < T.min) h = `Add ${T.min - n} more ${T.min - n === 1 ? acc.noun : acc.nouns}.`;
     else if (T.pages && !S.pages) h = 'Loading pages…';
     else if (T.pages && !S.pages.length) h = 'Keep at least one page.';
