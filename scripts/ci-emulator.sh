@@ -31,33 +31,30 @@ for t in txt2pdf jpg2avif; do
   sleep 2
 done
 # app 1.0: pull to refresh on Home (Fileora logo with the ring), caught while it spins.
-# Back first: closes App Center's announcement popup if one is shown.
+# Coordinates from the screen size (the CI emulator is small, e.g. 320 x 640).
+read W H < <(adb shell wm size | tail -1 | sed 's/.*: //; s/x/ /' | tr -d '\r')
+X=$((W / 2))
 adb shell am start -W -n in.fileora.app/.MainActivity
-sleep 5
-adb shell input keyevent 4
-sleep 2
-adb shell am start -W -n in.fileora.app/.MainActivity
-sleep 3
-adb shell input swipe 540 700 540 1500 700
+sleep 4
+adb shell input swipe $X $((H * 28 / 100)) $X $((H * 85 / 100)) 900
 adb exec-out screencap -p > "$OUT/refresh.png"
-sleep 0.4
+sleep 0.3
 adb exec-out screencap -p > "$OUT/refresh-2.png"
 sleep 3
 adb exec-out screencap -p > "$OUT/refresh-done.png"
-# app 1.0: Home categories with a large "Display size" (two cards per row must stay)
+# app 1.0: Home categories with a 30% larger "Display size" (two cards per row must stay)
+D=$(adb shell wm density | head -1 | sed 's/.*: //' | tr -d '\r')
 adb shell am force-stop in.fileora.app
-adb shell wm density 520
-sleep 4
-adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS > /dev/null 2>&1 || true
+adb shell wm density $((D * 130 / 100))
+sleep 3
 adb shell am start -W -n in.fileora.app/.MainActivity
-sleep 12
-adb shell input keyevent 4
-sleep 1
-adb shell am start -W -n in.fileora.app/.MainActivity
-sleep 2
-adb shell input swipe 540 1700 540 600 500
+sleep 10
+adb shell input swipe $X $((H * 80 / 100)) $X $((H * 30 / 100)) 600
 sleep 2
 adb exec-out screencap -p > "$OUT/home-large-display.png"
+adb shell input swipe $X $((H * 80 / 100)) $X $((H * 45 / 100)) 600
+sleep 2
+adb exec-out screencap -p > "$OUT/home-large-display-2.png"
 adb shell wm density reset
 adb logcat -d | grep -iE "FATAL|AndroidRuntime" | tail -40 > "$OUT/crash.txt" || true
 if adb shell pidof in.fileora.app > /dev/null; then echo RUNNING > "$OUT/status.txt"; else echo "NOT RUNNING" > "$OUT/status.txt"; fi
