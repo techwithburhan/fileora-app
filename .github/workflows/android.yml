@@ -103,12 +103,13 @@ jobs:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p out && cp android/app/build/outputs/apk/release/app-release.apk out/fileora-app.apk
+          cp android/app/build/outputs/bundle/release/app-release.aab out/fileora-app.aab
           cd out
-          echo "Fileora app APK from commit ${GITHUB_SHA::7} ($(date -u +%Y-%m-%d))" > README.md
+          echo "Fileora app APK and AAB (Google Play) from commit ${GITHUB_SHA::7} ($(date -u +%Y-%m-%d))" > README.md
           git init -q -b builds
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add fileora-app.apk README.md
+          git add fileora-app.apk fileora-app.aab README.md
           git commit -q -m "APK from ${GITHUB_SHA::7}"
           git push -q -f "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" builds
 
