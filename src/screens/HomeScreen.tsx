@@ -135,17 +135,17 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
               accessibilityRole="button"
               style={[styles.btn, styles.btnWide, { backgroundColor: brand.green }]}>
               <Icon name="grid" size={18} color="#03213F" width={2.3} />
-              <Text style={styles.btnText}>Browse by tools</Text>
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={styles.btnText}>Browse by tools</Text>
             </PressableScale>
             <View style={styles.btnPair}>
               <PressableScale onPress={() => nav.navigate('Activity', { tab: 'downloaded' })} accessibilityRole="button" style={[styles.btn, styles.btnGhost, styles.flex]}>
                 <Icon name="download" size={18} color="#FFFFFF" width={2.2} />
-                <Text style={[styles.btnText, styles.btnGhostText]}>Downloads</Text>
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={[styles.btnText, styles.btnGhostText]}>Downloads</Text>
               </PressableScale>
               {scannerOn && (
                 <PressableScale onPress={() => nav.navigate('Tabs', { screen: 'Scanner' })} accessibilityRole="button" style={[styles.btn, styles.btnGhost, styles.flex]}>
                   <Icon name="scan" size={18} color="#FFFFFF" width={2.2} />
-                  <Text style={[styles.btnText, styles.btnGhostText]}>Scanner</Text>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={[styles.btnText, styles.btnGhostText]}>Scanner</Text>
                 </PressableScale>
               )}
             </View>
@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
   btnPair: { flexDirection: 'row', gap: 10 },
   btn: { minHeight: 46, paddingHorizontal: 14, borderRadius: 14, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 },
   btnWide: { alignSelf: 'stretch' },
-  btnText: { color: '#03213F', fontSize: 14.5, fontWeight: '800' },
+  btnText: { color: '#03213F', fontSize: 14.5, fontWeight: '800', flexShrink: 1 },
   btnGhost: { backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)' },
   btnGhostText: { color: '#FFFFFF' },
   search: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, minHeight: 52 },

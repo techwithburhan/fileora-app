@@ -63,6 +63,12 @@ adb exec-out screencap -p > "$OUT/home-large-display.png"
 adb shell input swipe $X $((H * 80 / 100)) $X $((H * 45 / 100)) 600
 sleep 2
 adb exec-out screencap -p > "$OUT/home-large-display-2.png"
+adb shell input swipe $X $((H * 80 / 100)) $X $((H * 30 / 100)) 600
+sleep 2
+adb exec-out screencap -p > "$OUT/home-large-display-3.png"
+adb shell input swipe $X $((H * 80 / 100)) $X $((H * 40 / 100)) 600
+sleep 2
+adb exec-out screencap -p > "$OUT/home-large-display-4.png"
 adb shell wm density reset
 adb logcat -d | grep -iE "FATAL|AndroidRuntime" | tail -40 > "$OUT/crash.txt" || true
 if adb shell pidof in.fileora.app > /dev/null; then echo RUNNING > "$OUT/status.txt"; else echo "NOT RUNNING" > "$OUT/status.txt"; fi
