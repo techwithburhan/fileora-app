@@ -78,10 +78,23 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a,x86_64
+      # App 1.0: also the Android App Bundle for Google Play (same signing key)
+      - name: Build AAB (release, for Google Play)
+        working-directory: android
+        env:
+          FILEORA_KEYSTORE_PASSWORD: ${{ secrets.FILEORA_KEYSTORE_PASSWORD }}
+          FILEORA_KEY_ALIAS: ${{ secrets.FILEORA_KEY_ALIAS }}
+          FILEORA_KEY_PASSWORD: ${{ secrets.FILEORA_KEY_PASSWORD }}
+        run: ./gradlew bundleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a,x86_64
       - uses: actions/upload-artifact@v4
         with:
           name: fileora-apk
           path: android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fileora-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
           retention-days: 30
       # Also keep the latest APK in the "builds" branch: builds/fileora-app.apk (one commit, replaced each time).
       - name: Publish APK to the builds branch
