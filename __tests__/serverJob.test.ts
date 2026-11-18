@@ -18,7 +18,7 @@ import { runServerTool, jobBases, NeedPassword } from '../src/lib/serverJob';
 type Call = { url: string; method: string };
 function mockFetch(answers: ((c: Call) => { status: number; body?: unknown } | undefined)[]) {
   const calls: Call[] = [];
-  (global as unknown as { fetch: unknown }).fetch = jest.fn(async (url: string, init?: { method?: string }) => {
+  (globalThis as unknown as { fetch: unknown }).fetch = jest.fn(async (url: string, init?: { method?: string }) => {
     const c = { url, method: init?.method ?? 'GET' };
     calls.push(c);
     for (const a of answers) {
@@ -30,7 +30,7 @@ function mockFetch(answers: ((c: Call) => { status: number; body?: unknown } | u
   return calls;
 }
 const file = [{ uri: '/tmp/a.docx', name: 'a.docx', mime: 'application/msword' }];
-const FastTimers = () => jest.spyOn(global, 'setTimeout').mockImplementation(((fn: () => void) => { fn(); return 0; }) as unknown as typeof setTimeout);
+const FastTimers = () => jest.spyOn(globalThis, 'setTimeout').mockImplementation(((fn: () => void) => { fn(); return 0; }) as unknown as typeof setTimeout);
 
 beforeEach(() => FastTimers());
 afterEach(() => jest.restoreAllMocks());
