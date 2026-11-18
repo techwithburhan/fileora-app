@@ -73,6 +73,7 @@ export default function SettingsScreen({ theme }: { theme: Theme }) {
   // App Center → Notifications → Notification & Privacy settings: each one is Show (people change it),
   // Fixed (shown with a lock), Hidden or Disabled (greyed out, off). Changes arrive with the settings check.
   const eff = effectivePrefs(prefs);
+  const celebrateOn = prefs.celebrate !== false;
   const mode = (k: SettingKey) => settingCtl(k).mode;
   const notifLocked = mode('notify') !== 'show';
   const notifOn = eff.notify && perm === 'granted';
@@ -168,6 +169,21 @@ export default function SettingsScreen({ theme }: { theme: Theme }) {
               trackColor={{ true: theme.accent, false: theme.line }}
               thumbColor="#fff"
               accessibilityLabel="Dark mode"
+            />
+          ),
+        },
+        {
+          key: 'celebrate',
+          icon: 'party',
+          label: 'Celebration sound',
+          sub: 'A short, quiet party-popper sound with the confetti when a file is ready',
+          right: (
+            <Switch
+              value={celebrateOn}
+              onValueChange={v => remote.setPrefs({ celebrate: v })}
+              trackColor={{ true: theme.accent, false: theme.line }}
+              thumbColor="#fff"
+              accessibilityLabel="Celebration sound"
             />
           ),
         },

@@ -24,7 +24,9 @@ import { afterTask, prepareInterstitial } from '../ads/ads';
 import { toolById } from '../data/tools';
 import { call, EngineError, Item, readOutput, RunResult } from '../engine/engine';
 import { useToolSession } from '../engine/useToolSession';
-import { runServerTool, JobStatus } from '../lib/serverJob';
+import { runServerTool, JobStatus, NeedPassword } from '../lib/serverJob';
+import Dialog from '../components/Dialog';
+import { uiConfig } from '../remote/remote';
 import { Accept, pickFiles, Picked } from '../lib/pick';
 import { takePhoto } from '../lib/capture';
 import { saveResult } from '../lib/output';
@@ -39,7 +41,7 @@ import { telemetry } from '../remote/telemetry';
 import { busy as task } from '../lib/busy';
 import Appear from '../components/Appear';
 
-const PICK: Record<string, Accept> = { pdf: 'pdf', image: 'image', pdfimage: 'pdfimage', heic: 'heic', svg: 'svg', word: 'word', ppt: 'ppt', excel: 'excel', html: 'html' };
+const PICK: Record<string, Accept> = { pdf: 'pdf', image: 'image', pdfimage: 'pdfimage', heic: 'heic', svg: 'svg', word: 'word', ppt: 'ppt', excel: 'excel', html: 'html', text: 'text' };
 type Done = { title: string; files: FileRec[]; notes: Record<string, string>; extra: RunResult['result'] };
 
 /* the website's thumbStyle (CSS variables) as a native transform: rotation and flips */
@@ -67,6 +69,9 @@ export default function ProcessScreen({ theme }: { theme: Theme }) {
   const [opening, setOpening] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
   const [serverLabel, setServerLabel] = useState<string | null>(null);
+  // a locked PDF on a server tool: ask for its password and run again (plugin 2.18 / server 2.5)
+  const [pwAsk, setPwAsk] = useState<string | null>(null);
+  const pdfPw = useRef('');
   const [done, setDone] = useState<Done | null>(null);
   const [single, setSingle] = useState<FileRec | null>(null);
   const [scrollOn, setScrollOn] = useState(true);
@@ -121,7 +126,7 @@ export default function ProcessScreen({ theme }: { theme: Theme }) {
   if (!tool) return null;
 
   const items: Item[] = state?.items ?? [];
-  const accept = def ? PICK[def.accept] : undefined;
+  const accept = def ? PICK[def.code && def.codeText?.pick ? def.codeText.pick : def.accept] : undefined;
   const maxFiles = def?.max || 0;
   const canAdd = !!def && (def.multi ? !maxFiles || items.length < maxFiles : true);
   const pickMore = async () => {
@@ -187,10 +192,12 @@ export default function ProcessScreen({ theme }: { theme: Theme }) {
         setServerLabel('Uploading…');
         const label = (s: JobStatus) =>
           s.status === 'queued' ? (s.ahead ? `Waiting in line, ${s.ahead} ahead of you` : 'Waiting in line') : s.status === 'running' ? `${def.verb} on the server…` : 'Downloading the result…';
-        const res = await runServerTool(tool.id, up, r.options ?? {}, st => !signal.cancelled && setServerLabel(label(st)), signal, r.url);
+        const options = { ...(r.options ?? {}), ...(pdfPw.current ? { opw: pdfPw.current } : {}) };
+        const res = await runServerTool(tool.id, up, options, st => !signal.cancelled && setServerLabel(label(st)), signal, r.url);
         setServerLabel('Saving…');
         const rec = await saveResult({ name: res.name, fromPath: res.path, move: true, tool: tool.id, bytesIn });
         files.push(rec);
+        if (res.note) notes[rec.id] = res.note;
         if (res.text) extra = { md: res.text, title: r.textTitle || 'Your text is ready' };
       } else {
         const outs = r.outputs ?? [];
@@ -214,6 +221,10 @@ export default function ProcessScreen({ theme }: { theme: Theme }) {
       if (signal.cancelled || (e instanceof EngineError && e.message === 'cancelled')) return;
       const m = e instanceof Error ? e.message : String(e);
       telemetry.track('failed', tool.id, bytesIn, m);
+      if (e instanceof NeedPassword) {
+        setPwAsk(m);
+        return;
+      }
       Alert.alert(`${tool.name} didn’t work`, m);
     }
   };
@@ -223,12 +234,15 @@ export default function ProcessScreen({ theme }: { theme: Theme }) {
     setWorking(false);
   };
   const startOver = () => {
+    pdfPw.current = '';
     setDone(null);
     setSingle(null);
     order([]);
   };
 
   const onDevice = def ? !def.server : tool.exec !== 'server';
+  // App Center → Manage → Processing screen: detailed (bar and steps), simple (spinner) or off (spinner in the button)
+  const progressMode = uiConfig().progress[onDevice ? 'browser' : 'server'];
   const transform = state?.thumbStyle ? thumbTransform(state.thumbStyle) : undefined;
 
   const fileCard = (it: Item, i: number) => {
@@ -281,26 +295,28 @@ export default function ProcessScreen({ theme }: { theme: Theme }) {
 
   const inputArea = () => {
     if (!def || !state) return null;
+    // Text to PDF uses the same box for plain text (any language), HTML Code to PDF for code
+    const plain = !!def.codeText && def.codeText.pick === 'text';
     if (def.code)
       return (
         <View style={styles.block}>
-          <Text style={[type.heading, { color: theme.ink }]}>Your HTML code</Text>
+          <Text style={[type.heading, { color: theme.ink }]}>{plain ? def.codeText?.label : 'Your HTML code'}</Text>
           <TextInput
             value={String(vals.html ?? '')}
             onChangeText={t => change('html', t)}
             multiline
-            placeholder={'<!doctype html>\n<h1>Hello</h1>'}
+            placeholder={def.codeText?.placeholder || '<!doctype html>\n<h1>Hello</h1>'}
             placeholderTextColor={theme.muted}
-            autoCapitalize="none"
-            autoCorrect={false}
-            spellCheck={false}
+            autoCapitalize={plain ? 'sentences' : 'none'}
+            autoCorrect={plain}
+            spellCheck={plain}
             textAlignVertical="top"
-            style={[styles.code, { color: theme.ink, backgroundColor: theme.surface, borderColor: theme.line }]}
-            accessibilityLabel="HTML code"
+            style={[styles.code, plain && styles.plainText, { color: theme.ink, backgroundColor: theme.surface, borderColor: theme.line }]}
+            accessibilityLabel={plain ? def.codeText?.label : 'HTML code'}
           />
           <PressableScale onPress={pickMore} accessibilityRole="button" style={[styles.addMore, { backgroundColor: theme.surface2 }]}>
             <Icon name="file" size={18} color={theme.ink} />
-            <Text style={[type.button, { color: theme.ink }]}>Open an .html file</Text>
+            <Text style={[type.button, { color: theme.ink }]}>{def.codeText?.open || 'Open an .html file'}</Text>
           </PressableScale>
         </View>
       );
@@ -496,8 +512,15 @@ export default function ProcessScreen({ theme }: { theme: Theme }) {
               accessibilityRole="button"
               accessibilityState={{ disabled: !state.ok }}
               accessibilityHint={state.ok ? undefined : state.hint}
-              style={[styles.go, { backgroundColor: state.ok ? theme.accent : theme.surface2 }]}>
-              <Text style={[type.button, styles.goText, { color: state.ok ? theme.onAccent : theme.muted }]}>{def.cta}</Text>
+              style={[styles.go, { backgroundColor: state.ok || working ? theme.accent : theme.surface2 }]}>
+              {working && progressMode === 'off' ? (
+                <View style={styles.goBusy}>
+                  <ActivityIndicator color={theme.onAccent} />
+                  <Text style={[type.button, styles.goText, { color: theme.onAccent }]}>{def.verb}…</Text>
+                </View>
+              ) : (
+                <Text style={[type.button, styles.goText, { color: state.ok ? theme.onAccent : theme.muted }]}>{def.cta}</Text>
+              )}
             </PressableScale>
             <Text style={[type.caption, styles.center, { color: state.ok ? theme.muted : theme.ink2 }]}>
               {state.hint || (onDevice ? 'Processed on your phone. Nothing is uploaded.' : 'Files are deleted from the server after download.')}
@@ -506,7 +529,7 @@ export default function ProcessScreen({ theme }: { theme: Theme }) {
         )}
       </ScrollView>
 
-      {(working || opening) && (
+      {(opening || (working && progressMode !== 'off')) && (
         <Appear duration={250} rise={false} exiting={FadeOut} style={[StyleSheet.absoluteFill, styles.busy]}>
           <View style={[styles.busyCard, { backgroundColor: theme.surface }]} accessibilityLiveRegion="polite">
             {opening ? (
@@ -517,14 +540,20 @@ export default function ProcessScreen({ theme }: { theme: Theme }) {
             ) : (
               <>
                 <Text style={[type.section, styles.center, { color: theme.ink }]}>{def?.verb ?? 'Working'}…</Text>
-                <View style={[styles.bar, { backgroundColor: theme.surface2 }]}>
-                  {serverLabel || !progress || progress.f < 0 ? (
-                    <ActivityIndicator color={theme.accent} />
-                  ) : (
-                    <View style={[styles.barFill, { width: `${Math.round(Math.min(1, Math.max(0.04, progress.f)) * 100)}%`, backgroundColor: theme.accent }]} />
-                  )}
-                </View>
-                <Text style={[type.bodySm, styles.center, { color: theme.ink2 }]}>{serverLabel ?? progress?.label ?? ''}</Text>
+                {progressMode === 'simple' ? (
+                  <ActivityIndicator color={theme.accent} size="large" />
+                ) : (
+                  <>
+                    <View style={[styles.bar, { backgroundColor: theme.surface2 }]}>
+                      {serverLabel || !progress || progress.f < 0 ? (
+                        <ActivityIndicator color={theme.accent} />
+                      ) : (
+                        <View style={[styles.barFill, { width: `${Math.round(Math.min(1, Math.max(0.04, progress.f)) * 100)}%`, backgroundColor: theme.accent }]} />
+                      )}
+                    </View>
+                    <Text style={[type.bodySm, styles.center, { color: theme.ink2 }]}>{serverLabel ?? progress?.label ?? ''}</Text>
+                  </>
+                )}
                 <Text style={[type.caption, styles.center, { color: theme.muted }]}>{onDevice ? 'Keep Fileora open until it finishes.' : 'Your files are processed securely, then deleted.'}</Text>
                 <PressableScale onPress={stop} accessibilityRole="button" hitSlop={8}>
                   <Text style={[type.button, { color: theme.link }]}>Cancel</Text>
@@ -534,6 +563,22 @@ export default function ProcessScreen({ theme }: { theme: Theme }) {
           </View>
         </Appear>
       )}
+
+      <Dialog
+        visible={!!pwAsk}
+        title="This PDF needs its password"
+        message={pwAsk ?? ''}
+        label="PDF password"
+        secure
+        okLabel="Try again"
+        theme={theme}
+        onCancel={() => setPwAsk(null)}
+        onOk={text => {
+          pdfPw.current = text;
+          setPwAsk(null);
+          run();
+        }}
+      />
 
       <ResultSheet file={single} tool={tool.id} theme={theme} onClose={() => setSingle(null)} onOpen={openRecord} onNext={(id, f) => keepGoing(id, f)} />
     </View>
@@ -571,9 +616,11 @@ const styles = StyleSheet.create({
   x: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   addMore: { flexDirection: 'row', gap: 8, minHeight: 50, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   input: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 14, minHeight: 50, fontSize: 16 },
+  plainText: { fontFamily: undefined, fontSize: 16, lineHeight: 23 },
   code: { borderWidth: 1, borderRadius: 14, padding: 12, minHeight: 240, maxHeight: 420, fontSize: 13, fontFamily: 'monospace' },
   note: { flexDirection: 'row', gap: 10, borderWidth: 1, borderRadius: 14, padding: 12, alignItems: 'flex-start' },
   opts: { gap: 16, marginTop: 4 },
+  goBusy: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
   go: { minHeight: 56, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginTop: 6 },
   loading: { flexDirection: 'row', gap: 10, alignItems: 'center', justifyContent: 'center', paddingVertical: 24 },
   busy: { backgroundColor: 'rgba(2,11,23,0.5)', alignItems: 'center', justifyContent: 'center', padding: 32 },

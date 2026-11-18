@@ -1,5 +1,5 @@
 /**
- * Fileora tools – generated from the Fileora Core plugin's modules (plugin 2.16.0).
+ * Fileora tools – generated from the Fileora Core plugin's modules (plugin 2.18.0).
  * Edit PDF is still "pending" on the website: it is listed (as unavailable) like the other API tools.
  * The tool page is https://www.fileora.in/<slug>/ (Tool Management can change slugs: update here too).
  */
@@ -22,13 +22,13 @@ export const CATEGORIES: Category[] = [
     "id": "image",
     "name": "Image Tools",
     "desc": "Compress, resize, crop and convert photos without uploading them.",
-    "count": 21
+    "count": 27
   },
   {
     "id": "converter",
     "name": "File Converter",
     "desc": "Turn Word, Excel, PowerPoint and web pages into PDFs, and back again.",
-    "count": 8
+    "count": 9
   },
   {
     "id": "optimizer",
@@ -349,7 +349,7 @@ export const TOOLS: Tool[] = [
     "id": "imgconvert",
     "slug": "convert-image",
     "name": "Convert Image",
-    "desc": "Change photos between JPG, PNG and WebP.",
+    "desc": "Change photos between JPG, PNG, WebP and AVIF.",
     "cat": "image",
     "exec": "browser",
     "keys": "image format jpg jpeg png webp gif bmp convert change"
@@ -380,6 +380,60 @@ export const TOOLS: Tool[] = [
     "cat": "image",
     "exec": "browser",
     "keys": "png jpg jpeg convert smaller transparent"
+  },
+  {
+    "id": "jpg2webp",
+    "slug": "jpg-to-webp",
+    "name": "JPG to WebP",
+    "desc": "Turn JPG photos into WebP files that are about a third smaller, for faster websites.",
+    "cat": "image",
+    "exec": "browser",
+    "keys": "jpg jpeg webp convert web faster smaller google pagespeed"
+  },
+  {
+    "id": "webp2jpg",
+    "slug": "webp-to-jpg",
+    "name": "WebP to JPG",
+    "desc": "Turn WebP images into JPG (JPEG) that every phone, app and form accepts.",
+    "cat": "image",
+    "exec": "browser",
+    "keys": "webp jpg jpeg convert open save download google image"
+  },
+  {
+    "id": "png2psd",
+    "slug": "png-to-psd",
+    "name": "PNG to PSD",
+    "desc": "Turn PNG images into Photoshop files with transparency kept on a layer.",
+    "cat": "image",
+    "exec": "browser",
+    "keys": "png psd photoshop layer transparent convert gimp photopea"
+  },
+  {
+    "id": "avif2jpg",
+    "slug": "avif-to-jpg",
+    "name": "AVIF to JPG",
+    "desc": "Turn AVIF pictures into JPG that opens everywhere.",
+    "cat": "image",
+    "exec": "browser",
+    "keys": "avif jpg jpeg convert open av1 image"
+  },
+  {
+    "id": "jpg2avif",
+    "slug": "jpg-to-avif",
+    "name": "JPG to AVIF",
+    "desc": "Turn JPG photos into AVIF, often half the size at the same quality.",
+    "cat": "image",
+    "exec": "browser",
+    "keys": "jpg jpeg avif convert smaller compress web next-gen"
+  },
+  {
+    "id": "png2avif",
+    "slug": "png-to-avif",
+    "name": "PNG to AVIF",
+    "desc": "Turn PNG images into much smaller AVIF files, with transparency kept.",
+    "cat": "image",
+    "exec": "browser",
+    "keys": "png avif convert transparent smaller compress lossless"
   },
   {
     "id": "imgkb",
@@ -587,6 +641,15 @@ export const TOOLS: Tool[] = [
     "cat": "converter",
     "exec": "server",
     "keys": "html code css source markup render invoice template resume print"
+  },
+  {
+    "id": "txt2pdf",
+    "slug": "text-to-pdf",
+    "name": "Text to PDF",
+    "desc": "Type or paste text in Hindi, Tamil, English and more, and get a neatly formatted PDF.",
+    "cat": "converter",
+    "exec": "browser",
+    "keys": "text txt notepad plain type paste hindi tamil marathi bengali gujarati telugu kannada malayalam punjabi unicode font notes letter"
   },
   {
     "id": "compress",

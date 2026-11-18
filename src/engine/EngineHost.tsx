@@ -34,6 +34,7 @@ export default function EngineHost() {
         allowFileAccess
         allowingReadAccessToURL={ENGINE_DIR}
         javaScriptEnabled
+        mediaPlaybackRequiresUserAction={false} // the celebration sound after a finished task
         domStorageEnabled={false}
         cacheEnabled={false}
         incognito

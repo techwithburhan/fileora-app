@@ -3,9 +3,11 @@
  * Android's photo picker (no storage permission). Large photos are resized to 2400 px.
  */
 import { Asset, ImagePickerResponse, launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import DocumentScanner from 'react-native-document-scanner-plugin';
 import { stripScheme } from '../store/files';
 
-export type Img = { path: string; width: number; height: number; mime: string; size: number; name: string };
+/** cropped: the page was found and straightened by the phone's document scanner */
+export type Img = { path: string; width: number; height: number; mime: string; size: number; name: string; cropped?: boolean };
 const MAX = 2400;
 
 function toImgs(r: ImagePickerResponse): Img[] {
@@ -29,6 +31,25 @@ function toImgs(r: ImagePickerResponse): Img[] {
       size: a.fileSize ?? 0,
       name: a.fileName ?? 'photo.jpg',
     }));
+}
+
+/**
+ * Auto Detect (app 1.0): the phone's own document scanner — Google ML Kit on Android, VisionKit on
+ * iPhone. While the camera is open it finds the page edges live (also on a tilted page or a busy
+ * background), takes the picture when the page is steady, straightens it and crops it. Several
+ * pages in a row are possible. No camera permission is needed on Android.
+ * Returns [] when the person cancels, null when the scanner isn't available on this phone (no
+ * Google Play services, an old iPhone): the camera app is used then, with Fileora's own detection.
+ */
+export async function scanDocuments(): Promise<Img[] | null> {
+  try {
+    const r = await DocumentScanner.scanDocument({ croppedImageQuality: 92 });
+    if (!r || r.status === 'cancel' || !r.scannedImages?.length) return [];
+    return r.scannedImages.map((uri, i) => ({ path: stripScheme(uri), width: 0, height: 0, mime: 'image/jpeg', size: 0, name: `scan-${i + 1}.jpg`, cropped: true }));
+  } catch (e) {
+    console.warn('document scanner not available', e);
+    return null;
+  }
 }
 
 export async function takePhoto(): Promise<Img[]> {

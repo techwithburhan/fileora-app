@@ -1,4 +1,4 @@
-/*! Fileora tool engine for the app. Built 2026-11-16 by scripts/build-engine.sh from the website's public/js/src and engine/app-bridge.js. */
+/*! Fileora tool engine for the app. Built 2026-11-18 by scripts/build-engine.sh from the website's public/js/src and engine/app-bridge.js. */
 (function () {
 'use strict';
 
@@ -125,9 +125,30 @@ const LIBS = {
   pdfjs: [VENDOR + 'pdf.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'],
   jszip: [VENDOR + 'jszip.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'],
   heic2any: [VENDOR + 'heic2any.min.js', 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js'],
-  imagetracer: [VENDOR + 'imagetracer.min.js', 'https://cdn.jsdelivr.net/npm/imagetracerjs@1.2.6/imagetracer_v1.2.6.js']
+  imagetracer: [VENDOR + 'imagetracer.min.js', 'https://cdn.jsdelivr.net/npm/imagetracerjs@1.2.6/imagetracer_v1.2.6.js'],
+  /* 2.18: built for Fileora (WebAssembly inside the file, so they also load from an app's files) */
+  avifenc: [VENDOR + 'avifenc.min.js'], avifdec: [VENDOR + 'avifdec.min.js'], webpenc: [VENDOR + 'webp.min.js'],
+  psd: [VENDOR + 'psd.min.js'], hb: [VENDOR + 'hb.min.js'],
+  fontkit: [VENDOR + 'fontkit.min.js', 'https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js']
 };
 const libCache = {};
+const fontCache = {};
+/* A font from public/vendor/fonts (Noto, SIL Open Font License) as bytes. Fonts come as small
+   scripts (base64), so they load the same way from the website and from an app's own files. */
+function fontBytes(file) {
+  if (!fontCache[file]) {
+    fontCache[file] = (async () => {
+      const data = () => (window.FileoraFontData || {})[file];
+      if (!data()) await loadScript(VENDOR + 'fonts/' + file.replace(/\.ttf$/, '.js')).catch(() => { throw new Error('offline'); });
+      const b64 = data(); if (!b64) throw new Error('offline');
+      const bin = atob(b64), out = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+      delete window.FileoraFontData[file];   // keep only the bytes
+      return out;
+    })().catch(e => { delete fontCache[file]; throw e; });
+  }
+  return fontCache[file];
+}
 /* Full address of a library on this site (for Web Workers), or '' when there is no local copy. */
 function libUrl(name) { return VENDOR === '/' ? '' : new URL(LIBS[name][0], location.href).href; }
 function loadScript(src) {
@@ -147,7 +168,9 @@ function lib(name) {
       for (const u of urls) { try { used = await loadScript(u); break; } catch (e) { /* try next */ } }
       if (!used) throw new Error('offline');
       if (name === 'pdfjs') window.pdfjsLib.GlobalWorkerOptions.workerSrc = used.replace('pdf.min.js', 'pdf.worker.min.js');
-      return { pdflib: window.PDFLib, pdfjs: window.pdfjsLib, jszip: window.JSZip, heic2any: window.heic2any, imagetracer: window.ImageTracer }[name];
+      if (name === 'hb') return window.FileoraHB.load();
+      return { pdflib: window.PDFLib, pdfjs: window.pdfjsLib, jszip: window.JSZip, heic2any: window.heic2any, imagetracer: window.ImageTracer,
+        avifenc: window.FileoraAvifEnc, avifdec: window.FileoraAvifDec, webpenc: window.FileoraWebp, psd: window.FileoraPsd, fontkit: window.fontkit }[name];
     })().catch(e => { delete libCache[name]; throw e; });
   }
   return libCache[name];
@@ -220,11 +243,24 @@ const PAGE = { a4: [595.28, 841.89], letter: [612, 792], a3: [841.89, 1190.55], 
 const MM = 72 / 25.4;
 
 /* ---------------- images ---------------- */
+const isAvif = f => f.type === 'image/avif' || /\.avif$/i.test(f.name || '');
 async function decodeImage(file) {
   try { const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' }); return { src: bmp, w: bmp.width, h: bmp.height, done: () => bmp.close() }; }
   catch (e) {
     const url = URL.createObjectURL(file); const img = new Image(); img.src = url;
-    try { await img.decode(); } catch (er) { URL.revokeObjectURL(url); throw new UserError(`${file.name} couldn’t be read as an image.`); }
+    try { await img.decode(); } catch (er) {
+      URL.revokeObjectURL(url);
+      /* AVIF in a browser that can't show it (older Safari / iPhone): decode it here */
+      if (isAvif(file)) {
+        try {
+          const A = await lib('avifdec'), id = await A.decode(await file.arrayBuffer());
+          const c = document.createElement('canvas'); c.width = id.width; c.height = id.height;
+          c.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(id.data.buffer, id.data.byteOffset, id.data.byteLength), id.width, id.height), 0, 0);
+          return { src: c, w: c.width, h: c.height, done: () => { c.width = c.height = 0; } };
+        } catch (er2) { if (er2 && er2.message === 'offline') throw er2; }
+      }
+      throw new UserError(`${file.name} couldn’t be read as an image.`);
+    }
     return { src: img, w: img.naturalWidth, h: img.naturalHeight, done: () => URL.revokeObjectURL(url) };
   }
 }
@@ -423,9 +459,36 @@ function diffLines(a, b) {
 }
 
 /* ---------------- image tool helpers ---------------- */
+const MIME_PSD = 'image/vnd.adobe.photoshop';
+/* Canvas -> AVIF, WebP or PSD (formats a canvas can't always write), else the canvas's own encoder.
+   q: 0..1. AVIF uses jSquash (libaom); WebP falls back to jSquash when the browser writes PNG instead
+   (Safari, iPhone); PSD (ag-psd) keeps transparency in one layer, like Photoshop's own "Layer 0". */
+async function encodeCanvas(c, type, q = 0.9, opts = {}) {
+  if (type === 'image/avif') {
+    const A = await lib('avifenc');
+    const id = c.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, c.width, c.height);
+    const speed = c.width * c.height > 8e6 ? 8 : 6;
+    const buf = await A.encode(id, { quality: Math.round(Math.max(1, Math.min(100, q * 100))), speed, lossless: !!opts.lossless });
+    return new Blob([buf], { type: 'image/avif' });
+  }
+  if (type === 'image/webp') {
+    const b = await canvasToBlob(c, 'image/webp', q);
+    if (b.type === 'image/webp') return b;
+    const W = await lib('webpenc');
+    const id = c.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, c.width, c.height);
+    return new Blob([await W.encode(id, { quality: Math.round(q * 100) })], { type: 'image/webp' });
+  }
+  if (type === MIME_PSD) {
+    const P = await lib('psd');
+    const buf = P.writePsd({ width: c.width, height: c.height, canvas: c, children: [{ name: opts.layer || 'Layer 0', canvas: c }] }, { generateThumbnail: false });
+    return new Blob([buf], { type: MIME_PSD });
+  }
+  return canvasToBlob(c, type, type === 'image/png' ? undefined : q);
+}
 const IMG_EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
+const OUT_EXT = Object.assign({ 'image/avif': 'avif', [MIME_PSD]: 'psd' }, IMG_EXT);
 const sameType = file => IMG_EXT[file.type] ? file.type : 'image/jpeg';
-const renameImg = (name, type, suffix) => baseName(name) + (suffix || '') + '.' + IMG_EXT[type];
+const renameImg = (name, type, suffix) => baseName(name) + (suffix || '') + '.' + (OUT_EXT[type] || 'jpg');
 const Img = {
   /* Draw an image region onto a canvas of the target size and encode it. */
   async render(file, { sx = 0, sy = 0, sw, sh, width, height, type, quality = 0.9, suffix }) {
@@ -437,7 +500,7 @@ const Img = {
     g.imageSmoothingQuality = 'high';
     g.drawImage(img.src, sx, sy, sw, sh, 0, 0, c.width, c.height);
     img.done();
-    const blob = await canvasToBlob(c, type, quality);
+    const blob = await encodeCanvas(c, type, quality);
     return { blob, name: renameImg(file.name, type, suffix), width: c.width, height: c.height };
   },
   async compress(file, { quality = 0.72, maxSide = 0, type } = {}) {
@@ -457,7 +520,7 @@ const Img = {
     return Img.render(file, { width, height, type: type || sameType(file), quality: 0.92, suffix: '-' + Math.round(width) + 'x' + Math.round(height) });
   },
   async convert(file, type, { quality = 0.92 } = {}) {
-    if (!IMG_EXT[type]) throw new UserError('Choose JPG, PNG or WebP.');
+    if (!OUT_EXT[type]) throw new UserError('Choose JPG, PNG, WebP or AVIF.');
     return Img.render(file, { type, quality });
   },
   async crop(file, { x, y, width, height, type } = {}) {
@@ -813,7 +876,21 @@ function mountTool(root) {
   const useServer = !!def.server && (!def.run || meta.runs === 'server');
   const accept = ACCEPT[T.accept] || ACCEPT.pdf;
   const maxFiles = T.max || (useServer && meta.maxFiles ? meta.maxFiles : 0);
-  const WS = { root, tool: T, def, meta, useServer, items: [], pages: null, allPages: null, opts: defaults(T), phase: 'empty', outputs: [], result: null, error: '', urls: [], seq: 0, queue: Promise.resolve(), sigUrl: null, source: null, regions: null, refreshOpts: null, started: 0 };
+  /* Server tools on PDFs get a "PDF password" field. It appears when an added PDF is locked (or the
+     server said it needs its password); the server opens the file with it for this task only. */
+  const askPw = useServer && T.accept === 'pdf' && id !== 'unlock';
+  if (askPw) {
+    T.opts = (T.opts || []).concat([{ id: 'opw', type: 'password', value: '', label: id === 'protect' ? 'Current PDF password' : 'PDF password', placeholder: 'The password that opens the PDF',
+      help: id === 'protect' ? 'This PDF already has a password. Type it, and the new password replaces it.' : 'This PDF is locked. Type the password that opens it. It is used for this task only and is not stored.',
+      show: () => !!(WS.needPw || WS.items.some(i => i.locked)) }]);
+    const v0 = T.validate;
+    T.validate = (o, list, ws) => (list && list.some(i => i.locked) && !o.opw ? 'Type the password that opens the PDF.' : '') || (v0 ? v0(o, list, ws) : '');
+  }
+  /* code mode (accept 'html'): its words come from the tool (Text to PDF uses "text") */
+  const CODE = T.accept === 'html' ? Object.assign({ step: 'Add code', hint: 'Paste or type your HTML code to start.', edit: 'Edit the code', back: 'Back to my code', max: 5242880 }, T.code || {}) : null;
+  /* what visitors see while the tool works (App Center → Manage → Processing screen): detailed, simple or off */
+  const progressMode = ((CFG.progress || {})[useServer ? 'server' : 'browser']) || 'detailed';
+  const WS = { root, tool: T, def, meta, useServer, items: [], pages: null, allPages: null, opts: defaults(T), phase: 'empty', outputs: [], result: null, error: '', urls: [], seq: 0, queue: Promise.resolve(), sigUrl: null, source: null, regions: null, refreshOpts: null, started: 0, needPw: false };
   /* settings the page asks the tool to open with (data-fo-preset): { opts: {…} } or a tool's own preset hook */
   let preset = null;
   try { preset = root.dataset.foPreset ? JSON.parse(root.dataset.foPreset) : null; } catch (e) { preset = null; }
@@ -825,7 +902,7 @@ function mountTool(root) {
   root.dataset.cat = meta.color || root.dataset.cat || 'organize';
   root.innerHTML = `<div class="fo-ws">
     <div class="fo-ws-top">
-      <ol class="fo-ws-steps" aria-label="Progress"><li data-step="1"><i>1</i>${T.accept === 'url' ? 'Enter address' : T.accept === 'html' ? 'Add code' : 'Add files'}</li><li class="sep" aria-hidden="true"></li><li data-step="2"><i>2</i>Set options</li><li class="sep" aria-hidden="true"></li><li data-step="3"><i>3</i>Download</li></ol>
+      <ol class="fo-ws-steps" aria-label="Progress"><li data-step="1"><i>1</i>${T.accept === 'url' ? 'Enter address' : CODE ? esc(CODE.step) : 'Add files'}</li><li class="sep" aria-hidden="true"></li><li data-step="2"><i>2</i>Set options</li><li class="sep" aria-hidden="true"></li><li data-step="3"><i>3</i>Download</li></ol>
       <span class="fo-priv${useServer ? ' srv' : ''}" title="${useServer ? `Files are sent over HTTPS and deleted ${esc(CFG.deletionText)}` : 'Your files never leave this device'}">${useServer ? icon('shield') + '<span>Encrypted server processing</span>' : icon('device') + '<span>Runs in your browser</span>'}</span>
     </div>
     <div class="fo-ws-body">
@@ -845,7 +922,13 @@ function mountTool(root) {
   const mkItem = file => ({ id: 'f' + (++itemSeq), file, name: file.name, size: file.size, kind: kindOf(file), pages: null, thumb: null, err: null, note: '' });
   function clearOutputs() { WS.outputs.forEach(o => URL.revokeObjectURL(o.url)); WS.outputs = []; WS.result = null; }
   function clearItems() { WS.items = []; WS.pages = null; WS.allPages = null; WS.source = null; WS.regions = null; WS.seq++; WS.queue = Promise.resolve(); clearOutputs(); }
-  function setPhase(p) { WS.phase = p; root.classList.toggle('is-done', p === 'done'); renderMain(); updateSteps(); updateCta(); }
+  function setPhase(p) {
+    const keep = p === 'working' && progressMode === 'off';   /* hidden processing screen: the files stay, locked */
+    WS.phase = p; root.classList.toggle('is-done', p === 'done'); root.classList.toggle('is-busy', p === 'working');
+    root.setAttribute('aria-busy', p === 'working' ? 'true' : 'false');
+    if (!keep) renderMain();
+    updateSteps(); updateCta();
+  }
   function updateSteps() {
     const st = PHASE_STEP[WS.phase] || 1;
     $$('.fo-ws-steps li[data-step]', root).forEach(li => { const n = +li.dataset.step; li.className = n < st ? 'done' : n === st ? 'on' : ''; });
@@ -853,10 +936,10 @@ function mountTool(root) {
   const isUrl = v => { try { const u = new URL(/^https?:\/\//i.test(v) ? v : 'https://' + v); return /\./.test(u.hostname); } catch (e) { return false; } };
   function updateCta() {
     let ok = false, h = '';
-    if (WS.phase === 'working') { runBtn.disabled = true; runBtn.textContent = T.verb + '…'; hint.textContent = 'Keep this page open until it finishes.'; return; }
+    if (WS.phase === 'working') { runBtn.disabled = true; runBtn.innerHTML = `<span class="fo-spin-sm" aria-hidden="true"></span>${esc(T.verb)}…`; hint.textContent = 'Keep this page open until it finishes.'; return; }
     if (WS.phase === 'unavailable') { runBtn.disabled = true; runBtn.textContent = T.cta; hint.textContent = 'This tool is temporarily unavailable.'; return; }
     if (T.accept === 'url') { ok = isUrl(WS.opts.url || ''); h = ok ? '' : 'Enter a web address to continue.'; }
-    else if (T.accept === 'html') { const n = (WS.opts.html || '').length; ok = !!(WS.opts.html || '').trim() && n <= 5242880; h = !n || ok ? (ok ? '' : 'Paste or type your HTML code to start.') : 'The code is larger than 5 MB.'; }
+    else if (CODE) { const n = (WS.opts.html || '').length; ok = !!(WS.opts.html || '').trim() && n <= CODE.max; h = !n || ok ? (ok ? '' : CODE.hint) : `That is larger than ${Math.round(CODE.max / 1048576)} MB.`; }
     else {
       const n = goodItems().length;
       const regOk = !T.regions || (T.regions.skip && T.regions.skip(WS)) || !!(WS.source && WS.source.url);
@@ -885,7 +968,13 @@ function mountTool(root) {
   function renderOptsPanel() {
     $('.fo-ws-opts h2', root).textContent = T.opts.length ? 'Options' : 'About this tool';
     $('.fo-ws-about', root).textContent = T.tip || T.desc;
-    if (!T.opts.length) { $('.fo-opts', root).innerHTML = `<div class="fo-note">${icon('info')}<span>No settings needed. Add your files and press “${esc(T.cta)}”.</span></div>`; return; }
+    const real = T.opts.filter(f => f.id !== 'opw');
+    if (!real.length) {
+      $('.fo-ws-opts h2', root).textContent = 'About this tool';
+      $('.fo-opts', root).innerHTML = `<div class="fo-note">${icon('info')}<span>No settings needed. Add your files and press “${esc(T.cta)}”.</span></div>${T.opts.length ? '<div class="fo-opts-pw"></div>' : ''}`;
+      if (T.opts.length) WS.refreshOpts = renderOpts($('.fo-opts-pw', root), T.opts, WS.opts, onOptChange);
+      return;
+    }
     WS.refreshOpts = renderOpts($('.fo-opts', root), T.opts, WS.opts, onOptChange);
   }
   function onOptChange(fid) {
@@ -980,17 +1069,20 @@ function mountTool(root) {
         applyThumbStyle();
       }
     } else if (WS.phase === 'working') {
-      main.innerHTML = `<div class="fo-state">${tile()}<h2>${esc(T.verb)}…</h2><p>${useServer ? 'Your files are processed securely, then deleted.' : 'This happens on your device, so it depends on its speed.'}</p><div class="fo-pbar"><i></i></div><p class="fo-plabel">Getting ready</p></div>`;
+      const sub = useServer ? 'Your files are processed securely, then deleted.' : 'This happens on your device, so it depends on its speed.';
+      main.innerHTML = progressMode === 'simple'
+        ? `<div class="fo-state" role="status">${tile()}<h2>${esc(T.verb)}…</h2><div class="fo-spin" aria-hidden="true"></div><p>${sub}</p></div>`
+        : `<div class="fo-state" role="status">${tile()}<h2>${esc(T.verb)}…</h2><p>${sub}</p><div class="fo-pbar"><i></i></div><p class="fo-plabel">Getting ready</p></div>`;
     } else if (WS.phase === 'done') {
       main.innerHTML = resultHtml();
     } else if (WS.phase === 'error') {
       const repair = T.accept === 'pdf' && id !== 'repair' && CFG.catalog.some(x => x.id === 'repair') && /damaged|opened|read/i.test(WS.error);
       main.innerHTML = `<div class="fo-state"><span class="fo-ok fo-err">${icon('alert')}</span><h2>That didn’t work</h2><p>${esc(WS.error)}</p>
-        <div class="fo-res-actions"><button type="button" class="fo-btn fo-btn-ink" data-retry>Try again</button><button type="button" class="fo-btn fo-btn-line" data-again>${T.accept === 'html' ? 'Edit the code' : 'Choose other files'}</button>${repair ? `<button type="button" class="fo-btn fo-btn-quiet" data-next="repair">Repair the PDF</button>` : ''}</div></div>`;
+        <div class="fo-res-actions"><button type="button" class="fo-btn fo-btn-ink" data-retry>Try again</button><button type="button" class="fo-btn fo-btn-line" data-again>${CODE ? esc(CODE.edit) : 'Choose other files'}</button>${repair ? `<button type="button" class="fo-btn fo-btn-quiet" data-next="repair">Repair the PDF</button>` : ''}</div></div>`;
     } else if (WS.phase === 'server') {
       main.innerHTML = `<div class="fo-state"><span class="fo-tile fo-tile-lg">${icon('server')}</span><h2>${esc(T.name)} needs the processing server</h2>
         <p>This tool runs on a processing server, and this website isn’t connected to one yet. Nothing was uploaded.</p>${altsHtml()}
-        <div class="fo-res-actions"><button type="button" class="fo-btn fo-btn-line" data-retry>${T.accept === 'html' ? 'Back to my code' : 'Back to my files'}</button></div></div>`;
+        <div class="fo-res-actions"><button type="button" class="fo-btn fo-btn-line" data-retry>${CODE ? esc(CODE.back) : 'Back to my files'}</button></div></div>`;
     }
   }
   function altsHtml() {
@@ -1106,7 +1198,7 @@ function mountTool(root) {
         if (it.kind === 'svg') { const d = await decodeImage(it.file); it.pw = d.w; it.ph = d.h; d.done(); }
         else { const b = await createImageBitmap(it.file, { imageOrientation: 'from-image' }); it.pw = b.width; it.ph = b.height; b.close(); }
         it.note = `${it.pw} × ${it.ph} px`;
-      } catch (e) { it.err = useServer ? null : 'This image can’t be opened in this browser.'; }
+      } catch (e) { if (isAvif(it.file)) it.note = 'AVIF image'; else it.err = useServer ? null : 'This image can’t be opened in this browser.'; }
       refreshItem(it); updateCta();
       if (T.regions && seq === WS.seq) ensureSource();
       return;
@@ -1114,11 +1206,11 @@ function mountTool(root) {
     if (it.kind === 'heic') { it.note = 'HEIC photo'; refreshItem(it); updateCta(); return; }
     if (it.kind !== 'pdf') return;
     let pdf;
-    try { pdf = await pdfjsDoc(it.file, WS.opts.pw); }
+    try { pdf = await pdfjsDoc(it.file, WS.opts.pw || WS.opts.opw); }
     catch (e) {
       if (seq !== WS.seq) return;
       if (e && e.message === 'offline') { if (!warnedOffline) { warnedOffline = true; toast('Previews need an internet connection the first time.', 'error'); } }
-      else if (e && e.name === 'PasswordException') { it.locked = true; it.note = WS.opts.pw ? 'Wrong password' : 'Password-protected'; if (!useServer && !T.passwords) it.err = 'Password-protected. Unlock it first.'; }
+      else if (e && e.name === 'PasswordException') { it.locked = true; it.note = WS.opts.pw || WS.opts.opw ? 'Wrong password' : 'Password-protected'; if (!useServer && !T.passwords) it.err = 'Password-protected. Unlock it first.'; if (askPw && WS.refreshOpts) WS.refreshOpts(); }
       else if (id === 'repair') it.note = 'Damaged file';
       else if (!useServer) it.err = 'This file can’t be read as a PDF.';
       refreshItem(it); updateCta();
@@ -1195,6 +1287,7 @@ function mountTool(root) {
       if (e instanceof NoServer) return setPhase('server');
       if (!(e instanceof UserError)) console.error(e);
       WS.error = e instanceof UserError ? e.message : friendly(e);
+      if (e && e.need === 'password' && askPw) { WS.needPw = true; if (WS.refreshOpts) WS.refreshOpts(); }
       setPhase('error');
       track({ type: 'tool_run', tool: id, exec, status: 'failed', ms: Math.round(performance.now() - WS.started), files: items.length, name: runName(items) });
     }
@@ -1316,7 +1409,22 @@ async function serverRun(t, items, o, ctx) {
   if (o.url) fd.append('url', /^https?:\/\//i.test(o.url) ? o.url : 'https://' + o.url);
   fd.append('options', JSON.stringify(rest));
   try { if (window.FileoraTrack && FileoraTrack.sid()) fd.append('fo_sid', FileoraTrack.sid()); } catch (e) { /* analytics off */ }
-  const up = await uploadForm(apiUrl('/jobs/' + t.id), fd, f => ctx.progress(f * .3, items.length ? `Uploading ${Math.round(f * 100)}%` : 'Sending'));
+  /* A first connection can fail (the website couldn't reach the processing server in time, or the
+     visitor's network dropped): try again by itself, twice, before showing an error. */
+  let up;
+  for (let attempt = 1; ; attempt++) {
+    try {
+      up = await uploadForm(apiUrl('/jobs/' + t.id), fd, f => ctx.progress(f * .3, items.length ? `Uploading ${Math.round(f * 100)}%` : 'Sending'));
+    } catch (e) {
+      if (attempt >= 3 || (ctx.alive && !ctx.alive())) throw e;
+      up = null;
+    }
+    if (up && !(up.status === 502 || up.status === 504 || up.status === 0)) break;
+    if (attempt >= 3) break;
+    ctx.progress(-1, 'Connecting to the server again…');
+    await sleep(1500 * attempt);
+    if (ctx.alive && !ctx.alive()) throw new Error('cancelled');
+  }
   if (up.status === 503 && /connected/i.test(up.body.error || '')) throw new NoServer();
   if (up.status !== 202) throw new UserError(up.body.error || up.body.message || `The server couldn’t accept this request (error ${up.status}).`);
   const { job, token } = up.body;
@@ -1335,7 +1443,7 @@ async function serverRun(t, items, o, ctx) {
     if (!r.ok) throw new UserError(st.error || 'We lost track of this task. Please run it again.');
     misses = 0;
     if (st.status === 'done') break;
-    if (st.status === 'failed') throw new UserError(st.error || 'The server couldn’t process this file.');
+    if (st.status === 'failed') { const err = new UserError(st.error || 'The server couldn’t process this file.'); err.need = st.need || ''; throw err; }
     ctx.progress(.32 + Math.min(.55, (Date.now() - started) / 90000), st.status === 'queued' ? (st.ahead ? `Waiting in line, ${st.ahead} ahead of you` : 'Waiting in line') : `${t.verb} on the server`);
     if (Date.now() - started > 30 * 60000) throw new UserError('This is taking too long. Try a smaller file.');
   }
@@ -1346,7 +1454,7 @@ async function serverRun(t, items, o, ctx) {
   ctx.progress(.92, 'Downloading the result');
   const r = await fetch(apiUrl('/jobs/' + job + '/file'), { headers, cache: 'no-store' });
   if (!r.ok) { const b = await r.json().catch(() => ({})); throw new UserError(b.error || 'The result couldn’t be downloaded. Please run the task again.'); }
-  return [{ name: st.name, blob: await r.blob() }];
+  return [{ name: st.name, blob: await r.blob(), note: st.note || '' }];
 }
 
 /* ---- 90-boot.js ---- */
@@ -1365,7 +1473,7 @@ const API = {
     $, $$, esc, icon, fmtSize, baseName, extOf, clamp, sleep, toast, UserError,
     lib, libUrl, pdfjsDoc, renderPage, canvasToBlob, pdfOut, loadPdf, savePdf, vis, visRect, parseRanges, rangeLabel, PAGE, MM,
     decodeImage, canvasOf, imageCanvas, filterPixels, imageForPdf, embedCanvas, imagesToPdf, rasterize, textPng, textWidth,
-    pdfLines, toMarkdown, diffLines, Img, IMG_EXT, sameType, renameImg, cropRect, imageNote, eachImage, encodeToSize, padJpeg,
+    pdfLines, toMarkdown, diffLines, Img, IMG_EXT, OUT_EXT, MIME_PSD, encodeCanvas, fontBytes, isAvif, sameType, renameImg, cropRect, imageNote, eachImage, encodeToSize, padJpeg,
     cropCanvas, LANGS, pageSizeOpt, orientOpt, marginOpt, kindOf
   }
 };
@@ -1451,8 +1559,14 @@ function describe(S) {
     multi: !!T.multi, min: T.min, max: T.max || (S.useServer && S.meta.maxFiles ? S.meta.maxFiles : 0), ordered: !!(T.ordered || (T.multi && T.min > 1)),
     camera: !!T.camera, pages: !!T.pages, cta: T.cta, verb: T.verb, tip: T.tip || '', slots: T.slots || null, dropText: T.dropText || '',
     server: S.useServer, passwords: !!T.passwords, regions: T.regions ? { multi: !!T.regions.multi, after: T.regions.after ? String(T.regions.after(S) || '').replace(/<[^>]+>/g, '') : '' } : null,
-    code: T.accept === 'html', textTitle: T.textTitle || '', opts: (T.opts || []).map(optJson)
+    code: T.accept === 'html', codeText: T.accept === 'html' ? codeOf(T) : null, textTitle: T.textTitle || '', opts: (T.opts || []).map(optJson)
   };
+}
+
+/* code mode words (HTML Code to PDF, Text to PDF): the website's T.code, with HTML defaults */
+function codeOf(T) {
+  return Object.assign({ step: 'Add code', hint: 'Paste or type your HTML code to start.', edit: 'Edit the code', back: 'Back to my code', max: 5242880,
+    label: 'Your HTML code', open: 'Open an .html file', ext: '\\.html?$', pick: 'html', placeholder: '<!doctype html>\n<h1>Hello</h1>' }, T.code || {});
 }
 
 /* option values for the app (pictures go as a small preview) */
@@ -1473,7 +1587,7 @@ function ctaOf(S) {
   const T = S.tool, acc = ACCEPT[T.accept] || ACCEPT.pdf;
   let ok = false, h = '';
   if (T.accept === 'url') { ok = isUrlish(S.opts.url || ''); h = ok ? '' : 'Enter a web address to continue.'; }
-  else if (T.accept === 'html') { const n = (S.opts.html || '').length; ok = !!(S.opts.html || '').trim() && n <= 5242880; h = !n || ok ? (ok ? '' : 'Paste or type your HTML code to start.') : 'The code is larger than 5 MB.'; }
+  else if (T.accept === 'html') { const C = codeOf(T), n = (S.opts.html || '').length; ok = !!(S.opts.html || '').trim() && n <= C.max; h = !n || ok ? (ok ? '' : C.hint) : `That is larger than ${Math.round(C.max / 1048576)} MB.`; }
   else {
     const n = goodOf(S).length;
     const skip = T.regions && T.regions.skip && T.regions.skip(S);
@@ -1550,9 +1664,10 @@ function addFiles(S, fids) {
   let files = fids.map(fid => ({ fid, file: fileOf(fid) }));
   if (T.accept === 'url') return notes;
   if (T.accept === 'html') {
-    const f = files.find(x => /\.html?$/i.test(x.file.name) || x.file.type === 'text/html');
-    if (!f) notes.push('Choose an .html or .htm file.');
-    else if (f.file.size > 5242880) notes.push(`${f.file.name} is larger than 5 MB.`);
+    const C = codeOf(T), re = new RegExp(C.ext, 'i');
+    const f = files.find(x => re.test(x.file.name) || (C.pick === 'html' ? x.file.type === 'text/html' : x.file.type === 'text/plain'));
+    if (!f) notes.push(C.pick === 'html' ? 'Choose an .html or .htm file.' : 'Choose a .txt file.');
+    else if (f.file.size > C.max) notes.push(`${f.file.name} is larger than ${Math.round(C.max / 1048576)} MB.`);
     else return f.file.text().then(t => { S.codeSet(t); return [`Opened ${f.file.name}`]; });
     return notes;
   }
@@ -1744,7 +1859,7 @@ function resultJson(r) {
 async function runSession(S) {
   const T = S.tool, c = ctaOf(S);
   if (!c.ok) throw new UserError(c.hint || 'Add your files first.');
-  const items = T.accept === 'html' && T.codeFile ? [{ id: 'code', file: T.codeFile(S), name: 'document.html' }] : goodOf(S);
+  const items = T.accept === 'html' && T.codeFile ? (f => [{ id: 'code', file: f, name: f.name }])(T.codeFile(S)) : goodOf(S);
   const run = ++S.run;
   if (S.useServer) {
     /* the app uploads its own copies of the files to the processing server */
@@ -1769,8 +1884,38 @@ async function runSession(S) {
 }
 
 /* ---- commands ---- */
+/* App 1.0: a short, soft "party popper" when a file is ready, made here with Web Audio (no sound
+   file): a quick filtered pop, then a few light high notes. volume 0..1 (the app passes about 0.35). */
+let audioCtx = null;
+function popper(volume) {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return false;
+  if (!audioCtx) audioCtx = new AC();
+  const ctx = audioCtx;
+  if (ctx.state === 'suspended') ctx.resume();
+  const t = ctx.currentTime + 0.02, out = ctx.createGain();
+  out.gain.value = Math.max(0, Math.min(1, +volume || 0.35)) * 0.5;
+  out.connect(ctx.destination);
+  // the pop: a 60 ms burst of noise through a band-pass filter
+  const len = Math.floor(ctx.sampleRate * 0.06), buf = ctx.createBuffer(1, len, ctx.sampleRate), ch = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) ch[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+  const noise = ctx.createBufferSource(), bp = ctx.createBiquadFilter(), ng = ctx.createGain();
+  noise.buffer = buf; bp.type = 'bandpass'; bp.frequency.value = 1400; bp.Q.value = 0.8;
+  ng.gain.setValueAtTime(0.9, t); ng.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+  noise.connect(bp); bp.connect(ng); ng.connect(out); noise.start(t);
+  // the sparkle: four soft bell notes going up
+  [1318.5, 1568, 2093, 2637].forEach((f, i) => {
+    const o = ctx.createOscillator(), g = ctx.createGain(), s = t + 0.07 + i * 0.055;
+    o.type = 'sine'; o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, s); g.gain.exponentialRampToValueAtTime(0.22, s + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, s + 0.32);
+    o.connect(g); g.connect(out); o.start(s); o.stop(s + 0.35);
+  });
+  return true;
+}
+
 const CMDS = {
   ping: () => ({ protocol: APP_PROTOCOL, engine: API.version, tools: Object.keys(DEFS) }),
+  sound: a => ({ played: popper(a && a.volume) }),
   open: a => openSession(a),
   close: ({ sid }) => { const S = APPS[sid]; if (S) { S.seq++; S.run++; S.outputs.forEach(o => { delete APPO[o.oid]; if (o.url) URL.revokeObjectURL(o.url); }); S.items.forEach(it => { if (it.fid) delete APPF[it.fid]; }); delete APPS[sid]; } return true; },
   state: ({ sid }) => stateOf(sess(sid)),
@@ -1873,6 +2018,12 @@ const CMDS = {
     await one('palette', [a]);
     await one('img2svg', [a]);
     await one('favicon', [a]);
+    /* app 1.0: WebP, AVIF (WebAssembly encoder) and Photoshop output, AVIF back to JPG, and Text to PDF with Hindi and Tamil (HarfBuzz) */
+    await one('jpg2webp', [a]);
+    const [avif] = await one('png2avif', [b]);
+    if (avif) await one('avif2jpg', [avif]);
+    await one('png2psd', [a]);
+    await one('txt2pdf', [], { html: 'Fileora self-test\n\nहिंदी में संयुक्ताक्षर: क्ष त्र ज्ञ श्र\n- தமிழ் சோதனை கொண்டு\n- English line' });
     const fonts = { geist: document.fonts.check('700 20px Geist'), caveat: document.fonts.check('600 20px Caveat') };
     return { ok: res.every(r => r.ok), passed: res.filter(r => r.ok).length, total: res.length, ms: Math.round(performance.now() - t0), tools: Object.keys(DEFS).length, fonts, results: res, ua: navigator.userAgent };
   },

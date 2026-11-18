@@ -48,8 +48,14 @@ function describe(S) {
     multi: !!T.multi, min: T.min, max: T.max || (S.useServer && S.meta.maxFiles ? S.meta.maxFiles : 0), ordered: !!(T.ordered || (T.multi && T.min > 1)),
     camera: !!T.camera, pages: !!T.pages, cta: T.cta, verb: T.verb, tip: T.tip || '', slots: T.slots || null, dropText: T.dropText || '',
     server: S.useServer, passwords: !!T.passwords, regions: T.regions ? { multi: !!T.regions.multi, after: T.regions.after ? String(T.regions.after(S) || '').replace(/<[^>]+>/g, '') : '' } : null,
-    code: T.accept === 'html', textTitle: T.textTitle || '', opts: (T.opts || []).map(optJson)
+    code: T.accept === 'html', codeText: T.accept === 'html' ? codeOf(T) : null, textTitle: T.textTitle || '', opts: (T.opts || []).map(optJson)
   };
+}
+
+/* code mode words (HTML Code to PDF, Text to PDF): the website's T.code, with HTML defaults */
+function codeOf(T) {
+  return Object.assign({ step: 'Add code', hint: 'Paste or type your HTML code to start.', edit: 'Edit the code', back: 'Back to my code', max: 5242880,
+    label: 'Your HTML code', open: 'Open an .html file', ext: '\\.html?$', pick: 'html', placeholder: '<!doctype html>\n<h1>Hello</h1>' }, T.code || {});
 }
 
 /* option values for the app (pictures go as a small preview) */
@@ -70,7 +76,7 @@ function ctaOf(S) {
   const T = S.tool, acc = ACCEPT[T.accept] || ACCEPT.pdf;
   let ok = false, h = '';
   if (T.accept === 'url') { ok = isUrlish(S.opts.url || ''); h = ok ? '' : 'Enter a web address to continue.'; }
-  else if (T.accept === 'html') { const n = (S.opts.html || '').length; ok = !!(S.opts.html || '').trim() && n <= 5242880; h = !n || ok ? (ok ? '' : 'Paste or type your HTML code to start.') : 'The code is larger than 5 MB.'; }
+  else if (T.accept === 'html') { const C = codeOf(T), n = (S.opts.html || '').length; ok = !!(S.opts.html || '').trim() && n <= C.max; h = !n || ok ? (ok ? '' : C.hint) : `That is larger than ${Math.round(C.max / 1048576)} MB.`; }
   else {
     const n = goodOf(S).length;
     const skip = T.regions && T.regions.skip && T.regions.skip(S);
@@ -147,9 +153,10 @@ function addFiles(S, fids) {
   let files = fids.map(fid => ({ fid, file: fileOf(fid) }));
   if (T.accept === 'url') return notes;
   if (T.accept === 'html') {
-    const f = files.find(x => /\.html?$/i.test(x.file.name) || x.file.type === 'text/html');
-    if (!f) notes.push('Choose an .html or .htm file.');
-    else if (f.file.size > 5242880) notes.push(`${f.file.name} is larger than 5 MB.`);
+    const C = codeOf(T), re = new RegExp(C.ext, 'i');
+    const f = files.find(x => re.test(x.file.name) || (C.pick === 'html' ? x.file.type === 'text/html' : x.file.type === 'text/plain'));
+    if (!f) notes.push(C.pick === 'html' ? 'Choose an .html or .htm file.' : 'Choose a .txt file.');
+    else if (f.file.size > C.max) notes.push(`${f.file.name} is larger than ${Math.round(C.max / 1048576)} MB.`);
     else return f.file.text().then(t => { S.codeSet(t); return [`Opened ${f.file.name}`]; });
     return notes;
   }
@@ -341,7 +348,7 @@ function resultJson(r) {
 async function runSession(S) {
   const T = S.tool, c = ctaOf(S);
   if (!c.ok) throw new UserError(c.hint || 'Add your files first.');
-  const items = T.accept === 'html' && T.codeFile ? [{ id: 'code', file: T.codeFile(S), name: 'document.html' }] : goodOf(S);
+  const items = T.accept === 'html' && T.codeFile ? (f => [{ id: 'code', file: f, name: f.name }])(T.codeFile(S)) : goodOf(S);
   const run = ++S.run;
   if (S.useServer) {
     /* the app uploads its own copies of the files to the processing server */
@@ -366,8 +373,38 @@ async function runSession(S) {
 }
 
 /* ---- commands ---- */
+/* App 1.0: a short, soft "party popper" when a file is ready, made here with Web Audio (no sound
+   file): a quick filtered pop, then a few light high notes. volume 0..1 (the app passes about 0.35). */
+let audioCtx = null;
+function popper(volume) {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return false;
+  if (!audioCtx) audioCtx = new AC();
+  const ctx = audioCtx;
+  if (ctx.state === 'suspended') ctx.resume();
+  const t = ctx.currentTime + 0.02, out = ctx.createGain();
+  out.gain.value = Math.max(0, Math.min(1, +volume || 0.35)) * 0.5;
+  out.connect(ctx.destination);
+  // the pop: a 60 ms burst of noise through a band-pass filter
+  const len = Math.floor(ctx.sampleRate * 0.06), buf = ctx.createBuffer(1, len, ctx.sampleRate), ch = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) ch[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+  const noise = ctx.createBufferSource(), bp = ctx.createBiquadFilter(), ng = ctx.createGain();
+  noise.buffer = buf; bp.type = 'bandpass'; bp.frequency.value = 1400; bp.Q.value = 0.8;
+  ng.gain.setValueAtTime(0.9, t); ng.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+  noise.connect(bp); bp.connect(ng); ng.connect(out); noise.start(t);
+  // the sparkle: four soft bell notes going up
+  [1318.5, 1568, 2093, 2637].forEach((f, i) => {
+    const o = ctx.createOscillator(), g = ctx.createGain(), s = t + 0.07 + i * 0.055;
+    o.type = 'sine'; o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, s); g.gain.exponentialRampToValueAtTime(0.22, s + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, s + 0.32);
+    o.connect(g); g.connect(out); o.start(s); o.stop(s + 0.35);
+  });
+  return true;
+}
+
 const CMDS = {
   ping: () => ({ protocol: APP_PROTOCOL, engine: API.version, tools: Object.keys(DEFS) }),
+  sound: a => ({ played: popper(a && a.volume) }),
   open: a => openSession(a),
   close: ({ sid }) => { const S = APPS[sid]; if (S) { S.seq++; S.run++; S.outputs.forEach(o => { delete APPO[o.oid]; if (o.url) URL.revokeObjectURL(o.url); }); S.items.forEach(it => { if (it.fid) delete APPF[it.fid]; }); delete APPS[sid]; } return true; },
   state: ({ sid }) => stateOf(sess(sid)),
@@ -470,6 +507,12 @@ const CMDS = {
     await one('palette', [a]);
     await one('img2svg', [a]);
     await one('favicon', [a]);
+    /* app 1.0: WebP, AVIF (WebAssembly encoder) and Photoshop output, AVIF back to JPG, and Text to PDF with Hindi and Tamil (HarfBuzz) */
+    await one('jpg2webp', [a]);
+    const [avif] = await one('png2avif', [b]);
+    if (avif) await one('avif2jpg', [avif]);
+    await one('png2psd', [a]);
+    await one('txt2pdf', [], { html: 'Fileora self-test\n\nहिंदी में संयुक्ताक्षर: क्ष त्र ज्ञ श्र\n- தமிழ் சோதனை கொண்டு\n- English line' });
     const fonts = { geist: document.fonts.check('700 20px Geist'), caveat: document.fonts.check('600 20px Caveat') };
     return { ok: res.every(r => r.ok), passed: res.filter(r => r.ok).length, total: res.length, ms: Math.round(performance.now() - t0), tools: Object.keys(DEFS).length, fonts, results: res, ua: navigator.userAgent };
   },

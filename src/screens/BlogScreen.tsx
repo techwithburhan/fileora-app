@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Image, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import StackHeader from '../components/StackHeader';
@@ -7,13 +7,15 @@ import PressableScale from '../components/PressableScale';
 import { getPosts, Post } from '../api/wp';
 import { brand, Theme } from '../theme';
 import Appear from '../components/Appear';
+import PullRefresh from '../components/PullRefresh';
+import { remote } from '../remote/remote';
 
 export default function BlogScreen({ theme }: { theme: Theme }) {
   const nav = useNavigation();
   const [posts, setPosts] = useState<Post[]>([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [, setRefreshing] = useState(false);
   const [end, setEnd] = useState(false);
   const [error, setError] = useState(false);
 
@@ -41,20 +43,11 @@ export default function BlogScreen({ theme }: { theme: Theme }) {
   return (
     <View style={[styles.flex, { backgroundColor: theme.bg }]}>
       <StackHeader title="Blog" theme={theme} onBack={() => nav.goBack()} />
-      <Animated.FlatList
+      <PullRefresh theme={theme} onRefresh={() => Promise.all([load(1, true), remote.refresh(true)])}>
+        <Animated.FlatList
         data={posts}
         keyExtractor={p => String(p.id)}
         contentContainerStyle={styles.content}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            colors={[brand.green]}
-            onRefresh={() => {
-              setRefreshing(true);
-              load(1, true);
-            }}
-          />
-        }
         onEndReachedThreshold={0.4}
         onEndReached={() => {
           if (!loading && !end && !error && posts.length) {
@@ -96,7 +89,8 @@ export default function BlogScreen({ theme }: { theme: Theme }) {
             </PressableScale>
           </Appear>
         )}
-      />
+        />
+      </PullRefresh>
     </View>
   );
 }

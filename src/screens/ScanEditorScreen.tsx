@@ -17,7 +17,7 @@ import Dialog from '../components/Dialog';
 import ActionSheet, { SheetAction } from '../components/ActionSheet';
 import ResultSheet from '../components/ResultSheet';
 import { EDITOR_HTML } from '../scanner/editorHtml';
-import { pickPhotos, takePhoto } from '../lib/capture';
+import { pickPhotos, scanDocuments, takePhoto } from '../lib/capture';
 import { pickFiles } from '../lib/pick';
 import { native } from '../lib/native';
 import { imagesToPdf } from '../lib/pdf';
@@ -33,7 +33,7 @@ import { busy as task } from '../lib/busy';
 
 const WV = WebView<object>;
 type Filter = 'none' | 'photo' | 'document' | 'bw' | 'mono';
-type Page = { src: string; mime: string; w?: number; h?: number; quad?: number[][]; detected?: boolean; filter: Filter; rot: number; distortion: boolean };
+type Page = { src: string; mime: string; w?: number; h?: number; quad?: number[][]; detected?: boolean; cropped?: boolean; filter: Filter; rot: number; distortion: boolean };
 type Msg = { t: string; id?: number; [k: string]: unknown };
 
 const FILTERS: { id: Filter; label: string }[] = [
@@ -110,7 +110,7 @@ export default function ScanEditorScreen({ theme }: { theme: Theme }) {
       const p = list[i];
       if (!p) return;
       try {
-        const r = await call({ t: 'load', url: await dataUrl(p), quad: p.quad, w: p.w, h: p.h, detected: p.detected, filter: p.filter, rot: p.rot, distortion: p.distortion, mode });
+        const r = await call({ t: 'load', url: await dataUrl(p), quad: p.quad, w: p.w, h: p.h, detected: p.detected, cropped: p.cropped, filter: p.filter, rot: p.rot, distortion: p.distortion, mode });
         setPages(ps => ps.map((x, j) => (j === i ? { ...x, w: r.w as number, h: r.h as number, quad: r.quad as number[][], detected: r.detected as boolean } : x)));
         setHint(mode === 'border' && !p.quad && !r.detected ? 'Page edges not found: drag the corners to the page.' : null);
         if (mode === 'filter') setThumbs((await call({ t: 'thumbs' })).items as Record<string, string>);
@@ -126,7 +126,11 @@ export default function ScanEditorScreen({ theme }: { theme: Theme }) {
     async (source: 'camera' | 'gallery' | 'pdf' | 'images'): Promise<Page[]> => {
       const last = pages[pages.length - 1];
       const base = { filter: last?.filter ?? (convert ? 'document' : 'none'), rot: 0, distortion: true } as const;
-      if (source === 'camera') return (await takePhoto()).map(i => ({ ...base, src: i.path, mime: i.mime }));
+      if (source === 'camera') {
+        // Auto Detect: the document scanner finds and straightens the page; else the camera app
+        const scanned = await scanDocuments();
+        return (scanned ?? (await takePhoto())).map(i => ({ ...base, src: i.path, mime: i.mime, cropped: !!i.cropped }));
+      }
       if (source === 'gallery') return (await pickPhotos(0)).map(i => ({ ...base, src: i.path, mime: i.mime }));
       if (source === 'images') return (await pickFiles('jpgpng', true)).map(i => ({ ...base, src: i.path, mime: i.mime }));
       const pdfs = await pickFiles('pdf', true);
@@ -259,7 +263,7 @@ export default function ScanEditorScreen({ theme }: { theme: Theme }) {
       for (let i = 0; i < pages.length; i++) {
         setBusy(`Saving page ${i + 1} of ${pages.length}…`);
         const p = pages[i];
-        await call({ t: 'load', url: await dataUrl(p), quad: p.quad, w: p.w, h: p.h, detected: p.detected, filter: p.filter, rot: p.rot, distortion: p.distortion, mode: 'filter' });
+        await call({ t: 'load', url: await dataUrl(p), quad: p.quad, w: p.w, h: p.h, detected: p.detected, cropped: p.cropped, filter: p.filter, rot: p.rot, distortion: p.distortion, mode: 'filter' });
         const r = await call({ t: 'export', maxSide: 2400, quality: 0.88 });
         const path = `${BlobUtil.fs.dirs.CacheDir}/scan-${Date.now()}-${i}.jpg`;
         await BlobUtil.fs.writeFile(path, String(r.url).split(',')[1], 'base64');

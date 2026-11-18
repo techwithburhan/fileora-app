@@ -14,6 +14,8 @@ export default function Dialog({
   value,
   check,
   okLabel = 'OK',
+  secure = false,
+  message,
   theme,
   onCancel,
   onOk,
@@ -24,6 +26,10 @@ export default function Dialog({
   value?: string;
   check?: { label: string; value: boolean };
   okLabel?: string;
+  /** a password field (hidden text, no capitals or corrections) */
+  secure?: boolean;
+  /** a line under the title */
+  message?: string;
   theme: Theme;
   onCancel: () => void;
   onOk: (text: string, checked: boolean) => void;
@@ -48,6 +54,7 @@ export default function Dialog({
           <Text style={[type.section, { color: theme.ink }]} accessibilityRole="header">
             {title}
           </Text>
+          {message ? <Text style={[type.bodySm, { color: theme.ink2 }]}>{message}</Text> : null}
           {label !== undefined && (
             <View style={[styles.field, { borderColor: theme.line, backgroundColor: theme.surface }]}>
               <Text style={[type.caption, { color: theme.muted }]}>{label}</Text>
@@ -56,6 +63,9 @@ export default function Dialog({
                 onChangeText={setText}
                 autoFocus
                 selectTextOnFocus
+                secureTextEntry={secure}
+                autoCapitalize={secure ? 'none' : undefined}
+                autoCorrect={secure ? false : undefined}
                 maxLength={80}
                 style={[styles.input, { color: theme.ink }]}
                 placeholderTextColor={theme.muted}

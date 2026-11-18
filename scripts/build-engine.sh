@@ -29,6 +29,7 @@ node --check "$OUT/engine.js"
 
 for m in pdf image optimizer converter security editor ai; do cp "$CORE/modules/$m/$m.js" "$OUT/modules/$m.js"; done
 cp "$CORE"/public/vendor/*.js "$OUT/vendor/"
+mkdir -p "$OUT/vendor/fonts" && cp "$CORE"/public/vendor/fonts/*.js "$CORE"/public/vendor/fonts/OFL.txt "$OUT/vendor/fonts/"   # Text to PDF (Noto, OFL)
 cp "$ROOT/engine/index.html" "$OUT/index.html"
 
 # Fonts as data: URLs (a page opened from a file can't load font files from other files)

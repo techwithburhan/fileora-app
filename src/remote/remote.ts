@@ -45,8 +45,11 @@ export const TOGGLE_SETTINGS = ['notify', 'quiet', 'private', 'updates', 'news',
 export const ACTION_SETTINGS = ['check', 'test', 'sound', 'reset'] as const;
 export type SettingKey = (typeof TOGGLE_SETTINGS)[number] | (typeof ACTION_SETTINGS)[number];
 /** App Center: tool page sections and the menu's "Open fileora.in" (plugin 2.16+). */
+/** App Center → Manage → Processing screen (plugin 2.18): how a working tool shows progress. */
+export type ProgressMode = 'detailed' | 'simple' | 'off';
 export type UiConfig = {
   menu_website: boolean;
+  progress: { browser: ProgressMode; server: ProgressMode };
   tool: { website_link: boolean; breadcrumbs: boolean; after_content: boolean; more_tools: boolean; faq: boolean };
 };
 /** Alerts deleted automatically after `hours`, or by an admin (ids, or everything up to `before`). */
@@ -114,6 +117,8 @@ export type Prefs = {
   usage: boolean; // share anonymous usage
   quiet: boolean; // notifications arrive without sound or pop-up
   private: boolean; // nothing shown on the lock screen
+  /** app 1.0: a short, quiet party-popper sound when a file is ready (off = only the confetti) */
+  celebrate?: boolean;
   /** settings the person changed themselves (until then App Center's starting value applies) */
   touched?: string[];
 };
@@ -265,13 +270,15 @@ function cleanSettingsCtl(v: unknown): Partial<Record<SettingKey, SettingCtl>> |
   return out;
 }
 /** Older plugins send no "ui": the app keeps its earlier look (website link in the menu, more tools). */
-const UI_DEFAULT: UiConfig = { menu_website: true, tool: { website_link: false, breadcrumbs: false, after_content: false, more_tools: true, faq: false } };
+const UI_DEFAULT: UiConfig = { menu_website: true, progress: { browser: 'detailed', server: 'detailed' }, tool: { website_link: false, breadcrumbs: false, after_content: false, more_tools: true, faq: false } };
 function cleanUi(v: unknown): UiConfig {
   if (!v || typeof v !== 'object') return UI_DEFAULT;
-  const u = v as { menu_website?: unknown; tool?: Record<string, unknown> };
+  const u = v as { menu_website?: unknown; tool?: Record<string, unknown>; progress?: Record<string, unknown> };
   const t = u.tool && typeof u.tool === 'object' ? u.tool : {};
+  const pm = (x: unknown): ProgressMode => (x === 'simple' || x === 'off' ? x : 'detailed');
   return {
     menu_website: u.menu_website !== false,
+    progress: { browser: pm(u.progress?.browser), server: pm(u.progress?.server) },
     tool: { website_link: t.website_link === true, breadcrumbs: t.breadcrumbs === true, after_content: t.after_content === true, more_tools: t.more_tools === true, faq: t.faq === true },
   };
 }
@@ -458,6 +465,9 @@ export const remote = {
     }
   },
 
+  prefs(): Prefs {
+    return state.prefs;
+  },
   setPrefs(p: Partial<Prefs>) {
     set({ prefs: { ...state.prefs, ...p } });
   },

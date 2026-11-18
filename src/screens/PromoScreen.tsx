@@ -2,11 +2,9 @@
  * Promotions (App Center → Promotions): offers, news and links as cards with an image, a title,
  * a text and a button. Managed in WordPress; changes arrive with the next settings refresh.
  */
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Image,
-  RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -21,16 +19,12 @@ import { remote, useRemote } from '../remote/remote';
 import { Theme } from '../theme';
 import { type } from '../typography';
 import Appear from '../components/Appear';
+import PullRefresh from '../components/PullRefresh';
+import Animated from 'react-native-reanimated';
 
 export default function PromoScreen({ theme }: { theme: Theme }) {
   const nav = useNavigation();
   const promo = useRemote(s => s.config?.promo ?? null);
-  const [refreshing, setRefreshing] = useState(false);
-  const refresh = async () => {
-    setRefreshing(true);
-    await remote.refresh(true);
-    setRefreshing(false);
-  };
   return (
     <View style={[styles.flex, { backgroundColor: theme.bg }]}>
       <StackHeader
@@ -38,16 +32,9 @@ export default function PromoScreen({ theme }: { theme: Theme }) {
         theme={theme}
         onBack={() => nav.goBack()}
       />
-      <ScrollView
+      <PullRefresh theme={theme} onRefresh={() => remote.refresh(true)}>
+        <Animated.ScrollView
         contentContainerStyle={styles.content}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={refresh}
-            tintColor={theme.accent}
-            colors={[theme.accent]}
-          />
-        }
       >
         {promo?.intro ? (
           <Text style={[type.body, { color: theme.ink2 }]}>{promo.intro}</Text>
@@ -115,7 +102,8 @@ export default function PromoScreen({ theme }: { theme: Theme }) {
             </Text>
           </View>
         )}
-      </ScrollView>
+        </Animated.ScrollView>
+      </PullRefresh>
     </View>
   );
 }

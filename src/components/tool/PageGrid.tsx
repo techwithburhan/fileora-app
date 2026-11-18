@@ -1,4 +1,5 @@
 /** Pages of a PDF as a grid (Organize and other page tools): move, turn and delete pages. */
+import { useCells } from '../../lib/useCells';
 import React from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import Icon from '../Icon';
@@ -10,6 +11,7 @@ import { type } from '../../typography';
 type Props = { pages: PageRef[]; total: number; thumbs: Record<string, string>; theme: Theme; onChange: (p: PageRef[]) => void; onReset: () => void };
 
 export default function PageGrid({ pages, total, thumbs, theme, onChange, onReset }: Props) {
+  const grid = useCells(3, 10); // three pages per row, measured (see lib/useCells)
   const move = (k: number, d: number) => {
     const j = k + d;
     if (j < 0 || j >= pages.length) return;
@@ -30,11 +32,11 @@ export default function PageGrid({ pages, total, thumbs, theme, onChange, onRese
           <Text style={[type.caption, styles.bold, { color: theme.ink2 }]}>Reset pages</Text>
         </PressableScale>
       </View>
-      <View style={styles.grid}>
+      <View style={styles.grid} onLayout={grid.onLayout}>
         {pages.map((p, k) => {
           const uri = thumbs[p.key];
           return (
-            <View key={p.key} style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.line }]}>
+            <View key={p.key} style={[styles.card, { width: grid.width, backgroundColor: theme.surface, borderColor: theme.line }]}>
               <View style={[styles.thumb, { backgroundColor: theme.surface2 }]}>
                 {uri ? (
                   <Image source={{ uri }} style={[styles.img, { transform: [{ rotate: `${p.rot}deg` }, { scale: p.rot % 180 ? 0.72 : 1 }] }]} resizeMode="contain" accessibilityIgnoresInvertColors />
@@ -79,7 +81,7 @@ const styles = StyleSheet.create({
   head: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   reset: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, minHeight: 32 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  card: { width: '31%', flexGrow: 0, borderWidth: 1, borderRadius: 14, padding: 6, gap: 4 },
+  card: { flexGrow: 0, borderWidth: 1, borderRadius: 14, padding: 6, gap: 4 },
   thumb: { aspectRatio: 0.72, borderRadius: 8, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   img: { width: '100%', height: '100%' },
   num: { position: 'absolute', left: 4, top: 4, minWidth: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4 },

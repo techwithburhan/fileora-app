@@ -7,10 +7,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AppState,
-  FlatList,
   Image,
   Pressable,
-  RefreshControl,
   StyleSheet,
   Text,
   View,
@@ -30,6 +28,8 @@ import { openInboxItem, permission, pushAvailable } from '../remote/push';
 import { Theme } from '../theme';
 import { type } from '../typography';
 import Appear from '../components/Appear';
+import PullRefresh from '../components/PullRefresh';
+import Animated from 'react-native-reanimated';
 
 const TOPIC_ICON: Record<string, IconName> = {
   all: 'bell',
@@ -58,7 +58,6 @@ export default function AlertsScreen({ theme }: { theme: Theme }) {
   const items = useInbox();
   const prefs = useRemote(s => s.prefs);
   const hours = useRemote(s => s.config?.inbox_purge.hours ?? 72);
-  const [refreshing, setRefreshing] = useState(false);
   const [perm, setPerm] = useState<'granted' | 'denied' | null>(null);
   // what was unread when the screen opened keeps its dot during this visit
   const lastSeen = useRef(inbox.seenAt());
@@ -84,11 +83,6 @@ export default function AlertsScreen({ theme }: { theme: Theme }) {
     return () => sub.remove();
   }, []);
 
-  const refresh = async () => {
-    setRefreshing(true);
-    await remote.refresh(true);
-    setRefreshing(false);
-  };
 
   // Delete one, or all with one tap; both can be undone for a few seconds
   const [undo, setUndo] = useState<{ text: string; run: () => void } | null>(null);
@@ -192,19 +186,12 @@ export default function AlertsScreen({ theme }: { theme: Theme }) {
   return (
     <View style={[styles.flex, { backgroundColor: theme.bg }]}>
       <AppHeader theme={theme} />
-      <FlatList
+      <PullRefresh theme={theme} onRefresh={() => remote.refresh(true)}>
+        <Animated.FlatList
         data={items}
         keyExtractor={i => i.id}
         renderItem={renderItem}
         contentContainerStyle={styles.content}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={refresh}
-            tintColor={theme.accent}
-            colors={[theme.accent]}
-          />
-        }
         ListHeaderComponent={
           <View style={styles.head}>
             <View style={styles.headRow}>
@@ -268,7 +255,8 @@ export default function AlertsScreen({ theme }: { theme: Theme }) {
             </Text>
           </View>
         }
-      />
+        />
+      </PullRefresh>
       {undo && (
         <View style={[styles.undo, theme.dark ? { backgroundColor: theme.surface2 } : styles.undoLight]} accessibilityLiveRegion="polite">
           <Text style={[type.bodySm, styles.flex, styles.undoText]}>{undo.text}</Text>

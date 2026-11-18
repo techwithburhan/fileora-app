@@ -59,8 +59,9 @@
       src = canvas(W, H);
       var c = src.getContext('2d'); c.imageSmoothingQuality = 'high'; c.drawImage(img, 0, 0, W, H);
       srcData = c.getImageData(0, 0, W, H);
-      autoQuad = m.quad ? null : detect();
-      detected = m.quad ? !!m.detected : !!autoQuad;
+      // m.cropped: the phone's document scanner already found the edges and straightened the page
+      autoQuad = m.quad || m.cropped ? null : detect();
+      detected = m.quad ? !!m.detected : m.cropped ? true : !!autoQuad;
       quad = m.quad ? scaleQuad(m.quad, m.w && m.h ? W / m.w : 1) : (autoQuad || full());
       filter = m.filter || 'none'; rot = m.rot || 0; distortion = m.distortion !== false;
       mode = m.mode || 'border'; base = null; baseKey = ''; shown = null; shownKey = '';

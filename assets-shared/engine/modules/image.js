@@ -1,8 +1,8 @@
-/* Fileora module: Image Tools (21 tools, all in the browser). */
+/* Fileora module: Image Tools (27 tools, all in the browser). */
 (function (E) {
   'use strict';
   if (!E) return;
-  const { esc, fmtSize, baseName, extOf, clamp, UserError, lib, libUrl, canvasToBlob, decodeImage, canvasOf, imageCanvas, Img, IMG_EXT, sameType, renameImg, cropRect, imageNote, eachImage, encodeToSize, padJpeg, cropCanvas, textWidth } = E.h;
+  const { esc, fmtSize, baseName, extOf, clamp, UserError, lib, libUrl, canvasToBlob, decodeImage, canvasOf, imageCanvas, Img, IMG_EXT, MIME_PSD, encodeCanvas, isAvif, sameType, renameImg, cropRect, imageNote, eachImage, encodeToSize, padJpeg, cropCanvas, textWidth } = E.h;
   const R = def => E.register(def);
   const pc = (v, d) => (v / d * 100).toFixed(3) + '%';
   const COLORS = ['#FFFFFF', '#16182F', '#E0464C', '#2F6BF3', '#0E9F57', '#FFD43B'];
@@ -39,7 +39,7 @@
 
   R({ id: 'imgconvert', accept: 'image', multi: true, cta: 'Convert images', verb: 'Converting',
     opts: [
-      { id: 'to', type: 'seg', label: 'Convert to', value: 'image/png', choices: [['image/jpeg', 'JPG'], ['image/png', 'PNG'], ['image/webp', 'WebP']] },
+      { id: 'to', type: 'seg', label: 'Convert to', value: 'image/png', choices: [['image/jpeg', 'JPG'], ['image/png', 'PNG'], ['image/webp', 'WebP'], ['image/avif', 'AVIF']] },
       { id: 'quality', type: 'range', label: 'Quality', value: 90, min: 40, max: 100, step: 1, suffix: '%', show: o => o.to !== 'image/png' }
     ],
     run: (items, o, ctx) => eachImage(items, ctx, f => Img.convert(f, o.to, { quality: +o.quality / 100 })) });
@@ -65,6 +65,37 @@
   R({ id: 'png2jpg', accept: 'image', multi: true, cta: 'Convert to JPG', verb: 'Converting',
     opts: [{ id: 'quality', type: 'range', label: 'Quality', value: 90, min: 40, max: 100, step: 1, suffix: '%' }],
     run: (items, o, ctx) => eachImage(items, ctx, f => Img.convert(f, 'image/jpeg', { quality: +o.quality / 100 })) });
+
+  /* ---------------- 2.18: WebP, AVIF and Photoshop conversions ----------------
+     Each picture is drawn once at full size (EXIF rotation applied) and written in the new format.
+     JPG has no transparency, so transparent areas become white there. */
+  function conv(id, to, { cta, quality, note }) {
+    const opts = quality ? [{ id: 'quality', type: 'range', label: 'Quality', value: quality, min: to === 'image/avif' ? 20 : 40, max: 100, step: 1, suffix: '%',
+      help: to === 'image/avif' ? 'AVIF is very efficient: 50 to 65% already looks like the original. Higher is bigger.' : 'Lower quality gives a smaller file.' }] : [];
+    if (to === 'image/avif') opts.push({ id: 'lossless', type: 'toggle', label: 'Lossless (exact pixels, bigger file)', value: false });
+    R({ id, accept: 'image', multi: true, cta, verb: 'Converting', tip: note, opts,
+      /* any picture is accepted (a PNG added to JPG to WebP still becomes WebP) */
+      run: (items, o, ctx) => eachImage(items, ctx, async (f, it, i) => {
+        if (to === 'image/avif') ctx.progress(i / items.length, `Encoding AVIF ${i + 1} of ${items.length} (a few seconds each)`);
+        const c = await imageCanvas(f, 0, to === 'image/jpeg' ? '#fff' : null);
+        const q = quality ? (+o.quality || quality) / 100 : 0.92;
+        const blob = await encodeCanvas(c, to, q, { lossless: !!o.lossless, layer: baseName(f.name) });
+        const w = c.width, h = c.height; c.width = c.height = 0;
+        return { blob, name: renameImg(f.name, to), width: w, height: h };
+      }) });
+  }
+  conv('jpg2webp', 'image/webp', { cta: 'Convert to WebP', quality: 85,
+    note: 'WebP files are usually 25 to 35% smaller than JPG at the same quality, so pages load faster.' });
+  conv('webp2jpg', 'image/jpeg', { cta: 'Convert to JPG', quality: 92,
+    note: 'JPG opens everywhere: old phones, Windows Photo Viewer, email and government forms. Transparent areas become white.' });
+  conv('png2psd', MIME_PSD, { cta: 'Convert to PSD',
+    note: 'The picture becomes one layer in a Photoshop file, with its transparency kept. Opens in Photoshop, GIMP and Photopea.' });
+  conv('avif2jpg', 'image/jpeg', { cta: 'Convert to JPG', quality: 92,
+    note: 'Turns AVIF pictures into JPG that every app and website accepts.' });
+  conv('jpg2avif', 'image/avif', { cta: 'Convert to AVIF', quality: 60,
+    note: 'AVIF is often half the size of a JPG at the same look. The first picture takes a moment while the encoder loads.' });
+  conv('png2avif', 'image/avif', { cta: 'Convert to AVIF', quality: 70,
+    note: 'Keeps transparency and is much smaller than PNG. Turn on Lossless for exact pixels (logos, screenshots).' });
 
   /* ---------------- exact sizes for online forms ---------------- */
   R({ id: 'imgkb', accept: 'image', multi: true, cta: 'Compress to size', verb: 'Finding the best quality',

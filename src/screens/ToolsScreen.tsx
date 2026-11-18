@@ -8,8 +8,10 @@ import PressableScale from '../components/PressableScale';
 import { ToolCard } from '../components/ToolCard';
 import { CATEGORIES, CategoryId } from '../data/tools';
 import { useVisibleTools } from '../remote/useTools';
+import { remote } from '../remote/remote';
 import { TabParamList } from '../navigation/types';
 import { Theme } from '../theme';
+import PullRefresh from '../components/PullRefresh';
 
 
 export default function ToolsScreen({ theme }: { theme: Theme }) {
@@ -48,7 +50,8 @@ export default function ToolsScreen({ theme }: { theme: Theme }) {
   return (
     <View style={[styles.flex, { backgroundColor: theme.bg }]}>
       <AppHeader theme={theme} scrollY={scrollY} search={false} />
-      <Animated.FlatList
+      <PullRefresh theme={theme} onRefresh={() => remote.refresh(true)} scrollY={scrollY}>
+        <Animated.FlatList
         data={list}
         keyExtractor={t => t.id}
         numColumns={2}
@@ -103,7 +106,8 @@ export default function ToolsScreen({ theme }: { theme: Theme }) {
         }
         ListEmptyComponent={<Text style={[styles.empty, { color: theme.muted }]}>No tool matches “{q}”. Try another word.</Text>}
         renderItem={({ item, index }) => <ToolCard tool={item} theme={theme} index={index} onPress={() => nav.navigate('Tool', { id: item.id })} />}
-      />
+        />
+      </PullRefresh>
     </View>
   );
 }

@@ -4,7 +4,7 @@ import { Platform } from 'react-native';
 import { mimeOf, stripScheme } from '../store/files';
 
 export type Picked = { key: string; name: string; size: number; path: string; mime: string };
-export type Accept = 'pdf' | 'image' | 'jpgpng' | 'pdfimage' | 'heic' | 'svg' | 'html' | 'word' | 'excel' | 'ppt' | 'any';
+export type Accept = 'pdf' | 'image' | 'jpgpng' | 'pdfimage' | 'heic' | 'svg' | 'html' | 'text' | 'word' | 'excel' | 'ppt' | 'any';
 
 const IOS = Platform.OS === 'ios';
 const T = types as unknown as Record<string, string>;
@@ -18,6 +18,7 @@ const TYPES: Record<Accept, string[]> = IOS
       heic: ['public.heic', 'public.heif', T.images],
       svg: ['public.svg-image'],
       html: ['public.html', T.plainText],
+      text: [T.plainText, 'net.daringfireball.markdown'],
       word: [T.doc, T.docx, 'org.oasis-open.opendocument.text', 'public.rtf', T.plainText],
       excel: [T.xls, T.xlsx, 'public.comma-separated-values-text', 'org.oasis-open.opendocument.spreadsheet'],
       ppt: [T.ppt, T.pptx, 'org.openxmlformats.presentationml.slideshow', 'org.oasis-open.opendocument.presentation'],
@@ -31,6 +32,7 @@ const TYPES: Record<Accept, string[]> = IOS
       heic: ['image/heic', 'image/heif', 'image/jpeg', 'image/png', 'image/webp'],
       svg: ['image/svg+xml'],
       html: ['text/html', T.plainText],
+      text: [T.plainText, 'text/markdown'],
       word: [T.doc, T.docx, 'application/vnd.oasis.opendocument.text', 'application/rtf', 'text/rtf', T.plainText],
       excel: [T.xls, T.xlsx, 'text/csv', 'text/comma-separated-values', 'application/vnd.oasis.opendocument.spreadsheet'],
       ppt: [T.ppt, T.pptx, 'application/vnd.openxmlformats-officedocument.presentationml.slideshow', 'application/vnd.oasis.opendocument.presentation'],

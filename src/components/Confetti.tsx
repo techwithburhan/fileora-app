@@ -2,6 +2,7 @@
  * Party-popper confetti: two bursts from the sides that arc up, drift and fall, then fade.
  * Runs on the UI thread (Reanimated); skipped when the phone asks for reduced motion.
  */
+import { celebrate } from '../lib/celebrate';
 import React, { useEffect, useMemo } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
@@ -60,6 +61,10 @@ export default function Confetti({ play }: { play: boolean }) {
     // new bursts each time it plays
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [play, width, height]);
+  // the quiet party-popper sound plays with the confetti (Settings → Appearance → Celebration sound)
+  useEffect(() => {
+    if (play) celebrate();
+  }, [play]);
   if (!play || reduced) return null;
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>

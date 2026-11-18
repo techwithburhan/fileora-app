@@ -63,6 +63,8 @@ export type ToolDef = {
   passwords: boolean;
   regions: { multi: boolean; after: string } | null;
   code: boolean;
+  /** words for the code / text box (HTML Code to PDF, Text to PDF) */
+  codeText: { label: string; open: string; placeholder: string; pick: string; hint: string } | null;
   textTitle: string;
   opts: OptField[];
 };

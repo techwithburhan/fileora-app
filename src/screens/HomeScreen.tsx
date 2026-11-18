@@ -14,7 +14,7 @@ import HomeBanners from '../components/HomeBanners';
 import DailyPopup from '../components/DailyPopup';
 import NativeAdCard from '../ads/NativeAdCard';
 import { useRemotePopular, useVisibleTools } from '../remote/useTools';
-import { useRemote } from '../remote/remote';
+import { remote, useRemote } from '../remote/remote';
 import { useScreenState } from '../navigation/nav';
 import { getPosts, Post } from '../api/wp';
 import { categoryUsage, dailyBytes, popularTools, recentTools, totals } from '../store/derive';
@@ -27,6 +27,8 @@ import { ActivityTab } from '../navigation/types';
 import { brand, catColor, Theme } from '../theme';
 import { type } from '../typography';
 import Appear from '../components/Appear';
+import { useCells } from '../lib/useCells';
+import PullRefresh from '../components/PullRefresh';
 
 /** A soft circle that drifts very slowly in the hero (endless, UI thread; still when reduced motion is on). */
 function Blob({ size, color, x, y, dx, dy, ms }: { size: number; color: string; x: number; y: number; dx: number; dy: number; ms: number }) {
@@ -60,6 +62,7 @@ function Skeleton({ theme }: { theme: Theme }) {
 export default function HomeScreen({ theme }: { theme: Theme }) {
   const [showActions, actionSheet] = useFileActions(theme);
   const nav = useNavigation();
+  const catGrid = useCells(2, 10); // two category cards per row on every screen size
   const scrollY = useSharedValue(0);
   const onScroll = useAnimatedScrollHandler(e => {
     scrollY.value = e.contentOffset.y;
@@ -111,7 +114,8 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
   return (
     <View style={[styles.flex, { backgroundColor: theme.bg }]}>
       <AppHeader theme={theme} scrollY={scrollY} />
-      <Animated.ScrollView onScroll={onScroll} scrollEventThrottle={16} contentContainerStyle={styles.content}>
+      <PullRefresh theme={theme} onRefresh={() => remote.refresh(true)} scrollY={scrollY}>
+        <Animated.ScrollView onScroll={onScroll} scrollEventThrottle={16} contentContainerStyle={styles.content}>
         {/* Hero */}
         <View style={styles.hero}>
           <Blob size={190} color={brand.green} x={210} y={-70} dx={-10} dy={8} ms={7000} />
@@ -180,11 +184,11 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
 
         {/* Categories */}
         {section('Categories')}
-        <View style={styles.cats}>
+        <View style={styles.cats} onLayout={catGrid.onLayout}>
           {cats.map((c, i) => {
             const col = catColor(c.id, theme);
             return (
-              <Appear key={c.id} delay={200 + i * 60} duration={420} style={styles.catCell}>
+              <Appear key={c.id} delay={200 + i * 60} duration={420} style={{ width: catGrid.width }}>
                 <PressableScale
                   onPress={() => nav.navigate('Tabs', { screen: 'Tools', params: { cat: c.id } })}
                   accessibilityRole="button"
@@ -331,7 +335,8 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
             </PressableScale>
           </Appear>
         ))}
-      </Animated.ScrollView>
+        </Animated.ScrollView>
+      </PullRefresh>
       {actionSheet}
       {/* Daily Update (App Center → Promotions): a card above the bottom bar, never blocking */}
       <DailyPopup theme={theme} />
@@ -359,7 +364,6 @@ const styles = StyleSheet.create({
   secHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 6 },
   secLink: { fontSize: 14, fontWeight: '700', padding: 4 },
   cats: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  catCell: { width: '48.5%' },
   cat: { borderWidth: 1, borderRadius: 18, padding: 14, gap: 4 },
   catIcon: { width: 42, height: 42, borderRadius: 13, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   catName: { fontSize: 14.5, fontWeight: '800' },

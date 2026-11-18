@@ -11,6 +11,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, AppState, StatusBar, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -161,6 +162,7 @@ export default function App() {
     : { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: theme.bg, card: theme.header, primary: theme.accent, border: theme.line, text: theme.ink } };
 
   return (
+    <GestureHandlerRootView style={rootStyle}>
     <SafeAreaProvider>
       {/* Android 15+ draws edge to edge: the headers and the tab bar add the system bar insets themselves. */}
       <StatusBar barStyle={splash || theme.dark ? 'light-content' : 'dark-content'} />
@@ -204,7 +206,11 @@ export default function App() {
         </ErrorBoundary>
       </MenuProvider>
     </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({ root: { flex: 1 } });
+
+// pull to refresh (components/PullRefresh) needs the gesture handler's root view
+const rootStyle = { flex: 1 };

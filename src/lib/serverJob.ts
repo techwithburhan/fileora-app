@@ -13,11 +13,23 @@ import { SITE } from '../config';
 import { apiBase } from '../remote/remote';
 import { safeName, stripScheme } from '../store/files';
 
-export type JobStatus = { status: 'queued' | 'running' | 'done' | 'failed'; ahead?: number; name?: string; size?: number; error?: string; kind?: string; text?: string };
+export type JobStatus = { status: 'queued' | 'running' | 'done' | 'failed'; ahead?: number; name?: string; size?: number; error?: string; kind?: string; text?: string; need?: string; note?: string };
 export type JobFile = { uri: string; name: string; mime: string };
-export type JobResult = { path: string; name: string; text?: string; kind?: string };
+export type JobResult = { path: string; name: string; text?: string; kind?: string; note?: string };
 
 class Unreachable extends Error {}
+
+/** A task that needs the PDF's password: the screen asks for it and runs the task again with options.opw. */
+export class NeedPassword extends Error {}
+
+/**
+ * The VPS gateway answered "not here" (FILEORA_APP_GATEWAY=0, an old server, or an HTML error page
+ * from Nginx). Until app 1.0 this ended the task with "Not found." and only a later try (after the
+ * App Center settings were read again) went through the website. Now the task goes on through the
+ * website straight away, and the VPS is skipped for 10 minutes.
+ */
+let vpsSkipUntil = 0;
+const VPS_SKIP_MS = 10 * 60000;
 
 async function json<T>(r: Response): Promise<T> {
   try {
@@ -31,7 +43,7 @@ async function json<T>(r: Response): Promise<T> {
 export function jobBases(): string[] {
   const site = `${SITE}/wp-json/fileora/v1`;
   const vps = apiBase();
-  return vps ? [`${vps}/app/v1`, site] : [site];
+  return vps && Date.now() >= vpsSkipUntil ? [`${vps}/app/v1`, site] : [site];
 }
 
 async function submit(base: string, tool: string, files: JobFile[], options: Record<string, unknown>, url?: string) {
@@ -48,9 +60,28 @@ async function submit(base: string, tool: string, files: JobFile[], options: Rec
   } catch {
     throw new Unreachable('The processing server can’t be reached. Check your internet connection.');
   }
+  const vps = base.endsWith('/app/v1');
   // a gateway error from the VPS itself (down, restarting): try the next address
-  if (r.status === 502 || r.status === 504) throw new Unreachable(`The processing server isn’t answering (HTTP ${r.status}).`);
-  const created = await json<{ job?: string; token?: string; error?: string; message?: string }>(r);
+  if (r.status === 502 || r.status === 503 || r.status === 504) {
+    if (vps) vpsSkipUntil = Date.now() + 60000;
+    if (r.status !== 503 || vps) throw new Unreachable(`The processing server isn’t answering (HTTP ${r.status}).`);
+  }
+  // the gateway is off or not there (404/405/403/401, or not JSON): use the website instead
+  let created: { job?: string; token?: string; error?: string; message?: string; need?: string };
+  try {
+    created = (await r.json()) as typeof created;
+  } catch {
+    if (vps) {
+      vpsSkipUntil = Date.now() + VPS_SKIP_MS;
+      throw new Unreachable(`The processing server answered with HTTP ${r.status}.`);
+    }
+    throw new Error(`The server answered with HTTP ${r.status}.`);
+  }
+  if (vps && [401, 403, 404, 405, 410].includes(r.status)) {
+    // "This tool isn't available in the app" only concerns this tool; anything else: the gateway is off
+    if (!/tool/i.test(created.error ?? '')) vpsSkipUntil = Date.now() + VPS_SKIP_MS;
+    throw new Unreachable(created.error ?? `HTTP ${r.status}`);
+  }
   if (r.status === 503 && /connected/i.test(created.error ?? '')) throw new Unreachable(created.error ?? 'The server isn’t connected.');
   if (r.status !== 202 || !created.job || !created.token) throw new Error(created.error ?? created.message ?? `The server couldn’t accept this request (error ${r.status}).`);
   return { job: created.job, token: created.token };
@@ -68,14 +99,20 @@ export async function runServerTool(
   let job = '';
   let token = '';
   let lastErr: Error | null = null;
-  for (const b of jobBases()) {
-    try {
-      ({ job, token } = await submit(b, tool, files, options, url));
-      base = b;
-      break;
-    } catch (e) {
-      lastErr = e as Error;
-      if (!(e instanceof Unreachable)) throw e;
+  const bases = jobBases();
+  for (let i = 0; i < bases.length && !base; i++) {
+    const b = bases[i];
+    // the last address gets a second try after a short pause (a first connection can time out)
+    for (let attempt = 0; attempt < (i === bases.length - 1 ? 2 : 1) && !base; attempt++) {
+      if (signal?.cancelled) throw new Error('Cancelled.');
+      if (attempt) await new Promise<void>(res => setTimeout(() => res(), 1500));
+      try {
+        ({ job, token } = await submit(b, tool, files, options, url));
+        base = b;
+      } catch (e) {
+        lastErr = e as Error;
+        if (!(e instanceof Unreachable)) throw e;
+      }
     }
   }
   if (!base) throw lastErr ?? new Error('The processing server can’t be reached.');
@@ -105,7 +142,10 @@ export async function runServerTool(
     if (!r.ok && !st.status) throw new Error(st.error ?? 'We lost track of this task. Please run it again.');
     misses = 0;
     onStatus(st);
-    if (st.status === 'failed') throw new Error(st.error ?? 'The server couldn’t process this file.');
+    if (st.status === 'failed') {
+      if (st.need === 'password') throw new NeedPassword(st.error ?? 'This PDF needs its password.');
+      throw new Error(st.error ?? 'The server couldn’t process this file.');
+    }
   }
 
   if (st.kind === 'text') {
@@ -113,7 +153,7 @@ export async function runServerTool(
     const name = safeName(st.name ?? `${tool}-result.txt`);
     const path = `${BlobUtil.fs.dirs.CacheDir}/${Date.now()}-${name}`;
     await BlobUtil.fs.writeFile(path, st.text ?? '', 'utf8');
-    return { path, name, text: st.text, kind: 'text' };
+    return { path, name, text: st.text, kind: 'text', note: st.note };
   }
   const name = safeName(st.name ?? `${tool}-result`);
   const path = `${BlobUtil.fs.dirs.CacheDir}/${Date.now()}-${name}`;
@@ -123,5 +163,5 @@ export async function runServerTool(
     await BlobUtil.fs.unlink(path).catch(() => {});
     throw new Error(code === 410 ? 'The result was already downloaded. Please run the task again.' : `Download failed (HTTP ${code}).`);
   }
-  return { path: stripScheme(res.path() ?? path), name };
+  return { path: stripScheme(res.path() ?? path), name, note: st.note };
 }
