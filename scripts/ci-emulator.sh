@@ -42,6 +42,12 @@ sleep 0.3
 adb exec-out screencap -p > "$OUT/refresh-2.png"
 sleep 3
 adb exec-out screencap -p > "$OUT/refresh-done.png"
+# Closes App Center's Daily Update popup (its X button is labelled "Close"), so Home is visible
+close_popup() {
+  adb shell uiautomator dump /sdcard/ui.xml > /dev/null 2>&1 || return 0
+  B=$(adb exec-out cat /sdcard/ui.xml | tr '>' '\n' | grep 'content-desc="Close"' | grep -o 'bounds="[^"]*"' | head -1 | grep -o '[0-9]\+' | tr '\n' ' ')
+  if [ -n "$B" ]; then set -- $B; adb shell input tap $((($1 + $3) / 2)) $((($2 + $4) / 2)); sleep 1; fi
+}
 # app 1.0: Home categories with a 30% larger "Display size" (two cards per row must stay)
 D=$(adb shell wm density | head -1 | sed 's/.*: //' | tr -d '\r')
 adb shell am force-stop in.fileora.app
@@ -49,6 +55,8 @@ adb shell wm density $((D * 130 / 100))
 sleep 3
 adb shell am start -W -n in.fileora.app/.MainActivity
 sleep 10
+close_popup
+adb exec-out screencap -p > "$OUT/home-large-display-top.png"
 adb shell input swipe $X $((H * 80 / 100)) $X $((H * 30 / 100)) 600
 sleep 2
 adb exec-out screencap -p > "$OUT/home-large-display.png"
