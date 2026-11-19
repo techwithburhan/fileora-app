@@ -4,7 +4,8 @@
  * (e.g. after Merge PDF: Compress, Sign, Watermark, Page Number).
  */
 import React from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import Text from '../i18n/Text';
 import Animated, { Easing, FadeIn, FadeInUp } from 'react-native-reanimated';
 import Confetti from './Confetti';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,6 +20,7 @@ import { catColor, Theme } from '../theme';
 import { type } from '../typography';
 import { SAVED_WHERE } from '../store/files';
 import AdBanner from '../ads/AdBanner';
+import { tr } from '../i18n/i18n';
 
 export default function ResultSheet({
   file,
@@ -46,7 +48,7 @@ export default function ResultSheet({
   return (
     <Modal transparent visible animationType="none" onRequestClose={onClose} statusBarTranslucent>
       <Animated.View entering={FadeIn.duration(200)} style={styles.backdrop}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close" />
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={tr('Close')} />
       </Animated.View>
       <Animated.View
         entering={FadeInUp.duration(320).easing(Easing.out(Easing.cubic))}
@@ -59,7 +61,7 @@ export default function ResultSheet({
             <Text style={[type.title, styles.center, { color: theme.ink }]}>Congratulations!</Text>
             <Text style={[type.body, styles.center, { color: theme.ink2 }]}>Your files are completed successfully.</Text>
           </View>
-          <Text style={[type.bodySm, styles.center, { color: theme.muted }]}>{note ?? `Saved in Files and in ${SAVED_WHERE} on this phone.`}</Text>
+          <Text style={[type.bodySm, styles.center, { color: theme.muted }]}>{note ?? tr('Saved in Files and in {where} on this phone.', { where: tr(SAVED_WHERE) })}</Text>
           <View style={[styles.file, { backgroundColor: theme.surface, borderColor: theme.line }]}>
             <FileThumb path={file.path} mime={file.mime} name={file.name} theme={theme} size={46} />
             <View style={styles.flex}>

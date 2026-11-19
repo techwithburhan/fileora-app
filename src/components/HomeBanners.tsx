@@ -5,7 +5,8 @@
  * - an invitation to turn on notifications (Android 13+ asks for permission only after "Turn on").
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import { AppState, Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { AppState, Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
+import Text from '../i18n/Text';
 import { FadeOut } from 'react-native-reanimated';
 import Icon, { IconName } from './Icon';
 import PressableScale from './PressableScale';
@@ -16,6 +17,7 @@ import { brand, Theme } from '../theme';
 import { type } from '../typography';
 import { APP_VERSION } from '../version';
 import Appear from './Appear';
+import { tr } from '../i18n/i18n';
 
 const ASK_AGAIN = 14 * 86400000;
 
@@ -112,7 +114,7 @@ export default function HomeBanners({ theme }: { theme: Theme }) {
           tone="offer"
           icon="download"
           title={`Fileora ${latest} is available`}
-          text={config?.update.notes || `You have version ${APP_VERSION}. Update to get the newest tools and fixes.`}
+          text={config?.update.notes || tr('You have version {v}. Update to get the newest tools and fixes.', { v: APP_VERSION })}
           action={{ label: 'Update', onPress: () => Linking.openURL(config?.update.url || SHARE_URL).catch(() => {}) }}
           onClose={() => remote.dismiss('update', latest)}
           closeLabel="Not now"

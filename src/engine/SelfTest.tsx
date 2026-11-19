@@ -11,7 +11,8 @@
  * opens a link, so CI starts the app with launch arguments instead: -FileoraSelfTest 1, -FileoraTool <id>.
  */
 import React, { useEffect, useState } from 'react';
-import { Linking, Modal, Platform, ScrollView, Settings, StyleSheet, Text, View } from 'react-native';
+import { Linking, Modal, Platform, ScrollView, Settings, StyleSheet, View } from 'react-native';
+import Text from '../i18n/Text';
 import BlobUtil from 'react-native-blob-util';
 import { call, readOutput, sendFile, ToolState, Output } from './engine';
 import PressableScale from '../components/PressableScale';

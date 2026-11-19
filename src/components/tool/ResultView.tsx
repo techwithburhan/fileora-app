@@ -4,7 +4,8 @@
  * (Colour palette). Single-file results use ResultSheet instead.
  */
 import React, { useMemo, useState } from 'react';
-import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Share, StyleSheet, View } from 'react-native';
+import Text from '../../i18n/Text';
 import Confetti from '../Confetti';
 import FileThumb from '../FileThumb';
 import Icon from '../Icon';
@@ -17,6 +18,7 @@ import { formatBytes, SAVED_WHERE } from '../../store/files';
 import { FileRec } from '../../store/store';
 import { Theme } from '../../theme';
 import { type } from '../../typography';
+import { tr } from '../../i18n/i18n';
 
 type Extra = NonNullable<RunResult['result']>;
 type Props = {
@@ -47,7 +49,7 @@ export default function ResultView({ title, files, notes, extra, tool, theme, on
       </Text>
       {files.length > 0 && (
         <Text style={[type.bodySm, styles.center, { color: theme.muted }]}>
-          {files.length === 1 ? 'Saved' : `${files.length} files saved`} in Fileora and {SAVED_WHERE} · {formatBytes(files.reduce((s, f) => s + f.size, 0))}
+          {files.length === 1 ? 'Saved' : tr('{n} files saved', { n: files.length })} in Fileora and {SAVED_WHERE} · {formatBytes(files.reduce((s, f) => s + f.size, 0))}
         </Text>
       )}
 
@@ -71,7 +73,7 @@ export default function ResultView({ title, files, notes, extra, tool, theme, on
       {extra?.palette ? (
         <View style={styles.palette}>
           {extra.palette.map(c => (
-            <Pressable key={c.hex} onPress={() => Share.share({ message: c.hex })} accessibilityRole="button" accessibilityLabel={`${c.hex}, ${c.pct}%. Share the code.`} style={[styles.swatchCard, { backgroundColor: theme.surface, borderColor: theme.line }]}>
+            <Pressable key={c.hex} onPress={() => Share.share({ message: c.hex })} accessibilityRole="button" accessibilityLabel={tr('{hex}, {pct}%. Share the code.', { hex: c.hex, pct: c.pct })} style={[styles.swatchCard, { backgroundColor: theme.surface, borderColor: theme.line }]}>
               <View style={[styles.swatch, { backgroundColor: c.hex }]} />
               <Text style={[type.heading, { color: theme.ink }]}>{c.hex}</Text>
               <Text style={[type.caption, { color: theme.muted }]}>{c.pct}%</Text>

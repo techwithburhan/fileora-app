@@ -9,7 +9,8 @@
  * written before the screen appears.
  */
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, BackHandler, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, BackHandler, Linking, ScrollView, StyleSheet, View } from 'react-native';
+import Text from '../i18n/Text';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon, { IconName } from './Icon';

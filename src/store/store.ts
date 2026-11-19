@@ -39,6 +39,8 @@ type State = {
   v: 2;
   loaded: boolean;
   theme: ThemePref;
+  /** app 1.1: language chosen from the top bar ('' = the phone's language when Fileora has it) */
+  lang: string;
   files: FileRec[];
   docs: ScanDoc[];
   bin: FileRec[];
@@ -50,7 +52,7 @@ type State = {
 const FILE = `${DATA}/state.json`;
 const TRASH = `${DATA}/trash`;
 const MAX_EVENTS = 1000;
-let state: State = { v: 2, loaded: false, theme: 'system', files: [], docs: [], bin: [], binDocs: [], events: [], clouds: {} };
+let state: State = { v: 2, loaded: false, theme: 'system', lang: '', files: [], docs: [], bin: [], binDocs: [], events: [], clouds: {} };
 const listeners = new Set<() => void>();
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -61,8 +63,8 @@ function save() {
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = null;
   if (!state.loaded) return Promise.resolve(); // never overwrite saved data before it was read
-  const { v, theme, files, docs, bin, binDocs, events, clouds } = state;
-  return writeJsonSafe(FILE, { v, theme, files, docs, bin, binDocs, events, clouds });
+  const { v, theme, lang, files, docs, bin, binDocs, events, clouds } = state;
+  return writeJsonSafe(FILE, { v, theme, lang, files, docs, bin, binDocs, events, clouds });
 }
 function persist() {
   if (saveTimer) clearTimeout(saveTimer);
@@ -135,6 +137,7 @@ export const store = {
           v: 2,
           loaded: true,
           theme: d.theme ?? 'system',
+          lang: typeof d.lang === 'string' ? d.lang : '',
           files,
           docs: docs.filter(doc => doc.pageIds.length > 0),
           bin,
@@ -158,6 +161,9 @@ export const store = {
   setTheme(theme: ThemePref) {
     set({ theme });
   },
+  setLang(lang: string) {
+    set({ lang });
+  },
   setCloud(id: CloudId, connected: boolean) {
     const clouds = { ...state.clouds };
     if (connected) clouds[id] = { connectedAt: Date.now() };
@@ -172,6 +178,10 @@ export const store = {
   },
   markOpened(id: string) {
     set({ files: state.files.map(f => (f.id === id ? { ...f, openedAt: Date.now() } : f)) });
+  },
+  /** Downloads → Opened → Delete all: empties the Opened list only; the files themselves stay. */
+  clearOpened() {
+    set({ files: state.files.map(f => (f.openedAt ? { ...f, openedAt: undefined } : f)) });
   },
 
   /* ---------- scan documents ---------- */
@@ -208,6 +218,10 @@ export const store = {
       }
     }
     set({ files: state.files.filter(x => x.id !== id), bin, docs, binDocs });
+  },
+  /** Downloads → Downloaded / Processed → Delete all: moves exactly these files to the Recycle Bin. */
+  async trashMany(ids: string[]) {
+    for (const id of ids) await store.trashFile(id);
   },
   async trashDoc(docId: string, base?: { files: FileRec[]; bin: FileRec[]; docs: ScanDoc[] }) {
     const files0 = base?.files ?? state.files;

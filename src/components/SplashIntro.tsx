@@ -12,6 +12,7 @@ import { Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, { Easing, interpolate, runOnJS, SharedValue, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withSequence, withTiming } from 'react-native-reanimated';
 import { FIcon } from './Brand';
 import { brand } from '../theme';
+import { tr } from '../i18n/i18n';
 
 const ICON_H = 132; // = the artwork inside res/drawable-*/splash_icon.png (dp)
 const seamless = Platform.OS === 'android' && Number(Platform.Version) >= 31;
@@ -72,7 +73,7 @@ export default function SplashIntro({ onDone }: { onDone: () => void }) {
   const glowStyle = useAnimatedStyle(() => ({ opacity: glow.value, transform: [{ scale: interpolate(glow.value, [0, 1], [0.6, 1.25]) }] }));
 
   return (
-    <Animated.View style={[StyleSheet.absoluteFill, styles.screen, screenStyle]} pointerEvents="none" accessible accessibilityLabel="Fileora">
+    <Animated.View style={[StyleSheet.absoluteFill, styles.screen, screenStyle]} pointerEvents="none" accessible accessibilityLabel={tr('Fileora')}>
       <View style={styles.ribbons}>
         {RIBBONS.map((_, i) => (
           <Ribbon key={i} i={i} p={ribbons} height={height * 0.9} />

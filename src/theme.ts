@@ -1,6 +1,9 @@
+import { useMemo } from 'react';
 import { useColorScheme } from 'react-native';
 import type { CategoryId } from './data/tools';
 import { useStore } from './store/store';
+import { useRemote } from './remote/remote';
+import { readableOn, textOn, mix, contrast } from './festival/colour';
 
 /** Fileora brand colours (same as the website). */
 export const brand = {
@@ -31,6 +34,8 @@ export type Theme = {
   warnBg: string;
   warnLine: string;
   warnInk: string;
+  /** the app language when this theme was made (only so screens redraw when it changes) */
+  lang?: string;
 };
 
 const light: Theme = {
@@ -78,7 +83,23 @@ export function useTheme(): Theme {
   const system = useColorScheme();
   const pref = useStore(s => s.theme);
   const isDark = pref === 'system' ? system === 'dark' : pref === 'dark';
-  return isDark ? dark : light;
+  const accent = useRemote(st => st.config?.festival?.accent ?? '');
+  const lang = useStore(s => s.lang); // a new theme object per language: every screen redraws in it
+  const base = isDark ? dark : light;
+  return useMemo(() => ({ ...(accent ? festivalTheme(base, accent) : base), lang }), [base, accent, lang]);
+}
+
+/**
+ * App Center → Festival Themes: the festival's accent colour on buttons, the active tab and green
+ * text, adjusted so text on it and the coloured text itself stay readable in light and dark mode.
+ */
+export function festivalTheme(base: Theme, colour: string): Theme {
+  // in dark mode a deep festival colour is lightened until it stands out from the background
+  let accent = colour;
+  if (base.dark) {
+    for (let t = 0; t <= 0.7 && contrast(accent, base.bg) < 3; t += 0.05) accent = mix(colour, '#FFFFFF', t);
+  }
+  return { ...base, accent, onAccent: textOn(accent), accentInk: readableOn(accent, base.bg) };
 }
 
 const CAT: Record<CategoryId, [string, string]> = {

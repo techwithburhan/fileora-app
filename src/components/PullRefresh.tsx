@@ -35,6 +35,7 @@ import Animated, {
 import Svg, { Circle } from 'react-native-svg';
 import { FIcon } from './Brand';
 import { Theme } from '../theme';
+import { tr } from '../i18n/i18n';
 
 const SIZE = 46;
 const R = 20;
@@ -139,7 +140,7 @@ export default function PullRefresh({ theme, onRefresh, scrollY: external, enabl
 
   return (
     <View style={styles.flex}>
-      <Animated.View pointerEvents="none" style={[styles.indicator, indicator]} accessibilityLiveRegion="polite" accessibilityLabel="Refreshing">
+      <Animated.View pointerEvents="none" style={[styles.indicator, indicator]} accessibilityLiveRegion="polite" accessibilityLabel={tr('Refreshing')}>
         <View style={[styles.badge, { backgroundColor: theme.surface, borderColor: theme.line }]}>
           <Animated.View style={[StyleSheet.absoluteFill, ring]}>
             <Svg width={SIZE} height={SIZE}>

@@ -8,13 +8,15 @@
  * link changes, "always" = every time the app opens.
  */
 import React, { useEffect, useState } from 'react';
-import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, View } from 'react-native';
+import Text from '../i18n/Text';
 import Animated, { Easing, FadeOutDown, SlideInDown } from 'react-native-reanimated';
 import Icon from './Icon';
 import PressableScale from './PressableScale';
 import { remote, useRemote } from '../remote/remote';
 import { Theme } from '../theme';
 import { type } from '../typography';
+import { tr } from '../i18n/i18n';
 
 const today = () => {
   const d = new Date();
@@ -79,7 +81,7 @@ export default function DailyPopup({ theme }: { theme: Theme }) {
         <PressableScale
           onPress={open}
           accessibilityRole="link"
-          accessibilityHint="Opens in your browser"
+          accessibilityHint={tr('Opens in your browser')}
           style={[styles.btn, { backgroundColor: theme.accent }]}
         >
           <Text style={[type.button, { color: theme.onAccent }]}>
@@ -91,7 +93,7 @@ export default function DailyPopup({ theme }: { theme: Theme }) {
           onPress={close}
           hitSlop={10}
           accessibilityRole="button"
-          accessibilityLabel="Close"
+          accessibilityLabel={tr('Close')}
           style={styles.close}
         >
           <Icon name="close" size={18} color={theme.muted} />

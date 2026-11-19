@@ -5,14 +5,15 @@
 import BlobUtil from 'react-native-blob-util';
 import { degrees, PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { stripScheme } from '../store/files';
+import { tr } from '../i18n/i18n';
 
 async function load(path: string, name: string): Promise<PDFDocument> {
   const b64 = await BlobUtil.fs.readFile(stripScheme(path), 'base64');
   try {
     return await PDFDocument.load(b64, { updateMetadata: false });
   } catch (e) {
-    if (/encrypt/i.test(String(e))) throw new Error(`“${name}” is password-protected. Remove the password first with Unlock PDF.`);
-    throw new Error(`“${name}” isn’t a readable PDF.`);
+    if (/encrypt/i.test(String(e))) throw new Error(tr('“{name}” is password-protected. Remove the password first with Unlock PDF.', { name }));
+    throw new Error(tr('“{name}” isn’t a readable PDF.', { name }));
   }
 }
 

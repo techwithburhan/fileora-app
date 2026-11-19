@@ -5,7 +5,9 @@
  * share the app, check for updates, and the footer with the Fileora logo, version and developer link.
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import { Alert, AppState, Linking, Platform, ScrollView, Share, StyleSheet, Switch, Text, View } from 'react-native';
+import { AppState, Linking, Platform, ScrollView, Share, StyleSheet, Switch, View } from 'react-native';
+import Alert from '../i18n/Alert';
+import Text from '../i18n/Text';
 
 import { useNavigation } from '@react-navigation/native';
 import AppHeader from '../components/AppHeader';
@@ -35,6 +37,8 @@ import { Theme } from '../theme';
 import { type } from '../typography';
 import { APP_VERSION } from '../version';
 import Appear from '../components/Appear';
+import { langInfo, tr } from '../i18n/i18n';
+import { openLanguageSheet } from '../i18n/LanguageSheet';
 
 type Row = { key: string; icon: IconName; label: string; sub?: string; onPress?: () => void; right?: React.ReactNode; external?: boolean; dim?: boolean };
 
@@ -114,11 +118,11 @@ export default function SettingsScreen({ theme }: { theme: Theme }) {
     const latest = remote.get().config?.update.latest;
     if (err) Alert.alert('Couldn’t check for updates', 'Check your internet connection and try again.');
     else if (latest && cmpVersion(APP_VERSION, latest) < 0)
-      Alert.alert(`Fileora ${latest} is available`, remote.get().config?.update.notes || `You have version ${APP_VERSION}.`, [
+      Alert.alert(`Fileora ${latest} is available`, remote.get().config?.update.notes || tr('You have version {v}.', { v: APP_VERSION }), [
         { text: 'Later', style: 'cancel' },
         { text: 'Update', onPress: () => Linking.openURL(remote.get().config?.update.url || SHARE_URL).catch(() => {}) },
       ]);
-    else Alert.alert('You’re up to date', `Fileora ${APP_VERSION} is the newest version.`);
+    else Alert.alert('You’re up to date', tr('Fileora {v} is the newest version.', { v: APP_VERSION }));
   };
   const sw = (value: boolean, onChange: (v: boolean) => void, label: string, locked = false) => (
     <View style={styles.swWrap}>
@@ -129,7 +133,7 @@ export default function SettingsScreen({ theme }: { theme: Theme }) {
         disabled={locked}
         trackColor={{ true: theme.accent, false: theme.line }}
         thumbColor="#fff"
-        accessibilityLabel={locked ? `${label}, set by Fileora` : label}
+        accessibilityLabel={locked ? tr('{name}, set by Fileora', { name: tr(label) }) : label}
       />
     </View>
   );
@@ -138,7 +142,7 @@ export default function SettingsScreen({ theme }: { theme: Theme }) {
     const m = mode(k);
     if (m === 'hide') return [];
     if (m === 'show') return [{ ...row, right: sw(value, onChange, row.label) }];
-    if (m === 'fix') return [{ ...row, sub: `${row.sub ? row.sub + ' ' : ''}Set by Fileora.`, right: sw(value, () => {}, row.label, true) }];
+    if (m === 'fix') return [{ ...row, sub: `${row.sub ? tr(row.sub) + ' ' : ''}${tr('Set by Fileora.')}`, right: sw(value, () => {}, row.label, true) }];
     return [{ ...row, sub: 'Not available right now.', dim: true, right: sw(false, () => {}, row.label, true) }];
   };
   /** A button (Check notifications, Sound…, Reset): hidden, shown or disabled (greyed out). */
@@ -158,6 +162,13 @@ export default function SettingsScreen({ theme }: { theme: Theme }) {
       title: 'Appearance',
       rows: [
         {
+          key: 'lang',
+          icon: 'globe',
+          label: 'Language',
+          sub: `${langInfo().native} · ${tr('Select application language')}`,
+          onPress: openLanguageSheet,
+        },
+        {
           key: 'dark',
           icon: 'moon',
           label: 'Dark mode',
@@ -168,7 +179,7 @@ export default function SettingsScreen({ theme }: { theme: Theme }) {
               onValueChange={v => store.setTheme(v ? 'dark' : 'light')}
               trackColor={{ true: theme.accent, false: theme.line }}
               thumbColor="#fff"
-              accessibilityLabel="Dark mode"
+              accessibilityLabel={tr('Dark mode')}
             />
           ),
         },
@@ -183,7 +194,7 @@ export default function SettingsScreen({ theme }: { theme: Theme }) {
               onValueChange={v => remote.setPrefs({ celebrate: v })}
               trackColor={{ true: theme.accent, false: theme.line }}
               thumbColor="#fff"
-              accessibilityLabel="Celebration sound"
+              accessibilityLabel={tr('Celebration sound')}
             />
           ),
         },
@@ -302,17 +313,17 @@ export default function SettingsScreen({ theme }: { theme: Theme }) {
             title: 'Ads & privacy',
             rows: [
               ...(adFreeUntil
-                ? [{ key: 'adfree', icon: 'clock' as IconName, label: 'No ads right now', sub: `Ad-free until ${untilText(adFreeUntil)}` }]
+                ? [{ key: 'adfree', icon: 'clock' as IconName, label: 'No ads right now', sub: tr('Ad-free until {time}', { time: untilText(adFreeUntil) }) }]
                 : unitFor('reward_adfree')
                   ? [
                       {
                         key: 'adfree',
                         icon: 'clock' as IconName,
-                        label: `${rewardHours()} hours without ads`,
+                        label: tr('{n} hours without ads', { n: rewardHours() }),
                         sub: 'Watch one short video',
                         onPress: () => setRewardOpen(true),
                         right: (
-                          <PressableScale onPress={() => setRewardOpen(true)} accessibilityRole="button" accessibilityLabel="Watch a video for hours without ads" style={[styles.pill, { backgroundColor: theme.accent }]}>
+                          <PressableScale onPress={() => setRewardOpen(true)} accessibilityRole="button" accessibilityLabel={tr('Watch a video for hours without ads')} style={[styles.pill, { backgroundColor: theme.accent }]}>
                             <Text style={[type.caption, { color: theme.onAccent }]}>Watch</Text>
                           </PressableScale>
                         ),
@@ -405,12 +416,12 @@ export default function SettingsScreen({ theme }: { theme: Theme }) {
 
         <View style={styles.footer}>
           <Logo height={30} onDark={theme.dark} />
-          <Text style={[type.caption, { color: theme.muted }]}>Version {APP_VERSION}</Text>
+          <Text style={[type.caption, { color: theme.muted }]}>{tr('Version {v}', { v: APP_VERSION })}</Text>
           <Text
             style={[type.caption, { color: theme.muted }]}
             onPress={() => Linking.openURL(DEVELOPER.url)}
             accessibilityRole="link"
-            accessibilityHint="Opens www.techdeployers.com">
+            accessibilityHint={tr('Opens www.techdeployers.com')}>
             Developed by <Text style={[styles.link, { color: theme.link }]}>{DEVELOPER.handle}</Text>
           </Text>
         </View>

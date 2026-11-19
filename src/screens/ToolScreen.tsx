@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import Text from '../i18n/Text';
 
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,6 +20,7 @@ import { catColor, Theme } from '../theme';
 import { type } from '../typography';
 import AdBanner from '../ads/AdBanner';
 import Appear from '../components/Appear';
+import { tr } from '../i18n/i18n';
 
 export default function ToolScreen({ theme }: { theme: Theme }) {
   const nav = useNavigation();
@@ -153,7 +155,7 @@ export default function ToolScreen({ theme }: { theme: Theme }) {
         )}
         {ui.more_tools && related.length > 0 && (
           <>
-            <Text style={[styles.secTitle, { color: theme.ink }]}>More {cat?.name ?? 'tools'}</Text>
+            <Text style={[styles.secTitle, { color: theme.ink }]}>{tr('More {category}', { category: tr(cat?.name ?? 'tools') })}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carousel} style={styles.carouselOuter}>
               {related.map(t => (
                 <ToolChip key={t.id} tool={t} theme={theme} onPress={() => nav.navigate('Tool', { id: t.id })} />

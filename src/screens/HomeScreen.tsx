@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FlatList, Image, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Image, StyleSheet, View } from 'react-native';
+import Text from '../i18n/Text';
 import Animated, { Easing, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, useReducedMotion, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import AppHeader from '../components/AppHeader';
@@ -29,6 +30,8 @@ import { type } from '../typography';
 import Appear from '../components/Appear';
 import { useCells } from '../lib/useCells';
 import PullRefresh from '../components/PullRefresh';
+import { tr } from '../i18n/i18n';
+import { FestivalBanner } from '../festival/Festival';
 
 /** A soft circle that drifts very slowly in the hero (endless, UI thread; still when reduced motion is on). */
 function Blob({ size, color, x, y, dx, dy, ms }: { size: number; color: string; x: number; y: number; dx: number; dy: number; ms: number }) {
@@ -59,6 +62,9 @@ function Skeleton({ theme }: { theme: Theme }) {
   );
 }
 
+/** The website homepage's quick links (only those switched on are shown). */
+const QUICK = ['merge', 'compress', 'pdf2word', 'sign', 'jpg2pdf', 'aadhaar'];
+
 export default function HomeScreen({ theme }: { theme: Theme }) {
   const [showActions, actionSheet] = useFileActions(theme);
   const nav = useNavigation();
@@ -88,6 +94,8 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
   const popular = remotePopular ? { tools: remotePopular, personal: false } : own;
   const cats = useMemo(() => CATEGORIES.map(c => ({ ...c, count: tools.filter(t => t.cat === c.id).length })).filter(c => c.count > 0), [tools]);
   const deviceCount = tools.filter(t => t.exec !== 'server').length;
+  // the website's quick links under the search field
+  const quick = useMemo(() => QUICK.map(id => tools.find(t => t.id === id)).filter((t): t is NonNullable<typeof t> => !!t), [tools]);
   // Scanner can be switched off in App Center → Navigation: then its Home button goes too
   const scannerOn = useScreenState('scanner') === 'on';
   const promo = config?.promo ?? null;
@@ -116,55 +124,78 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
       <AppHeader theme={theme} scrollY={scrollY} />
       <PullRefresh theme={theme} onRefresh={() => remote.refresh(true)} scrollY={scrollY}>
         <Animated.ScrollView onScroll={onScroll} scrollEventThrottle={16} contentContainerStyle={styles.content}>
-        {/* Hero */}
-        <View style={styles.hero}>
-          <Blob size={190} color={brand.green} x={210} y={-70} dx={-10} dy={8} ms={7000} />
-          <Blob size={120} color={brand.blue} x={-40} y={150} dx={12} dy={-6} ms={8000} />
-          <Appear text delay={150} duration={500} style={styles.kicker}>
+        {/* Festival theme (App Center → Festival Themes) */}
+        <FestivalBanner theme={theme} />
+
+        {/* Hero: the website's homepage hero (headline, search, quick tools), then the main buttons */}
+        <View style={[styles.hero, { backgroundColor: theme.surface, borderColor: theme.line }]}>
+          <Blob size={190} color={theme.accent} x={230} y={-90} dx={-10} dy={8} ms={7000} />
+          <Blob size={120} color={brand.blue} x={-50} y={190} dx={12} dy={-6} ms={8000} />
+          <Appear text delay={150} duration={500} style={[styles.kicker, { color: theme.accentInk }]}>
             FREE · NO SIGN-UP · PRIVATE
           </Appear>
-          <Appear text delay={250} duration={550} style={styles.heroTitle}>
-            Every PDF & image tool, in your pocket
+          <Appear text delay={250} duration={550} style={[styles.heroTitle, { color: theme.ink }]}>
+            Free PDF tools, done in seconds.
           </Appear>
-          <Appear text delay={350} duration={550} style={styles.heroText}>
-            Merge, compress, convert and edit. {deviceCount} tools run on your phone, so your files stay with you.
+          <Appear text delay={350} duration={550} style={[styles.heroText, { color: theme.ink2 }]}>
+            {tr('Merge, compress, convert, sign and edit PDFs and images. {total} free tools, and {device} of them run right on your phone, so your files never leave it.', { total: tools.length, device: deviceCount })}
           </Appear>
-          <Appear delay={450} duration={550} style={styles.heroBtns}>
-            <PressableScale
-              onPress={() => nav.navigate('Tabs', { screen: 'Tools', params: { cat: 'all' } })}
-              accessibilityRole="button"
-              style={[styles.btn, styles.btnWide, { backgroundColor: brand.green }]}>
-              <Icon name="grid" size={18} color="#03213F" width={2.3} />
-              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={styles.btnText}>Browse by tools</Text>
-            </PressableScale>
-            <View style={styles.btnPair}>
-              <PressableScale onPress={() => nav.navigate('Activity', { tab: 'downloaded' })} accessibilityRole="button" style={[styles.btn, styles.btnGhost, styles.flex]}>
-                <Icon name="download" size={18} color="#FFFFFF" width={2.2} />
-                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={[styles.btnText, styles.btnGhostText]}>Downloads</Text>
+          <PressableScale
+            scaleTo={0.98}
+            onPress={() => nav.navigate('Tabs', { screen: 'Tools', params: { focus: Date.now() } })}
+            accessibilityRole="search"
+            accessibilityLabel={tr('Search tools')}
+            style={[styles.search, { backgroundColor: theme.bg, borderColor: theme.line }]}>
+            <Icon name="search" size={20} color={theme.muted} />
+            <Text style={[styles.searchText, { color: theme.muted }]} numberOfLines={1}>
+              What do you want to do? Try “compress pdf”
+            </Text>
+          </PressableScale>
+          <View style={styles.quick}>
+            {quick.map(t => (
+              <PressableScale
+                key={t.id}
+                onPress={() => openTool(t.id)}
+                accessibilityRole="button"
+                accessibilityLabel={tr(t.name)}
+                style={[styles.quickChip, { backgroundColor: theme.bg, borderColor: theme.line }]}>
+                <Icon name={t.cat as IconName} size={16} color={catColor(t.cat, theme)} />
+                <Text style={[styles.quickText, { color: theme.ink }]} numberOfLines={1}>
+                  {t.name}
+                </Text>
               </PressableScale>
-              {scannerOn && (
-                <PressableScale onPress={() => nav.navigate('Tabs', { screen: 'Scanner' })} accessibilityRole="button" style={[styles.btn, styles.btnGhost, styles.flex]}>
-                  <Icon name="scan" size={18} color="#FFFFFF" width={2.2} />
-                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={[styles.btnText, styles.btnGhostText]}>Scanner</Text>
-                </PressableScale>
-              )}
-            </View>
-          </Appear>
+            ))}
+          </View>
+          <View style={styles.trust}>
+            <Icon name="shield" size={16} color={theme.accentInk} />
+            <Text style={[type.caption, { color: theme.muted }]}>No sign-up. No watermark. Free to use.</Text>
+          </View>
         </View>
+
+        <Appear delay={450} duration={550} style={styles.heroBtns}>
+          <PressableScale
+            onPress={() => nav.navigate('Tabs', { screen: 'Tools', params: { cat: 'all' } })}
+            accessibilityRole="button"
+            style={[styles.btn, styles.btnWide, { backgroundColor: theme.accent }]}>
+            <Icon name="grid" size={18} color={theme.onAccent} width={2.3} />
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={[styles.btnText, { color: theme.onAccent }]}>Browse by tools</Text>
+          </PressableScale>
+          <View style={styles.btnPair}>
+            <PressableScale onPress={() => nav.navigate('Activity', { tab: 'downloaded' })} accessibilityRole="button" style={[styles.btn, styles.btnGhost, styles.flex, { borderColor: theme.line, backgroundColor: theme.surface }]}>
+              <Icon name="download" size={18} color={theme.ink} width={2.2} />
+              <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={[styles.btnText, { color: theme.ink }]}>Downloads</Text>
+            </PressableScale>
+            {scannerOn && (
+              <PressableScale onPress={() => nav.navigate('Tabs', { screen: 'Scanner' })} accessibilityRole="button" style={[styles.btn, styles.btnGhost, styles.flex, { borderColor: theme.line, backgroundColor: theme.surface }]}>
+                <Icon name="scan" size={18} color={theme.ink} width={2.2} />
+                <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={[styles.btnText, { color: theme.ink }]}>Scanner</Text>
+              </PressableScale>
+            )}
+          </View>
+        </Appear>
 
         {/* Announcement, update available, notifications (App Center) */}
         <HomeBanners theme={theme} />
-
-        {/* Search */}
-        <PressableScale
-          scaleTo={0.98}
-          onPress={() => nav.navigate('Tabs', { screen: 'Tools', params: { focus: Date.now() } })}
-          accessibilityRole="search"
-          accessibilityLabel="Search tools"
-          style={[styles.search, { backgroundColor: theme.surface, borderColor: theme.line }]}>
-          <Icon name="search" size={20} color={theme.muted} />
-          <Text style={[styles.searchText, { color: theme.muted }]}>Search {tools.length} tools…</Text>
-        </PressableScale>
 
         {/* Recently used (from this phone's history) */}
         {recent.length > 0 && (
@@ -200,7 +231,7 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
                   <Text style={[styles.catName, { color: theme.ink }]} numberOfLines={1}>
                     {c.name}
                   </Text>
-                  <Text style={[styles.catCount, { color: theme.muted }]}>{c.count} tools</Text>
+                  <Text style={[styles.catCount, { color: theme.muted }]}>{tr(c.count === 1 ? '1 tool' : '{n} tools', { n: c.count })}</Text>
                 </PressableScale>
               </Appear>
             );
@@ -347,20 +378,23 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: { padding: 16, paddingBottom: 32, gap: 14 },
-  hero: { backgroundColor: brand.navy, borderRadius: 24, padding: 20, paddingTop: 22, overflow: 'hidden', gap: 10 },
-  blob: { position: 'absolute', opacity: 0.85 },
-  kicker: { color: '#9FE3C1', fontSize: 11.5, fontWeight: '800', letterSpacing: 1.1 },
-  heroTitle: { color: '#FFFFFF', fontSize: 23, lineHeight: 29, fontWeight: '800', maxWidth: '90%' },
-  heroText: { color: '#D3E2F5', fontSize: 14, lineHeight: 20, maxWidth: '95%' },
-  heroBtns: { gap: 10, marginTop: 6 },
+  hero: { borderWidth: 1, borderRadius: 24, padding: 18, paddingTop: 20, overflow: 'hidden', gap: 12 },
+  blob: { position: 'absolute', opacity: 0.16 },
+  kicker: { fontSize: 11.5, fontWeight: '800', letterSpacing: 1.1 },
+  heroTitle: { fontSize: 30, lineHeight: 33, fontWeight: '800', letterSpacing: -0.8, maxWidth: '96%' },
+  heroText: { fontSize: 14.5, lineHeight: 21 },
+  heroBtns: { gap: 10 },
   btnPair: { flexDirection: 'row', gap: 10 },
-  btn: { minHeight: 46, paddingHorizontal: 14, borderRadius: 14, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 },
+  btn: { minHeight: 48, paddingHorizontal: 14, borderRadius: 14, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 },
   btnWide: { alignSelf: 'stretch' },
-  btnText: { color: '#03213F', fontSize: 14.5, fontWeight: '800', flexShrink: 1 },
-  btnGhost: { backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)' },
-  btnGhostText: { color: '#FFFFFF' },
-  search: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, minHeight: 52 },
-  searchText: { fontSize: 15.5 },
+  btnText: { fontSize: 14.5, fontWeight: '800', flexShrink: 1 },
+  btnGhost: { borderWidth: 1 },
+  search: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, minHeight: 54 },
+  searchText: { fontSize: 15, flexShrink: 1 },
+  quick: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  quickChip: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 38, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, maxWidth: '100%' },
+  quickText: { fontSize: 13.5, fontWeight: '600', flexShrink: 1 },
+  trust: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   secHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 6 },
   secLink: { fontSize: 14, fontWeight: '700', padding: 4 },
   cats: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },

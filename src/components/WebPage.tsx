@@ -4,7 +4,9 @@
  * the phone's browser, downloads are saved to Downloads/Fileora, file pickers work.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, BackHandler, Linking, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, BackHandler, Linking, StyleSheet, View } from 'react-native';
+import Alert from '../i18n/Alert';
+import Text from '../i18n/Text';
 import BlobUtil from 'react-native-blob-util';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';

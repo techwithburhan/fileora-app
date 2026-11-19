@@ -9,7 +9,8 @@
  * usage go to App Monitoring (src/remote/telemetry.ts).
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, AppState, StatusBar, StyleSheet, View } from 'react-native';
+import { AppState, StatusBar, StyleSheet, View } from 'react-native';
+import Alert from './src/i18n/Alert';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
@@ -51,6 +52,9 @@ import { telemetry } from './src/remote/telemetry';
 import { onNavigationReady, startPush, syncTopics } from './src/remote/push';
 import { inbox } from './src/remote/inbox';
 import { loadAds } from './src/ads/ads';
+import { syncRtl, useLang } from './src/i18n/i18n';
+import LanguageSheet from './src/i18n/LanguageSheet';
+import { FestivalOverlay, useFestivalPrefetch } from './src/festival/Festival';
 
 /** Reads App Center settings; reports only real server answers as errors (not "offline"). */
 installGlobalErrorHandler();
@@ -81,13 +85,15 @@ function TabsScreen({ theme }: { theme: Theme }) {
 
 export default function App() {
   const theme = useTheme();
+  const { rtl } = useLang();
+  useFestivalPrefetch();
   const [splash, setSplash] = useState(true);
   const done = useCallback(() => setSplash(false), []);
   const [navReady, setNavReady] = useState(false);
   const lastCheckin = useRef(0);
   useEffect(() => {
     // files, activity and the dark-mode choice saved on this phone; the Alerts history
-    store.load();
+    store.load().then(syncRtl);
     inbox.load();
     loadAds();
     // App Center settings (cached copy first, so the app works offline), then check in
@@ -168,7 +174,7 @@ export default function App() {
       <StatusBar barStyle={splash || theme.dark ? 'light-content' : 'dark-content'} />
       <MenuProvider>
         <ErrorBoundary>
-          <View style={[styles.root, { backgroundColor: theme.bg }]}>
+          <View style={[styles.root, { backgroundColor: theme.bg, direction: rtl ? 'rtl' : 'ltr' }]}>
             <NavigationContainer
               ref={navigationRef}
               theme={navTheme}
@@ -177,7 +183,7 @@ export default function App() {
                 const r = navigationRef.getCurrentRoute();
                 if (r) trackScreen(r.name);
               }}>
-              <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', contentStyle: { backgroundColor: theme.bg } }}>
+              <Stack.Navigator screenOptions={{ headerShown: false, animation: rtl ? 'slide_from_left' : 'slide_from_right', contentStyle: { backgroundColor: theme.bg } }}>
                 <Stack.Screen name="Tabs">{() => <TabsScreen theme={theme} />}</Stack.Screen>
                 <Stack.Screen name="Tool">{() => <ToolScreen theme={theme} />}</Stack.Screen>
                 <Stack.Screen name="Process">{() => <ProcessScreen theme={theme} />}</Stack.Screen>
@@ -198,6 +204,8 @@ export default function App() {
               <MenuSheet theme={theme} />
             </NavigationContainer>
             <RemoteGate />
+            {!splash && <FestivalOverlay />}
+            <LanguageSheet theme={theme} />
             {/* the offline tool engine: an invisible page from the app's own files */}
             <EngineHost />
             <SelfTest />

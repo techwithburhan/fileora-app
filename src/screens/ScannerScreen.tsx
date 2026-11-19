@@ -5,7 +5,8 @@
  * Each tab has its own list, its own + button and its own "Clear all".
  */
 import React, { useMemo, useState } from 'react';
-import { FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Image, Pressable, StyleSheet, View } from 'react-native';
+import Text from '../i18n/Text';
 import Animated, { FadeInDown, FadeOut, LinearTransition } from 'react-native-reanimated';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
@@ -21,6 +22,7 @@ import { FileRec, ScanDoc, store, useStore } from '../store/store';
 import { Theme } from '../theme';
 import { type } from '../typography';
 import Appear from '../components/Appear';
+import { tr } from '../i18n/i18n';
 
 type Tab = 'images' | 'convert';
 type Sort = 'new' | 'old' | 'name';
@@ -206,7 +208,7 @@ export default function ScannerScreen({ theme }: { theme: Theme }) {
 
       {fab && (
         <Appear duration={160} rise={false} exiting={FadeOut.duration(160)} style={styles.dim}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => setFab(false)} accessibilityLabel="Close" />
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setFab(false)} accessibilityLabel={tr('Close')} />
         </Appear>
       )}
       {fab && (
@@ -263,7 +265,7 @@ function DocRow({ doc, first, hasPdf, theme, onPress, onMore }: { doc: ScanDoc; 
       scaleTo={0.98}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${doc.name}, ${n} ${n === 1 ? 'page' : 'pages'}${hasPdf ? ', PDF saved' : ''}`}
+      accessibilityLabel={`${doc.name}, ${tr(n === 1 ? '1 page' : '{n} pages', { n })}${hasPdf ? ', ' + tr('PDF saved') : ''}`}
       style={[styles.doc, { backgroundColor: theme.surface, borderColor: theme.line }]}>
       <View style={[styles.docThumb, { backgroundColor: theme.surface2 }]}>
         {first ? <Image source={{ uri: `file://${first.path}` }} style={styles.docImg} resizeMode="cover" /> : <Icon name="image" size={22} color={theme.muted} />}
@@ -282,7 +284,7 @@ function DocRow({ doc, first, hasPdf, theme, onPress, onMore }: { doc: ScanDoc; 
           </View>
         )}
       </View>
-      <PressableScale onPress={onMore} hitSlop={10} accessibilityRole="button" accessibilityLabel={`More actions for ${doc.name}`} style={styles.more}>
+      <PressableScale onPress={onMore} hitSlop={10} accessibilityRole="button" accessibilityLabel={tr('More actions for {name}', { name: doc.name })} style={styles.more}>
         <Icon name="more" size={22} color={theme.muted} width={3} />
       </PressableScale>
     </PressableScale>

@@ -4,7 +4,9 @@
  * then Fileora files can be uploaded to it in one tap. Fileora never sees cloud passwords.
  */
 import React, { useCallback, useState } from 'react';
-import { Alert, FlatList, Image, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Image, Linking, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import Alert from '../i18n/Alert';
+import Text from '../i18n/Text';
 import Animated, { Easing, FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,6 +19,7 @@ import { native } from '../lib/native';
 import { FileRec, store, useStore } from '../store/store';
 import { Theme } from '../theme';
 import { type } from '../typography';
+import { tr } from '../i18n/i18n';
 
 type AppInfo = { installed: boolean; icon: string | null };
 
@@ -51,7 +54,7 @@ export default function CloudScreen({ theme }: { theme: Theme }) {
       return;
     }
     Alert.alert(
-      `${c.name} app needed`,
+      tr('{name} app needed', { name: c.name }),
       `Fileora connects to ${c.name} through its app on your phone, with the account you are signed in to there. Install ${c.name} from Google Play, sign in, then tap Add Connection again.`,
       [
         { text: 'Cancel', style: 'cancel' },
@@ -60,7 +63,7 @@ export default function CloudScreen({ theme }: { theme: Theme }) {
     );
   };
   const disconnect = (c: Cloud) =>
-    Alert.alert(`Disconnect ${c.name}?`, `Fileora will stop offering “Upload to ${c.name}”. Nothing is removed from your ${c.name}.`, [
+    Alert.alert(`Disconnect ${c.name}?`, tr('Fileora will stop offering “Upload to {name}”. Nothing is removed from your {name}.', { name: c.name }), [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Disconnect', style: 'destructive', onPress: () => store.setCloud(c.id, false) },
     ]);
@@ -96,7 +99,7 @@ export default function CloudScreen({ theme }: { theme: Theme }) {
                 <View style={styles.flex}>
                   <Text style={[type.heading, { color: theme.ink }]}>{c.name}</Text>
                   <Text style={[type.caption, { color: theme.muted }]}>
-                    {missing ? `${c.name} app not found on this phone` : connected ? `Connected through the ${c.name} app` : c.desc}
+                    {missing ? tr('{name} app not found on this phone', { name: c.name }) : connected ? tr('Connected through the {name} app', { name: c.name }) : c.desc}
                   </Text>
                 </View>
                 {connected && !missing && (
@@ -137,10 +140,10 @@ export default function CloudScreen({ theme }: { theme: Theme }) {
       {uploadTo && (
         <Modal transparent visible animationType="none" onRequestClose={() => setUploadTo(null)} statusBarTranslucent>
           <Animated.View entering={FadeIn.duration(160)} style={styles.backdrop}>
-            <Pressable style={StyleSheet.absoluteFill} onPress={() => setUploadTo(null)} accessibilityLabel="Close" />
+            <Pressable style={StyleSheet.absoluteFill} onPress={() => setUploadTo(null)} accessibilityLabel={tr('Close')} />
           </Animated.View>
           <Animated.View entering={FadeInDown.duration(260).easing(Easing.out(Easing.cubic))} style={[styles.sheet, { backgroundColor: theme.bg, paddingBottom: insets.bottom + 12 }]}>
-            <Text style={[type.section, { color: theme.ink }]}>Upload to {uploadTo.name}</Text>
+            <Text style={[type.section, { color: theme.ink }]}>{tr('Upload to {name}', { name: uploadTo.name })}</Text>
             <FlatList
               data={files}
               keyExtractor={f => f.id}

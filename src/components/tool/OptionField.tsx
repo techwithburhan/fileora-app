@@ -4,7 +4,8 @@
  * signature, note. Help texts and "show only when…" come from the tool's code (engine state).
  */
 import React, { useEffect, useState } from 'react';
-import { FlatList, Image, Modal, Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { FlatList, Image, Modal, Pressable, StyleSheet, Switch, TextInput, View } from 'react-native';
+import Text from '../../i18n/Text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from '../Icon';
 import PressableScale from '../PressableScale';
@@ -14,6 +15,7 @@ import { pickFiles, Picked } from '../../lib/pick';
 import type { OptField, PictureValue } from '../../engine/engine';
 import { Theme } from '../../theme';
 import { type } from '../../typography';
+import { tr } from '../../i18n/i18n';
 
 const POS_LABEL: Record<string, string> = { tl: 'Top left', tc: 'Top centre', tr: 'Top right', ml: 'Middle left', mc: 'Centre', mr: 'Middle right', bl: 'Bottom left', bc: 'Bottom centre', br: 'Bottom right' };
 const POS_ALL = ['tl', 'tc', 'tr', 'ml', 'mc', 'mr', 'bl', 'bc', 'br'];
@@ -130,7 +132,7 @@ function Select({ choices, value, theme, onChange, label }: { choices: [string, 
         <Icon name="down" size={18} color={theme.ink2} />
       </PressableScale>
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <Pressable style={styles.scrim} onPress={() => setOpen(false)} accessibilityLabel="Close">
+        <Pressable style={styles.scrim} onPress={() => setOpen(false)} accessibilityLabel={tr('Close')}>
           <View style={[styles.sheet, { backgroundColor: theme.surface, paddingBottom: insets.bottom + 12 }]}>
             <Text style={[type.section, styles.sheetTitle, { color: theme.ink }]}>{label}</Text>
             <FlatList
@@ -243,13 +245,13 @@ function ColorField({ choices, custom, value, theme, onChange, label }: { choice
               setHex(x);
               if (/^#[0-9a-f]{6}$/i.test(x)) onChange(x.toLowerCase());
             }}
-            placeholder="#2337b8"
+            placeholder={tr('#2337b8')}
             placeholderTextColor={theme.muted}
             autoCapitalize="none"
             autoCorrect={false}
             maxLength={7}
             style={[styles.hexInput, { color: theme.ink }]}
-            accessibilityLabel="Any colour, as a hex code"
+            accessibilityLabel={tr('Any colour, as a hex code')}
           />
         </View>
       )}
@@ -301,7 +303,7 @@ function ImageField({ value, theme, onPick }: { value: PictureValue; theme: Them
   return (
     <View style={[styles.imgPick, { borderColor: theme.line, backgroundColor: theme.surface }]}>
       <View style={[styles.imgPrev, { backgroundColor: theme.surface2 }]}>
-        {value?.preview ? <Image source={{ uri: value.preview }} style={styles.imgPrevImg} resizeMode="contain" accessibilityLabel="Chosen picture" /> : <Icon name="image" size={26} color={theme.muted} />}
+        {value?.preview ? <Image source={{ uri: value.preview }} style={styles.imgPrevImg} resizeMode="contain" accessibilityLabel={tr('Chosen picture')} /> : <Icon name="image" size={26} color={theme.muted} />}
       </View>
       <View style={styles.flex}>
         <PressableScale onPress={choose} disabled={busy} accessibilityRole="button" style={[styles.smallBtn, { borderColor: theme.line }]}>

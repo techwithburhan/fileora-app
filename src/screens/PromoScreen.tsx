@@ -3,12 +3,8 @@
  * a text and a button. Managed in WordPress; changes arrive with the next settings refresh.
  */
 import React from 'react';
-import {
-  Image,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
+import Text from '../i18n/Text';
 
 import { useNavigation } from '@react-navigation/native';
 import StackHeader from '../components/StackHeader';

@@ -4,7 +4,8 @@
  * and keeps its space while loading; if Google has no ad, the slot closes.
  */
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { StyleSheet, View, ViewStyle } from 'react-native';
+import Text from '../i18n/Text';
 import { BannerAd, BannerAdSize } from 'react-native-google-mobile-ads';
 import { useAdUnit } from './ads';
 import { Theme } from '../theme';

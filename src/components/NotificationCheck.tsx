@@ -7,18 +7,9 @@
  * notifications for apps that were swiped away. iPhone: allowed, sound and banners.
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  AppState,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, AppState, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import Alert from '../i18n/Alert';
+import Text from '../i18n/Text';
 import Animated, { Easing, FadeIn, FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon, { IconName } from './Icon';
@@ -34,6 +25,7 @@ import {
 import { control, useRemote } from '../remote/remote';
 import { Theme } from '../theme';
 import { type } from '../typography';
+import { tr } from '../i18n/i18n';
 
 type Check = {
   key: string;
@@ -163,7 +155,7 @@ export default function NotificationCheck({
     const delay = 10;
     Alert.alert(
       'Test notification',
-      `Go to your home screen now (or lock the phone). The test notification arrives in about ${delay} seconds.`,
+      tr('Go to your home screen now (or lock the phone). The test notification arrives in about {n} seconds.', { n: delay }),
     );
     const err = await requestTestPush(delay);
     setSending(false);
@@ -189,7 +181,7 @@ export default function NotificationCheck({
         <Pressable
           style={StyleSheet.absoluteFill}
           onPress={onClose}
-          accessibilityLabel="Close"
+          accessibilityLabel={tr('Close')}
         />
       </Animated.View>
       <Animated.View

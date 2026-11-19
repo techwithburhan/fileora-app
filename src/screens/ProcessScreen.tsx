@@ -7,7 +7,9 @@
  * (your VPS, or the website until App Center has the VPS address).
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import Alert from '../i18n/Alert';
+import Text from '../i18n/Text';
 import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 import BlobUtil from 'react-native-blob-util';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
@@ -40,6 +42,7 @@ import { type } from '../typography';
 import { telemetry } from '../remote/telemetry';
 import { busy as task } from '../lib/busy';
 import Appear from '../components/Appear';
+import { tr } from '../i18n/i18n';
 
 const PICK: Record<string, Accept> = { pdf: 'pdf', image: 'image', pdfimage: 'pdfimage', heic: 'heic', svg: 'svg', word: 'word', ppt: 'ppt', excel: 'excel', html: 'html', text: 'text' };
 type Done = { title: string; files: FileRec[]; notes: Record<string, string>; extra: RunResult['result'] };
@@ -191,7 +194,7 @@ export default function ProcessScreen({ theme }: { theme: Theme }) {
         }
         setServerLabel('Uploading…');
         const label = (s: JobStatus) =>
-          s.status === 'queued' ? (s.ahead ? `Waiting in line, ${s.ahead} ahead of you` : 'Waiting in line') : s.status === 'running' ? `${def.verb} on the server…` : 'Downloading the result…';
+          s.status === 'queued' ? (s.ahead ? tr('Waiting in line, {n} ahead of you', { n: s.ahead }) : 'Waiting in line') : s.status === 'running' ? tr('{verb} on the server…', { verb: tr(def.verb) }) : 'Downloading the result…';
         const options = { ...(r.options ?? {}), ...(pdfPw.current ? { opw: pdfPw.current } : {}) };
         const res = await runServerTool(tool.id, up, options, st => !signal.cancelled && setServerLabel(label(st)), signal, r.url);
         setServerLabel('Saving…');
@@ -213,7 +216,7 @@ export default function ProcessScreen({ theme }: { theme: Theme }) {
       }
       setWorking(false);
       await afterTask(); // App Center → Ads: maybe a full-screen ad first, within its limits
-      const title = extra?.title || (files.length > 1 ? `${files.length} files are ready` : 'Your file is ready');
+      const title = extra?.title || (files.length > 1 ? tr('{n} files are ready', { n: files.length }) : 'Your file is ready');
       setDone({ title, files, notes, extra });
       if (files.length === 1 && !extra?.md && !extra?.text && !extra?.diff && !extra?.palette) setSingle(files[0]);
     } catch (e) {
@@ -327,13 +330,13 @@ export default function ProcessScreen({ theme }: { theme: Theme }) {
           <TextInput
             value={String(vals.url ?? '')}
             onChangeText={t => change('url', t.trim())}
-            placeholder="https://example.com/article"
+            placeholder={tr('https://example.com/article')}
             placeholderTextColor={theme.muted}
             autoCapitalize="none"
             autoCorrect={false}
             keyboardType="url"
             style={[styles.input, { color: theme.ink, backgroundColor: theme.surface, borderColor: theme.line }]}
-            accessibilityLabel="Web address"
+            accessibilityLabel={tr('Web address')}
           />
           <Text style={[type.caption, { color: theme.muted }]}>The page is opened on the processing server and saved exactly as it appears there.</Text>
         </View>
@@ -346,9 +349,9 @@ export default function ProcessScreen({ theme }: { theme: Theme }) {
             <View style={[styles.dropIcon, { backgroundColor: theme.accent }]}>
               <Icon name="plus" size={26} color="#fff" width={2.6} />
             </View>
-            <Text style={[type.section, styles.center, { color: theme.ink }]}>Choose {what}</Text>
+            <Text style={[type.section, styles.center, { color: theme.ink }]}>{tr('Choose {things}', { things: tr(what) })}</Text>
             <Text style={[type.bodySm, styles.center, { color: theme.muted }]}>
-              {def.min > 1 ? `Select at least ${def.min} files.` : 'From your phone, Google Drive or Downloads.'} {onDevice ? 'Processed on this phone.' : ''}
+              {def.min > 1 ? tr('Select at least {n} files.', { n: def.min }) : 'From your phone, Google Drive or Downloads.'} {onDevice ? 'Processed on this phone.' : ''}
             </Text>
           </PressableScale>
           {def.camera && (
@@ -386,7 +389,7 @@ export default function ProcessScreen({ theme }: { theme: Theme }) {
     const more = canAdd && (
       <PressableScale onPress={pickMore} accessibilityRole="button" style={[styles.addMore, { backgroundColor: theme.surface2 }]}>
         <Icon name={def.multi ? 'plus' : 'refresh'} size={18} color={theme.ink} />
-        <Text style={[type.button, { color: theme.ink }]}>{def.multi ? (def.slots && def.slots[items.length] ? `Add: ${def.slots[items.length]}` : `Add more ${def.nouns}`) : 'Choose another file'}</Text>
+        <Text style={[type.button, { color: theme.ink }]}>{def.multi ? (def.slots && def.slots[items.length] ? `Add: ${def.slots[items.length]}` : tr('Add more {things}', { things: tr(def.nouns) })) : 'Choose another file'}</Text>
       </PressableScale>
     );
     if (def.pages) {

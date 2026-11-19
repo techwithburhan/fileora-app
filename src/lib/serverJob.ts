@@ -12,6 +12,7 @@ import BlobUtil from 'react-native-blob-util';
 import { SITE } from '../config';
 import { apiBase } from '../remote/remote';
 import { safeName, stripScheme } from '../store/files';
+import { tr } from '../i18n/i18n';
 
 export type JobStatus = { status: 'queued' | 'running' | 'done' | 'failed'; ahead?: number; name?: string; size?: number; error?: string; kind?: string; text?: string; need?: string; note?: string };
 export type JobFile = { uri: string; name: string; mime: string };
@@ -35,7 +36,7 @@ async function json<T>(r: Response): Promise<T> {
   try {
     return (await r.json()) as T;
   } catch {
-    throw new Error(`The server answered with HTTP ${r.status}.`);
+    throw new Error(tr('The server answered with HTTP {code}.', { code: r.status }));
   }
 }
 
@@ -64,7 +65,7 @@ async function submit(base: string, tool: string, files: JobFile[], options: Rec
   // a gateway error from the VPS itself (down, restarting): try the next address
   if (r.status === 502 || r.status === 503 || r.status === 504) {
     if (vps) vpsSkipUntil = Date.now() + 60000;
-    if (r.status !== 503 || vps) throw new Unreachable(`The processing server isn’t answering (HTTP ${r.status}).`);
+    if (r.status !== 503 || vps) throw new Unreachable(tr('The processing server isn’t answering (HTTP {code}).', { code: r.status }));
   }
   // the gateway is off or not there (404/405/403/401, or not JSON): use the website instead
   let created: { job?: string; token?: string; error?: string; message?: string; need?: string };
@@ -73,9 +74,9 @@ async function submit(base: string, tool: string, files: JobFile[], options: Rec
   } catch {
     if (vps) {
       vpsSkipUntil = Date.now() + VPS_SKIP_MS;
-      throw new Unreachable(`The processing server answered with HTTP ${r.status}.`);
+      throw new Unreachable(tr('The processing server answered with HTTP {code}.', { code: r.status }));
     }
-    throw new Error(`The server answered with HTTP ${r.status}.`);
+    throw new Error(tr('The server answered with HTTP {code}.', { code: r.status }));
   }
   if (vps && [401, 403, 404, 405, 410].includes(r.status)) {
     // "This tool isn't available in the app" only concerns this tool; anything else: the gateway is off
@@ -83,7 +84,7 @@ async function submit(base: string, tool: string, files: JobFile[], options: Rec
     throw new Unreachable(created.error ?? `HTTP ${r.status}`);
   }
   if (r.status === 503 && /connected/i.test(created.error ?? '')) throw new Unreachable(created.error ?? 'The server isn’t connected.');
-  if (r.status !== 202 || !created.job || !created.token) throw new Error(created.error ?? created.message ?? `The server couldn’t accept this request (error ${r.status}).`);
+  if (r.status !== 202 || !created.job || !created.token) throw new Error(created.error ?? created.message ?? tr('The server couldn’t accept this request (error {code}).', { code: r.status }));
   return { job: created.job, token: created.token };
 }
 
@@ -161,7 +162,7 @@ export async function runServerTool(
   const code = res.info().status;
   if (code !== 200) {
     await BlobUtil.fs.unlink(path).catch(() => {});
-    throw new Error(code === 410 ? 'The result was already downloaded. Please run the task again.' : `Download failed (HTTP ${code}).`);
+    throw new Error(code === 410 ? 'The result was already downloaded. Please run the task again.' : tr('Download failed (HTTP {code}).', { code }));
   }
   return { path: stripScheme(res.path() ?? path), name, note: st.note };
 }

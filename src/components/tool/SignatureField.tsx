@@ -3,7 +3,8 @@
  * engine turns it into the same transparent PNG the website makes.
  */
 import React, { useRef, useState } from 'react';
-import { ActivityIndicator, Image, PanResponder, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, PanResponder, StyleSheet, TextInput, View } from 'react-native';
+import Text from '../../i18n/Text';
 import Svg, { Path } from 'react-native-svg';
 import PressableScale from '../PressableScale';
 import Segmented from '../Segmented';
@@ -11,6 +12,7 @@ import { pickFiles, Picked } from '../../lib/pick';
 import type { PictureValue } from '../../engine/engine';
 import { Theme } from '../../theme';
 import { type } from '../../typography';
+import { tr } from '../../i18n/i18n';
 
 const INKS = [
   { v: '#16182F', label: 'Black ink' },
@@ -124,7 +126,7 @@ export default function SignatureField({ value, theme, onChange, onScrollLock }:
         ]}
       />
       {mode === 'draw' && (
-        <View style={[styles.pad, { borderColor: theme.line }]} {...pan.panHandlers} accessibilityLabel="Signature pad. Draw your signature with your finger.">
+        <View style={[styles.pad, { borderColor: theme.line }]} {...pan.panHandlers} accessibilityLabel={tr('Signature pad. Draw your signature with your finger.')}>
           <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
             {strokes.map((s, i) => (
               <Path key={i} d={pathOf(s)} stroke={ink} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" fill="none" />
@@ -146,11 +148,11 @@ export default function SignatureField({ value, theme, onChange, onScrollLock }:
             if (typing.current) clearTimeout(typing.current);
             typing.current = setTimeout(() => send(t.trim() ? { mode: 'type', text: t, ink: inkRef.current } : null), 350);
           }}
-          placeholder="Type your name"
+          placeholder={tr('Type your name')}
           placeholderTextColor={theme.muted}
           maxLength={40}
           style={[styles.input, { color: ink, backgroundColor: theme.surface, borderColor: theme.line }]}
-          accessibilityLabel="Type your name"
+          accessibilityLabel={tr('Type your name')}
         />
       )}
       {mode === 'upload' && (
@@ -182,7 +184,7 @@ export default function SignatureField({ value, theme, onChange, onScrollLock }:
       {value?.preview ? (
         <View style={[styles.preview, { borderColor: theme.line }]}>
           <Text style={[type.caption, { color: theme.muted }]}>Goes on the page like this</Text>
-          <Image source={{ uri: value.preview }} style={[styles.previewImg, { aspectRatio: value.w / Math.max(1, value.h) }]} resizeMode="contain" accessibilityLabel="Your signature" />
+          <Image source={{ uri: value.preview }} style={[styles.previewImg, { aspectRatio: value.w / Math.max(1, value.h) }]} resizeMode="contain" accessibilityLabel={tr('Your signature')} />
         </View>
       ) : null}
     </View>

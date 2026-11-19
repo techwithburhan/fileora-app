@@ -4,7 +4,8 @@
  * and the information pages. Slides in from the right; its rows arrive one after another.
  */
 import React, { useEffect, useState } from 'react';
-import { BackHandler, Linking, Platform, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { BackHandler, Linking, Platform, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import Text from '../i18n/Text';
 import Animated, { Easing, FadeInRight, runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Logo } from './Brand';
@@ -20,6 +21,7 @@ import { navigationRef, TabParamList } from '../navigation/types';
 import { catColor, Theme } from '../theme';
 import { trackScreen } from '../analytics';
 import { APP_VERSION } from '../version';
+import { tr } from '../i18n/i18n';
 
 type Row = { key: string; label: string; icon: IconName; color?: string; count?: number; badge?: string; dim?: boolean; go: () => void };
 
@@ -108,14 +110,14 @@ export default function MenuSheet({ theme }: { theme: Theme }) {
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
       <Animated.View style={[StyleSheet.absoluteFill, styles.backdrop, backdrop]}>
-        <PressableScale style={StyleSheet.absoluteFill} scaleTo={1} onPress={close} accessibilityLabel="Close menu" accessibilityRole="button" />
+        <PressableScale style={StyleSheet.absoluteFill} scaleTo={1} onPress={close} accessibilityLabel={tr('Close menu')} accessibilityRole="button" />
       </Animated.View>
       <Animated.View
         accessibilityViewIsModal
         style={[styles.panel, { width: panelW, backgroundColor: theme.bg, paddingTop: insets.top + 8 }, panel]}>
         <View style={styles.head}>
           <Logo height={28} onDark={theme.dark} />
-          <PressableScale onPress={close} accessibilityRole="button" accessibilityLabel="Close menu" style={[styles.close, { backgroundColor: theme.surface2 }]}>
+          <PressableScale onPress={close} accessibilityRole="button" accessibilityLabel={tr('Close menu')} style={[styles.close, { backgroundColor: theme.surface2 }]}>
             <Icon name="close" size={20} color={theme.ink} />
           </PressableScale>
         </View>

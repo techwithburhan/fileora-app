@@ -4,15 +4,9 @@
  * "Not now" is just as easy.
  */
 import React, { useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Modal, Pressable, StyleSheet, View } from 'react-native';
+import Alert from '../i18n/Alert';
+import Text from '../i18n/Text';
 import Animated, { Easing, FadeIn, FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from '../components/Icon';
@@ -20,6 +14,7 @@ import PressableScale from '../components/PressableScale';
 import { rewardHours, watchForAdFree } from './ads';
 import { Theme } from '../theme';
 import { type } from '../typography';
+import { tr } from '../i18n/i18n';
 
 export function untilText(ms: number) {
   const d = new Date(ms);
@@ -51,7 +46,7 @@ export default function RewardSheet({
     if (r === 'ok')
       Alert.alert(
         'Enjoy Fileora without ads',
-        `No ads until ${untilText(Date.now() + hours * 3600000)}.`,
+        tr('No ads until {time}.', { time: untilText(Date.now() + hours * 3600000) }),
       );
     else if (r === 'noad')
       Alert.alert(
@@ -71,7 +66,7 @@ export default function RewardSheet({
         <Pressable
           style={StyleSheet.absoluteFill}
           onPress={busy ? undefined : onClose}
-          accessibilityLabel="Close"
+          accessibilityLabel={tr('Close')}
         />
       </Animated.View>
       <Animated.View

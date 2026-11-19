@@ -11,7 +11,8 @@
  * Overlays (sheets, dialogs, pop-ups) keep `entering`: nothing moves around them.
  */
 import React, { useEffect } from 'react';
-import { StyleProp, Text, TextProps, TextStyle, ViewStyle } from 'react-native';
+import { StyleProp, TextProps, TextStyle, ViewStyle } from 'react-native';
+import Text from '../i18n/Text';
 import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 
 type Common = { delay?: number; duration?: number; /** rise from below (FadeInDown); false = fade only */ rise?: boolean };

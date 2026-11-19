@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TextInputInstance, View } from 'react-native';
+import { ScrollView, StyleSheet, TextInput, TextInputInstance, View } from 'react-native';
+import Text from '../i18n/Text';
 import Animated, { LinearTransition, useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import AppHeader from '../components/AppHeader';
@@ -12,6 +13,7 @@ import { remote } from '../remote/remote';
 import { TabParamList } from '../navigation/types';
 import { Theme } from '../theme';
 import PullRefresh from '../components/PullRefresh';
+import { tr } from '../i18n/i18n';
 
 
 export default function ToolsScreen({ theme }: { theme: Theme }) {
@@ -40,7 +42,8 @@ export default function ToolsScreen({ theme }: { theme: Theme }) {
     const words = q.trim().toLowerCase().split(/\s+/).filter(Boolean);
     return tools.filter(t => {
       if (cat !== 'all' && t.cat !== cat) return false;
-      const hay = `${t.name} ${t.desc} ${t.keys}`.toLowerCase();
+      // English and the app language, so "संपीड़ित" finds Compress PDF as well as "compress"
+      const hay = `${t.name} ${t.desc} ${t.keys} ${tr(t.name)} ${tr(t.desc)}`.toLowerCase();
       return words.every(w => hay.includes(w));
     });
   }, [q, cat, tools]);
@@ -72,12 +75,12 @@ export default function ToolsScreen({ theme }: { theme: Theme }) {
                 placeholder={`Search ${tools.length} tools`}
                 placeholderTextColor={theme.muted}
                 style={[styles.input, { color: theme.ink }]}
-                accessibilityLabel="Search tools"
+                accessibilityLabel={tr('Search tools')}
                 returnKeyType="search"
                 autoCorrect={false}
               />
               {q ? (
-                <PressableScale onPress={() => setQ('')} accessibilityRole="button" accessibilityLabel="Clear search" hitSlop={10}>
+                <PressableScale onPress={() => setQ('')} accessibilityRole="button" accessibilityLabel={tr('Clear search')} hitSlop={10}>
                   <Icon name="close" size={18} color={theme.muted} />
                 </PressableScale>
               ) : null}
@@ -104,7 +107,7 @@ export default function ToolsScreen({ theme }: { theme: Theme }) {
             </Text>
           </View>
         }
-        ListEmptyComponent={<Text style={[styles.empty, { color: theme.muted }]}>No tool matches “{q}”. Try another word.</Text>}
+        ListEmptyComponent={<Text style={[styles.empty, { color: theme.muted }]}>{tr('No tool matches “{q}”. Try another word.', { q })}</Text>}
         renderItem={({ item, index }) => <ToolCard tool={item} theme={theme} index={index} onPress={() => nav.navigate('Tool', { id: item.id })} />}
         />
       </PullRefresh>

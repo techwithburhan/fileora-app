@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, StyleSheet, View } from 'react-native';
+import Text from '../i18n/Text';
 import Animated from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import StackHeader from '../components/StackHeader';

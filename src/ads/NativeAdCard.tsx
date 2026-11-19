@@ -4,7 +4,8 @@
  * its space while the ad loads and disappears if Google has no ad, so it never covers anything.
  */
 import React from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
+import Text from '../i18n/Text';
 
 import {
   NativeAdChoicesPlacement,
@@ -19,6 +20,7 @@ import { useAdUnit } from './ads';
 import { Theme } from '../theme';
 import { type } from '../typography';
 import Appear from '../components/Appear';
+import { tr } from '../i18n/i18n';
 
 const OPTIONS = {
   adChoicesPlacement: NativeAdChoicesPlacement.TOP_RIGHT,
@@ -29,7 +31,7 @@ export function AdLabel({ theme }: { theme: Theme }) {
   return (
     <View
       style={[styles.badge, theme.dark ? styles.badgeDark : styles.badgeLight]}
-      accessibilityLabel="Advertisement"
+      accessibilityLabel={tr('Advertisement')}
     >
       <Text
         style={[

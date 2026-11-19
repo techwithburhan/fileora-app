@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Linking, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, StyleSheet, View } from 'react-native';
+import Text from '../i18n/Text';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import StackHeader from '../components/StackHeader';
 import WebPage from '../components/WebPage';

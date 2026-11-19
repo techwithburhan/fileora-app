@@ -1,12 +1,14 @@
 /** Bottom sheet with a short list of actions (⋮ menus, picking a source). */
 import React from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import Text from '../i18n/Text';
 import Animated, { Easing, FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon, { IconName } from './Icon';
 import PressableScale from './PressableScale';
 import { Theme } from '../theme';
 import { type } from '../typography';
+import { tr } from '../i18n/i18n';
 
 export type SheetAction = { key: string; label: string; sub?: string; icon: IconName; danger?: boolean; onPress: () => void };
 
@@ -16,7 +18,7 @@ export default function ActionSheet({ title, actions, theme, onClose }: { title?
   return (
     <Modal transparent visible animationType="none" onRequestClose={onClose} statusBarTranslucent>
       <Animated.View entering={FadeIn.duration(160)} style={styles.backdrop}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close" />
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={tr('Close')} />
       </Animated.View>
       <Animated.View
         entering={FadeInDown.duration(260).easing(Easing.out(Easing.cubic))}

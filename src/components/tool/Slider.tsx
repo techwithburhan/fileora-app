@@ -1,6 +1,7 @@
 /** A small slider (tap or drag on the track); screen readers can step it up and down. */
 import React, { useRef, useState } from 'react';
-import { PanResponder, StyleSheet, Text, View } from 'react-native';
+import { PanResponder, StyleSheet, View } from 'react-native';
+import Text from '../../i18n/Text';
 import { Theme } from '../../theme';
 
 type Props = { value: number; min: number; max: number; step?: number; suffix?: string; label: string; theme: Theme; onChange: (v: number) => void; onDone?: (v: number) => void; onDrag?: (active: boolean) => void };

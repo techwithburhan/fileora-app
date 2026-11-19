@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import Text from '../i18n/Text';
 
 import Icon, { IconName } from './Icon';
 import PressableScale from './PressableScale';

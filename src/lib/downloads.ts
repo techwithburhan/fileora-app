@@ -3,13 +3,14 @@
  * cache, then the file is saved in Fileora's folder (listed under Files → Downloaded) and copied
  * to the phone's Downloads/Fileora.
  */
-import { Alert } from 'react-native';
+import Alert from '../i18n/Alert';
 import BlobUtil from 'react-native-blob-util';
 import { openWithViewer, safeName, SAVED_WHERE } from '../store/files';
 import { store } from '../store/store';
 import { saveResult } from './output';
 import { telemetry } from '../remote/telemetry';
 import { busy } from './busy';
+import { tr } from '../i18n/i18n';
 
 type Pending = { name: string; mime: string; path: string; chain: Promise<unknown>; done: () => void };
 const pending = new Map<string, Pending>();
@@ -48,7 +49,7 @@ export function handleDownloadMessage(msg: DownloadMessage, tool?: string) {
   p.chain
     .then(() => saveResult({ name: p.name, fromPath: p.path, move: true, mime: p.mime === 'application/octet-stream' ? undefined : p.mime, tool, source: 'downloaded' }))
     .then(rec => {
-      Alert.alert('Your file is ready', `${rec.name}\nSaved in Files and in ${SAVED_WHERE}.`, [
+      Alert.alert('Your file is ready', `${rec.name}\n${tr('Saved in Files and in {where}.', { where: tr(SAVED_WHERE) })}`, [
         { text: 'OK', style: 'cancel' },
         {
           text: 'Open',

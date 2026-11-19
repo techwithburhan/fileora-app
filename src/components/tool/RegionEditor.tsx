@@ -4,12 +4,14 @@
  * Coordinates are fractions (0..1) of the picture.
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { Image, PanResponder, StyleSheet, Text, View } from 'react-native';
+import { Image, PanResponder, StyleSheet, View } from 'react-native';
+import Text from '../../i18n/Text';
 import Icon from '../Icon';
 import PressableScale from '../PressableScale';
 import type { Region } from '../../engine/engine';
 import { Theme } from '../../theme';
 import { type } from '../../typography';
+import { tr } from '../../i18n/i18n';
 
 type Props = { src: string; w: number; h: number; rects: Region[]; multi: boolean; note?: string; theme: Theme; onChange: (r: Region[]) => void; onScrollLock: (lock: boolean) => void };
 
@@ -128,7 +130,7 @@ export default function RegionEditor({ src, w, h, rects, multi, note, theme, onC
               style={[styles.box, { left: r.x * size.W, top: r.y * size.H, width: r.w * size.W, height: r.h * size.H }, on ? { borderColor: theme.accent } : styles.boxIdle]}
               accessible
               accessibilityRole="adjustable"
-              accessibilityLabel={`${r.label ?? 'Area'}: drag to move`}
+              accessibilityLabel={tr('{name}: drag to move', { name: tr(r.label ?? 'Area') })}
               accessibilityActions={[{ name: 'increment', label: 'Move right' }, { name: 'decrement', label: 'Move left' }]}
               onAccessibilityAction={e => nudge(r.id, e.nativeEvent.actionName === 'increment' ? 0.02 : -0.02, 0)}
               {...p.move.panHandlers}>
@@ -139,9 +141,9 @@ export default function RegionEditor({ src, w, h, rects, multi, note, theme, onC
                   </Text>
                 </View>
               ) : null}
-              <View style={[styles.corner, on ? { backgroundColor: theme.accent } : styles.cornerIdle]} {...p.size.panHandlers} accessibilityLabel="Resize" />
+              <View style={[styles.corner, on ? { backgroundColor: theme.accent } : styles.cornerIdle]} {...p.size.panHandlers} accessibilityLabel={tr('Resize')} />
               {multi && (
-                <PressableScale onPress={() => remove(r.id)} hitSlop={8} style={styles.del} accessibilityRole="button" accessibilityLabel="Remove this box">
+                <PressableScale onPress={() => remove(r.id)} hitSlop={8} style={styles.del} accessibilityRole="button" accessibilityLabel={tr('Remove this box')}>
                   <Icon name="close" size={14} color="#fff" width={3} />
                 </PressableScale>
               )}

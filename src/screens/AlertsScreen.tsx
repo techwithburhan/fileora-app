@@ -5,14 +5,8 @@
  * this), and an admin can delete one or all of them. Tapping an alert opens what it points to.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  AppState,
-  Image,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { AppState, Image, Pressable, StyleSheet, View } from 'react-native';
+import Text from '../i18n/Text';
 
 import {
   useFocusEffect,
@@ -30,6 +24,7 @@ import { type } from '../typography';
 import Appear from '../components/Appear';
 import PullRefresh from '../components/PullRefresh';
 import Animated from 'react-native-reanimated';
+import { tr } from '../i18n/i18n';
 
 const TOPIC_ICON: Record<string, IconName> = {
   all: 'bell',
@@ -43,7 +38,7 @@ const TOPIC_ICON: Record<string, IconName> = {
 function ago(at: number) {
   const s = Math.max(0, Math.floor(Date.now() / 1000) - at);
   if (s < 60) return 'Just now';
-  if (s < 3600) return `${Math.floor(s / 60)} min ago`;
+  if (s < 3600) return tr('{n} min ago', { n: Math.floor(s / 60) });
   if (s < 86400) return `${Math.floor(s / 3600)} h ago`;
   if (s < 7 * 86400) return `${Math.floor(s / 86400)} d ago`;
   return new Date(at * 1000).toLocaleDateString([], {
@@ -102,7 +97,7 @@ export default function AlertsScreen({ theme }: { theme: Theme }) {
   const clearAll = () => {
     const n = items.length;
     const back = inbox.clearAll();
-    offer(n === 1 ? '1 alert deleted' : `${n} alerts deleted`, back);
+    offer(n === 1 ? '1 alert deleted' : tr('{n} alerts deleted', { n }), back);
   };
   const off =
     pushAvailable() && (perm === 'denied' || !effectivePrefs(prefs).notify);
@@ -173,7 +168,7 @@ export default function AlertsScreen({ theme }: { theme: Theme }) {
             onPress={() => remove(item)}
             hitSlop={6}
             accessibilityRole="button"
-            accessibilityLabel={`Delete alert: ${item.title}`}
+            accessibilityLabel={tr('Delete alert: {title}', { title: item.title })}
             style={({ pressed }) => [styles.del, pressed && { backgroundColor: theme.surface2 }]}
           >
             <Icon name="trash" size={18} color={theme.muted} />
@@ -205,7 +200,7 @@ export default function AlertsScreen({ theme }: { theme: Theme }) {
                 <PressableScale
                   onPress={clearAll}
                   accessibilityRole="button"
-                  accessibilityLabel="Delete all alerts"
+                  accessibilityLabel={tr('Delete all alerts')}
                   style={[styles.clear, { borderColor: theme.line, backgroundColor: theme.surface }]}
                 >
                   <Icon name="trash" size={16} color={theme.ink2} />

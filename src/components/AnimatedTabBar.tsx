@@ -5,7 +5,8 @@
  * Alerts shows the number of unread notifications.
  */
 import React, { useEffect } from 'react';
-import { LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
+import { LayoutChangeEvent, Pressable, StyleSheet, View } from 'react-native';
+import Text from '../i18n/Text';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import Icon, { IconName } from './Icon';

@@ -1,12 +1,14 @@
 /** Pages of a PDF as a grid (Organize and other page tools): move, turn and delete pages. */
 import { useCells } from '../../lib/useCells';
 import React from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
+import Text from '../../i18n/Text';
 import Icon from '../Icon';
 import PressableScale from '../PressableScale';
 import type { PageRef } from '../../engine/engine';
 import { Theme } from '../../theme';
 import { type } from '../../typography';
+import { tr } from '../../i18n/i18n';
 
 type Props = { pages: PageRef[]; total: number; thumbs: Record<string, string>; theme: Theme; onChange: (p: PageRef[]) => void; onReset: () => void };
 
@@ -52,16 +54,16 @@ export default function PageGrid({ pages, total, thumbs, theme, onChange, onRese
                 {p.rot ? `, ${p.rot}°` : ''}
               </Text>
               <View style={styles.acts}>
-                <PressableScale onPress={() => move(k, -1)} disabled={k === 0} hitSlop={4} accessibilityLabel={`Move page ${p.i + 1} earlier`} style={styles.act}>
+                <PressableScale onPress={() => move(k, -1)} disabled={k === 0} hitSlop={4} accessibilityLabel={tr('Move page {n} earlier', { n: p.i + 1 })} style={styles.act}>
                   <Icon name="back" size={16} color={k === 0 ? theme.line : theme.ink2} />
                 </PressableScale>
-                <PressableScale onPress={() => turn(k)} hitSlop={4} accessibilityLabel={`Turn page ${p.i + 1}`} style={styles.act}>
+                <PressableScale onPress={() => turn(k)} hitSlop={4} accessibilityLabel={tr('Turn page {n}', { n: p.i + 1 })} style={styles.act}>
                   <Icon name="rotate" size={16} color={theme.ink2} />
                 </PressableScale>
-                <PressableScale onPress={() => del(k)} disabled={pages.length <= 1} hitSlop={4} accessibilityLabel={`Delete page ${p.i + 1}`} style={styles.act}>
+                <PressableScale onPress={() => del(k)} disabled={pages.length <= 1} hitSlop={4} accessibilityLabel={tr('Delete page {n}', { n: p.i + 1 })} style={styles.act}>
                   <Icon name="trash" size={16} color={pages.length <= 1 ? theme.line : theme.danger} />
                 </PressableScale>
-                <PressableScale onPress={() => move(k, 1)} disabled={k === pages.length - 1} hitSlop={4} accessibilityLabel={`Move page ${p.i + 1} later`} style={styles.act}>
+                <PressableScale onPress={() => move(k, 1)} disabled={k === pages.length - 1} hitSlop={4} accessibilityLabel={tr('Move page {n} later', { n: p.i + 1 })} style={styles.act}>
                   <Icon name="chevron" size={16} color={k === pages.length - 1 ? theme.line : theme.ink2} />
                 </PressableScale>
               </View>

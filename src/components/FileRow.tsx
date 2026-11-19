@@ -1,5 +1,6 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import Text from '../i18n/Text';
 import FileThumb from './FileThumb';
 import Icon, { IconName } from './Icon';
 import PressableScale from './PressableScale';
@@ -8,6 +9,7 @@ import { FileRec } from '../store/store';
 import { toolById } from '../data/tools';
 import { Theme } from '../theme';
 import { type } from '../typography';
+import { tr } from '../i18n/i18n';
 
 const SOURCE: Record<FileRec['source'], string> = { downloaded: 'Downloaded', processed: 'Processed', scan: 'Scanned PDF', 'scan-image': 'Scanned image', convert: 'Converted PDF' };
 
@@ -50,7 +52,7 @@ export default function FileRow({
         </Text>
       </View>
       {onMore ? (
-        <PressableScale onPress={onMore} hitSlop={10} accessibilityRole="button" accessibilityLabel={`More actions for ${file.name}`} style={styles.more}>
+        <PressableScale onPress={onMore} hitSlop={10} accessibilityRole="button" accessibilityLabel={tr('More actions for {name}', { name: file.name })} style={styles.more}>
           <Icon name={moreIcon} size={moreIcon === 'more' ? 22 : 19} color={theme.muted} width={moreIcon === 'more' ? 3 : 2} />
         </PressableScale>
       ) : null}

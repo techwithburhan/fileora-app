@@ -3,7 +3,8 @@
  * Image tools open with the images already chosen; "Scan to PDF" opens the scanner editor.
  */
 import React, { useMemo } from 'react';
-import { FlatList, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Image, ScrollView, StyleSheet, View } from 'react-native';
+import Text from '../i18n/Text';
 
 import { RouteProp, StackActions, useNavigation, useRoute } from '@react-navigation/native';
 import StackHeader from '../components/StackHeader';

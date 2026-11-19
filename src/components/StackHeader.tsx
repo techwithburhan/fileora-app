@@ -1,9 +1,11 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import Text from '../i18n/Text';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon, { IconName } from './Icon';
 import PressableScale from './PressableScale';
 import { Theme } from '../theme';
+import { tr } from '../i18n/i18n';
 
 export default function StackHeader({
   title,
@@ -19,7 +21,7 @@ export default function StackHeader({
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.bar, { paddingTop: insets.top + 8, backgroundColor: theme.header, borderBottomColor: theme.line }]}>
-      <PressableScale onPress={onBack} accessibilityRole="button" accessibilityLabel="Back" style={[styles.btn, { backgroundColor: theme.surface2 }]}>
+      <PressableScale onPress={onBack} accessibilityRole="button" accessibilityLabel={tr('Back')} style={[styles.btn, { backgroundColor: theme.surface2 }]}>
         <Icon name="back" size={21} color={theme.ink} />
       </PressableScale>
       <Text style={[styles.title, { color: theme.ink }]} numberOfLines={1} accessibilityRole="header">

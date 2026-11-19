@@ -1,12 +1,13 @@
 /** ⋮ menu for a Fileora file: open, share, upload to a connected cloud, delete (to the Recycle Bin). */
 import React, { useCallback, useState } from 'react';
-import { Alert } from 'react-native';
+import Alert from '../i18n/Alert';
 import ActionSheet, { SheetAction } from './ActionSheet';
 import { CLOUDS } from '../data/clouds';
 import { native } from '../lib/native';
 import { confirmDelete, openRecord, shareRecord } from '../lib/openFile';
 import { FileRec, store } from '../store/store';
 import { Theme } from '../theme';
+import { tr } from '../i18n/i18n';
 
 export function useFileActions(theme: Theme): [(f: FileRec) => void, React.ReactElement] {
   const [file, setFile] = useState<FileRec | null>(null);
@@ -18,7 +19,7 @@ export function useFileActions(theme: Theme): [(f: FileRec) => void, React.React
         { key: 'share', label: 'Share', sub: 'WhatsApp, email, Bluetooth…', icon: 'share', onPress: () => shareRecord(file) },
         ...clouds.map(c => ({
           key: c.id,
-          label: `Upload to ${c.name}`,
+          label: tr('Upload to {name}', { name: c.name }),
           icon: 'cloud' as const,
           onPress: () => native.shareToApp(file.path, file.mime, c.pkg).catch(e => Alert.alert(c.name, e instanceof Error ? e.message : String(e))),
         })),

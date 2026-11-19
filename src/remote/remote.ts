@@ -69,6 +69,31 @@ export type AdsConfig = {
 export type PromoItem = { id: string; title: string; text: string; image: string; button: string; link: string };
 export type Promo = { title: string; intro: string; items: PromoItem[] };
 export type Popup = { id: string; title: string; text: string; button: string; link: string; freq: 'daily' | 'once' | 'always' };
+export type FestivalAnim = 'none' | 'snow' | 'hearts' | 'petals' | 'stars' | 'sparkles' | 'fireworks' | 'lanterns' | 'colours' | 'confetti';
+/** App Center → Festival Themes (plugin 2.20+): the theme shown now, or the next one (cached ahead). */
+export type Festival = {
+  id: string;
+  v: string;
+  name: string;
+  greeting: string;
+  sub: string;
+  /** one of the ten festivals that come with the app (their texts are translated in the app) */
+  builtin: boolean;
+  /** built-in artwork drawn from the copy in the app ('' = none) */
+  design: string;
+  /** artwork uploaded in App Center (https), shown instead of the design */
+  image: string;
+  /** buttons, active tab and header line ('' = the normal Fileora green) */
+  accent: string;
+  /** text colour on the banner */
+  ink: string;
+  animation: FestivalAnim;
+  anim_secs: number;
+  anim_freq: 'open' | 'daily' | 'once';
+  link: string;
+  /** festival_next only: first day (YYYY-MM-DD) */
+  from?: string;
+};
 export type RemoteConfig = {
   v: number;
   api_live: boolean;
@@ -101,6 +126,9 @@ export type RemoteConfig = {
   ads: AdsConfig | null;
   promo: Promo | null;
   popup: Popup | null;
+  /* app 1.1+ (plugin 2.20+) */
+  festival: Festival | null;
+  festival_next: Festival | null;
 };
 /** Notification categories people can switch off (FCM topics). "all" = important, always on. */
 export const TOPIC_LABELS: { id: string; label: string }[] = [
@@ -129,7 +157,7 @@ type State = {
   install: string;
   prefs: Prefs;
   /** popup = "<id>|<YYYY-MM-DD>" of the Daily Update popup last closed */
-  dismissed: { ann?: string; update?: string; popup?: string };
+  dismissed: { ann?: string; update?: string; popup?: string; festival?: string; fanim?: string };
   subscribed: string[]; // FCM topics this install is subscribed to
 };
 
@@ -350,6 +378,34 @@ function cleanPopup(v: unknown): Popup | null {
   return { id: text(p.id, 20) || title, title, text: text(p.text, 240), button: text(p.button, 24) || 'Learn more', link, freq };
 }
 
+const ANIMS: FestivalAnim[] = ['none', 'snow', 'hearts', 'petals', 'stars', 'sparkles', 'fireworks', 'lanterns', 'colours', 'confetti'];
+const hex = (v: unknown) => (typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v) ? v.toUpperCase() : '');
+function cleanFestival(v: unknown): Festival | null {
+  if (!v || typeof v !== 'object') return null;
+  const f = v as Record<string, unknown>;
+  const id = text(f.id, 30);
+  const greeting = text(f.greeting, 60);
+  if (!id || !greeting) return null;
+  const secs = Number(f.anim_secs);
+  return {
+    id,
+    v: text(f.v, 20) || id,
+    name: text(f.name, 50) || id,
+    greeting,
+    sub: text(f.sub, 120),
+    builtin: f.builtin === true,
+    design: /^[a-z0-9]{2,20}$/.test(String(f.design ?? '')) ? String(f.design) : '',
+    image: httpsOnly(f.image),
+    accent: hex(f.accent),
+    ink: hex(f.ink) || '#FFFFFF',
+    animation: ANIMS.includes(f.animation as FestivalAnim) ? (f.animation as FestivalAnim) : 'none',
+    anim_secs: Number.isFinite(secs) ? Math.max(0, Math.min(15, Math.round(secs))) : 6,
+    anim_freq: f.anim_freq === 'open' || f.anim_freq === 'once' ? f.anim_freq : 'daily',
+    link: httpsOnly(f.link),
+    from: /^\d{4}-\d{2}-\d{2}$/.test(String(f.from ?? '')) ? String(f.from) : undefined,
+  };
+}
+
 /**
  * A navigation from a plugin older than 2.14 has no Alerts item: add it to the bar (before
  * Settings), or to the menu when the bar is full, like the plugin's own 2.14 update does.
@@ -407,6 +463,8 @@ function clean(j: unknown): RemoteConfig | null {
     ads: cleanAds(c.ads),
     promo: cleanPromo(c.promo),
     popup: cleanPopup(c.popup),
+    festival: cleanFestival(c.festival),
+    festival_next: cleanFestival(c.festival_next),
   };
 }
 
@@ -480,7 +538,7 @@ export const remote = {
     const touched = [...new Set([...(state.prefs.touched ?? []), id])];
     set({ prefs: { ...state.prefs, topics: { ...state.prefs.topics, [id]: on }, touched } });
   },
-  dismiss(kind: 'ann' | 'update' | 'popup', id: string) {
+  dismiss(kind: 'ann' | 'update' | 'popup' | 'festival' | 'fanim', id: string) {
     set({ dismissed: { ...state.dismissed, [kind]: id } });
   },
   setSubscribed(list: string[]) {

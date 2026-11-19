@@ -1,11 +1,13 @@
 /** Centered dialog with a text field and/or a checkbox (Scan complete, Rename, Save as PDF). */
 import React, { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import Text from '../i18n/Text';
 import Animated, { Easing, FadeIn, FadeInDown } from 'react-native-reanimated';
 import Icon from './Icon';
 import PressableScale from './PressableScale';
 import { Theme } from '../theme';
 import { type } from '../typography';
+import { tr } from '../i18n/i18n';
 
 export default function Dialog({
   visible,
@@ -47,7 +49,7 @@ export default function Dialog({
   return (
     <Modal transparent visible animationType="none" onRequestClose={onCancel} statusBarTranslucent>
       <Animated.View entering={FadeIn.duration(160)} style={styles.backdrop}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onCancel} accessibilityLabel="Close" />
+        <Pressable style={StyleSheet.absoluteFill} onPress={onCancel} accessibilityLabel={tr('Close')} />
       </Animated.View>
       <KeyboardAvoidingView behavior="padding" style={styles.center} pointerEvents="box-none">
         <Animated.View entering={FadeInDown.duration(240).easing(Easing.out(Easing.cubic))} style={[styles.card, { backgroundColor: theme.bg }]}>

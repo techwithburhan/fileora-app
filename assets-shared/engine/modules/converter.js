@@ -483,7 +483,7 @@ Next steps
     f.text().then(t => { (set || (v => { WS.opts.html = v; tstore.set(v); }))(t.replace(/^﻿/, '')); toast(`Opened ${f.name}`, 'ok'); }, () => toast(`${f.name} couldn’t be read.`, 'error'));
   }
   E.register({ id: 'txt2pdf', accept: 'html', multi: false, cta: 'Convert to PDF', verb: 'Making your PDF',
-    tip: 'Type or paste text in any of 12 languages, including Hindi and Tamil. Headings, bullet points and paragraphs are formatted for you.',
+    tip: 'Type or paste text in English or 10 Indian languages, including Hindi and Tamil. Headings, bullet points and paragraphs are formatted for you.',
     code: { step: 'Add text', hint: 'Type or paste your text to start.', edit: 'Edit the text', back: 'Back to my text', max: TXT_MAXB,
       label: 'Your text', open: 'Open a .txt file', ext: '\\.(txt|text|md)$', pick: 'text', placeholder: 'Type or paste your text. Hindi, Tamil and English all work.' },
     localOpts: ['html'],

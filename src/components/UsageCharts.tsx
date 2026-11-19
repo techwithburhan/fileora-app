@@ -4,7 +4,8 @@
  *  - WeekBars: data processed per day over the last 7 days (tap a bar for its value)
  */
 import React, { useState } from 'react';
-import { LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
+import { LayoutChangeEvent, Pressable, StyleSheet, View } from 'react-native';
+import Text from '../i18n/Text';
 import Svg, { Circle, G, Line, Path, Rect } from 'react-native-svg';
 import type { CategoryId } from '../data/tools';
 import { formatBytes } from '../store/files';

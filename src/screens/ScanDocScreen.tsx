@@ -1,6 +1,8 @@
 /** A scanned document: its pages in a grid (open, reorder, discard), add pages, Save as PDF. */
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Image, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Image, StyleSheet, View } from 'react-native';
+import Alert from '../i18n/Alert';
+import Text from '../i18n/Text';
 import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import StackHeader from '../components/StackHeader';
@@ -17,6 +19,8 @@ import { FileRec, store, useStore } from '../store/store';
 import { RootStackParamList } from '../navigation/types';
 import { Theme } from '../theme';
 import { type } from '../typography';
+import { SAVED_WHERE } from '../store/files';
+import { tr } from '../i18n/i18n';
 
 export default function ScanDocScreen({ theme }: { theme: Theme }) {
   const nav = useNavigation();
@@ -110,7 +114,7 @@ export default function ScanDocScreen({ theme }: { theme: Theme }) {
                 </PressableScale>
               )}
               {pdf && (
-                <PressableScale onPress={() => shareRecord(pdf)} accessibilityRole="button" accessibilityLabel="Share PDF" style={[styles.btn, styles.square, { backgroundColor: theme.surface2 }]}>
+                <PressableScale onPress={() => shareRecord(pdf)} accessibilityRole="button" accessibilityLabel={tr('Share PDF')} style={[styles.btn, styles.square, { backgroundColor: theme.surface2 }]}>
                   <Icon name="share" size={20} color={theme.ink} />
                 </PressableScale>
               )}
@@ -123,15 +127,15 @@ export default function ScanDocScreen({ theme }: { theme: Theme }) {
               <Image source={{ uri: `file://${item.path}` }} style={[styles.page, { backgroundColor: theme.surface2, borderColor: theme.line }]} resizeMode="cover" />
             </PressableScale>
             <View style={styles.cap}>
-              <Text style={[type.caption, styles.flex, { color: theme.ink2 }]}>Page {index + 1}</Text>
-              <PressableScale onPress={() => pageMenu(item, index)} hitSlop={10} accessibilityRole="button" accessibilityLabel={`More actions for page ${index + 1}`}>
+              <Text style={[type.caption, styles.flex, { color: theme.ink2 }]}>{tr('Page {n}', { n: index + 1 })}</Text>
+              <PressableScale onPress={() => pageMenu(item, index)} hitSlop={10} accessibilityRole="button" accessibilityLabel={tr('More actions for page {n}', { n: index + 1 })}>
                 <Icon name="more" size={20} color={theme.muted} width={3} />
               </PressableScale>
             </View>
           </Animated.View>
         )}
       />
-      <PressableScale onPress={addPages} accessibilityRole="button" accessibilityLabel="Add pages" style={[styles.fab, { backgroundColor: theme.accent }]}>
+      <PressableScale onPress={addPages} accessibilityRole="button" accessibilityLabel={tr('Add pages')} style={[styles.fab, { backgroundColor: theme.accent }]}>
         <Icon name="scan" size={26} color="#03213F" width={2.4} />
       </PressableScale>
       <ActionSheet title={sheet?.title} actions={sheet?.actions ?? null} theme={theme} onClose={() => setSheet(null)} />
@@ -152,7 +156,7 @@ export default function ScanDocScreen({ theme }: { theme: Theme }) {
         file={result}
         tool="scan"
         theme={theme}
-        note="Saved with this document and in Downloads/Fileora."
+        note={tr('Saved with this document and in {where}.', { where: tr(SAVED_WHERE) })}
         openLabel="Open PDF"
         onClose={() => setResult(null)}
         onOpen={openRecord}

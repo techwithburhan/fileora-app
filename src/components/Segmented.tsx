@@ -1,5 +1,6 @@
 import React from 'react';
-import { ScrollView, StyleSheet, Text } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
+import Text from '../i18n/Text';
 import PressableScale from './PressableScale';
 import { Theme } from '../theme';
 import { type } from '../typography';

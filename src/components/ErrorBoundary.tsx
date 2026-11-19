@@ -7,7 +7,8 @@
  * would otherwise close the app.
  */
 import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import Text from '../i18n/Text';
 import Icon from './Icon';
 import PressableScale from './PressableScale';
 import { flushAll } from '../lib/safeFile';

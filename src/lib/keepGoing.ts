@@ -1,6 +1,6 @@
 /** "Keep going with this file": opens the next tool's screen with the result already chosen. */
 import { useCallback } from 'react';
-import { Alert } from 'react-native';
+import Alert from '../i18n/Alert';
 import { StackActions, useNavigation } from '@react-navigation/native';
 import { isNative } from '../data/nativeTools';
 import { isAvailable, toolById, toolState } from '../data/tools';

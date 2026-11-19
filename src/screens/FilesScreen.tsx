@@ -3,7 +3,9 @@
  * Internal storage (Android's file picker), Cloud Storage, Recycle Bin, and Fileora's files with filters.
  */
 import React, { useCallback, useMemo, useState } from 'react';
-import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, View } from 'react-native';
+import Alert from '../i18n/Alert';
+import Text from '../i18n/Text';
 
 import BlobUtil from 'react-native-blob-util';
 import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
@@ -21,6 +23,7 @@ import { FileFilter, TabParamList } from '../navigation/types';
 import { Theme } from '../theme';
 import { type } from '../typography';
 import Appear from '../components/Appear';
+import { tr } from '../i18n/i18n';
 
 const FOLDERS: { id: Source[]; key: string; label: string; icon: IconName }[] = [
   { id: ['downloaded'], key: 'downloaded', label: 'Downloads', icon: 'download' },
@@ -109,7 +112,7 @@ export default function FilesScreen({ theme }: { theme: Theme }) {
               style={[styles.track, { backgroundColor: theme.surface2 }]}
               accessible
               accessibilityRole="progressbar"
-              accessibilityLabel={`Phone storage ${Math.round((used / disk.total) * 100)}% used`}>
+              accessibilityLabel={tr('Phone storage {pct}% used', { pct: Math.round((used / disk.total) * 100) })}>
               <View style={[styles.fill, { width: `${(used / disk.total) * 100}%`, backgroundColor: theme.link }]} />
             </View>
             <Text style={[type.caption, { color: theme.muted }]}>

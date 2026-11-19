@@ -6,7 +6,7 @@
  * Items open an app screen, a tool category, a tool or a web page. "Coming soon" and
  * "Disabled" items show a message instead of opening.
  */
-import { Alert } from 'react-native';
+import Alert from '../i18n/Alert';
 import { useMemo } from 'react';
 import { IconName, ICON_NAMES } from '../components/Icon';
 import { CONTACT_SLUGS, PAGES } from '../config';

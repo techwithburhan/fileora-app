@@ -5,7 +5,9 @@
  * The image work happens on the phone, in an offline page (src/scanner/editor.html).
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Image, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
+import Alert from '../i18n/Alert';
+import Text from '../i18n/Text';
 import Animated, { Easing, FadeIn, FadeOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RouteProp, StackActions, useNavigation, usePreventRemove, useRoute } from '@react-navigation/native';
@@ -28,8 +30,10 @@ import { FileRec, store } from '../store/store';
 import { RootStackParamList } from '../navigation/types';
 import { brand, Theme } from '../theme';
 import { type } from '../typography';
+import { SAVED_WHERE } from '../store/files';
 import { telemetry } from '../remote/telemetry';
 import { busy as task } from '../lib/busy';
+import { tr } from '../i18n/i18n';
 
 const WV = WebView<object>;
 type Filter = 'none' | 'photo' | 'document' | 'bw' | 'mono';
@@ -261,7 +265,7 @@ export default function ScanEditorScreen({ theme }: { theme: Theme }) {
     const outs: string[] = [];
     try {
       for (let i = 0; i < pages.length; i++) {
-        setBusy(`Saving page ${i + 1} of ${pages.length}…`);
+        setBusy(tr('Saving page {n} of {total}…', { n: i + 1, total: pages.length }));
         const p = pages[i];
         await call({ t: 'load', url: await dataUrl(p), quad: p.quad, w: p.w, h: p.h, detected: p.detected, cropped: p.cropped, filter: p.filter, rot: p.rot, distortion: p.distortion, mode: 'filter' });
         const r = await call({ t: 'export', maxSide: 2400, quality: 0.88 });
@@ -337,24 +341,24 @@ export default function ScanEditorScreen({ theme }: { theme: Theme }) {
     <View style={[styles.flex, { backgroundColor: D.bg }]}>
       <StatusBar barStyle="light-content" />
       <View style={[styles.header, { paddingTop: insets.top + 6 }]}>
-        <PressableScale onPress={() => nav.goBack()} hitSlop={8} accessibilityRole="button" accessibilityLabel="Back" style={styles.hBtn}>
+        <PressableScale onPress={() => nav.goBack()} hitSlop={8} accessibilityRole="button" accessibilityLabel={tr('Back')} style={styles.hBtn}>
           <Icon name="back" size={24} color={D.ink} />
         </PressableScale>
         <View style={styles.pager}>
           {pages.length > 1 && (
-            <PressableScale onPress={() => go(cur - 1)} disabled={cur === 0} hitSlop={8} accessibilityLabel="Previous page">
+            <PressableScale onPress={() => go(cur - 1)} disabled={cur === 0} hitSlop={8} accessibilityLabel={tr('Previous page')}>
               <Icon name="back" size={18} color={cur === 0 ? D.line : D.ink} />
             </PressableScale>
           )}
           <Text style={[type.heading, { color: D.ink }]}>{pages.length ? `Page ${cur + 1} of ${pages.length}` : convert ? 'Convert to PDF' : 'Scan'}</Text>
           {pages.length > 1 && (
-            <PressableScale onPress={() => go(cur + 1)} disabled={cur === pages.length - 1} hitSlop={8} accessibilityLabel="Next page">
+            <PressableScale onPress={() => go(cur + 1)} disabled={cur === pages.length - 1} hitSlop={8} accessibilityLabel={tr('Next page')}>
               <Icon name="chevron" size={18} color={cur === pages.length - 1 ? D.line : D.ink} />
             </PressableScale>
           )}
         </View>
         {pages.length > 0 && (
-          <PressableScale onPress={discardCurrent} hitSlop={8} accessibilityRole="button" accessibilityLabel="Discard this page" style={styles.hBtn}>
+          <PressableScale onPress={discardCurrent} hitSlop={8} accessibilityRole="button" accessibilityLabel={tr('Discard this page')} style={styles.hBtn}>
             <Icon name="trash" size={21} color={D.muted} />
           </PressableScale>
         )}
@@ -460,7 +464,7 @@ export default function ScanEditorScreen({ theme }: { theme: Theme }) {
         file={result?.file ?? null}
         tool={result?.file.mime === 'application/pdf' ? 'scan' : 'scan-doc'}
         theme={theme}
-        note={convert ? 'Saved in Scanner → Convert PDFs and in Downloads/Fileora.' : result?.file.mime === 'application/pdf' ? 'Saved in Scanner → Scanned Images and in Downloads/Fileora.' : 'Saved in Scanner → Scanned Images.'}
+        note={convert ? tr('Saved in Scanner → Convert PDFs and in {where}.', { where: tr(SAVED_WHERE) }) : result?.file.mime === 'application/pdf' ? tr('Saved in Scanner → Scanned Images and in {where}.', { where: tr(SAVED_WHERE) }) : 'Saved in Scanner → Scanned Images.'}
         openLabel={result?.file.mime === 'application/pdf' ? 'Open PDF' : 'View scan'}
         onClose={closeResult}
         onOpen={f => {

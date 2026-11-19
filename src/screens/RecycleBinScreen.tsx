@@ -1,6 +1,8 @@
 /** Recycle Bin: deleted files and scan documents, to restore or delete permanently. */
 import React, { useMemo } from 'react';
-import { Alert, FlatList, Platform, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Platform, StyleSheet, View } from 'react-native';
+import Alert from '../i18n/Alert';
+import Text from '../i18n/Text';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import StackHeader from '../components/StackHeader';
@@ -12,6 +14,7 @@ import { FileRec, ScanDoc, store, useStore } from '../store/store';
 import { Theme } from '../theme';
 import { type } from '../typography';
 import Appear from '../components/Appear';
+import { tr } from '../i18n/i18n';
 
 type Entry = { key: string; name: string; meta: string; at: number; thumb?: FileRec; doc?: ScanDoc; file?: FileRec };
 
@@ -41,7 +44,7 @@ export default function RecycleBinScreen({ theme }: { theme: Theme }) {
 
   const restore = (e: Entry) => (e.doc ? store.restoreDoc(e.doc.id) : store.restoreFile(e.file!.id)).catch(() => Alert.alert('Couldn’t restore', 'The file is no longer on this phone.'));
   const purge = (e: Entry) =>
-    Alert.alert('Delete permanently?', `“${e.name}” will be deleted from this phone. This can’t be undone.`, [
+    Alert.alert('Delete permanently?', tr('“{name}” will be deleted from this phone. This can’t be undone.', { name: e.name }), [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: () => (e.doc ? store.purgeDoc(e.doc.id) : store.purgeFile(e.file!.id)) },
     ]);
