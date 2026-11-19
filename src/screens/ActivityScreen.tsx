@@ -92,7 +92,7 @@ export default function ActivityScreen({ theme }: { theme: Theme }) {
           onPress={() => setAsking(true)}
           style={[styles.clear, { borderColor: theme.line, backgroundColor: theme.surface, opacity: data.length === 0 || busy ? 0.45 : 1 }]}>
           <Icon name="trash" size={17} color={theme.danger} />
-          <Text style={[type.bodySm, styles.clearText, { color: theme.danger }]}>{tab === 'opened' ? 'Clear all' : 'Delete all'}</Text>
+          <Text style={[type.bodySm, styles.clearText, { color: theme.danger }]}>Delete all</Text>
         </PressableScale>
       </View>
       <FlatList
@@ -117,7 +117,7 @@ export default function ActivityScreen({ theme }: { theme: Theme }) {
         theme={theme}
         title={CLEAR[tab].title}
         message={CLEAR[tab].message}
-        okLabel={tab === 'opened' ? 'Clear all' : 'Delete all'}
+        okLabel="Delete all"
         onCancel={() => setAsking(false)}
         onOk={clearTab}
       />
