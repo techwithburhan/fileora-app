@@ -20,6 +20,7 @@ import { brand } from '../theme';
 import { navigationRef } from '../navigation/types';
 import { toolById } from '../data/tools';
 import { LANGS, setLang, LangCode } from '../i18n/i18n';
+import { store } from '../store/store';
 
 const PNG =
   'iVBORw0KGgoAAAANSUhEUgAAAEAAAAAwCAIAAAAuKetIAAAAeElEQVR4Xu3ZsQ2AIBQGYTFuwgRW7mYsjTOxBSsZGweA4vIn9/WQ93J0lHq0JdmaPPzHBWgWoFmAZgGaBWjbzAD9vGaO//bnHr7HJ0SzAM0CNAvQLECzAM0CNAvQLECzAM0CtPgCxT8yWPwTcgGaBWgWoFmAFl/gBeCDBYUf80jsAAAAAElFTkSuQmCC';
@@ -89,7 +90,9 @@ export default function SelfTest() {
       const lang = url ? /^fileora:\/\/lang\/([a-z]{2})/i.exec(url) : null;
       if (lang) {
         const code = lang[1].toLowerCase();
-        if (LANGS.some(l => l.code === code)) setLang(code as LangCode);
+        // after the saved settings are read, or they would put the old language back
+        const apply = () => (store.get().loaded ? setLang(code as LangCode) : setTimeout(apply, 200));
+        if (LANGS.some(l => l.code === code)) apply();
         return;
       }
       if (url && /^fileora:\/\/screen\/downloads/i.test(url)) {
