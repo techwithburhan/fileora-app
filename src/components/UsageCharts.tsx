@@ -11,6 +11,7 @@ import type { CategoryId } from '../data/tools';
 import { formatBytes } from '../store/files';
 import { chartColor, Theme } from '../theme';
 import { type } from '../typography';
+import { tr } from '../i18n/i18n';
 
 const polar = (cx: number, cy: number, r: number, a: number) => ({ x: cx + r * Math.sin(a), y: cy - r * Math.cos(a) });
 
@@ -74,7 +75,7 @@ export function UsageDonut({ data, theme }: { data: { cat: CategoryId; name: str
             onPress={() => setSel(s => (s === d.cat ? null : d.cat))}
             accessibilityRole="button"
             accessibilityState={{ selected: sel === d.cat }}
-            accessibilityLabel={`${d.name}: ${d.count} uses, ${pct(d.count)}`}
+            accessibilityLabel={`${tr(d.name)}: ${tr(d.count === 1 ? '1 use' : '{n} uses', { n: d.count })}, ${pct(d.count)}`}
             style={[styles.legendRow, sel && sel !== d.cat && styles.dim]}>
             <View style={[styles.swatch, { backgroundColor: chartColor(d.cat, theme) }]} />
             <Text style={[type.caption, styles.flex, { color: theme.ink2 }]} numberOfLines={1}>

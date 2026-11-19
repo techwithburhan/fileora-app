@@ -164,7 +164,7 @@ export default function ScannerScreen({ theme }: { theme: Theme }) {
             }
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel={`Sort: ${SORTS.find(s => s.id === sort[tab])?.label}`}
+            accessibilityLabel={`${tr('Sort')}: ${tr(SORTS.find(s => s.id === sort[tab])?.label ?? '')}`}
             style={styles.sortBtn}>
             <Icon name="sort" size={22} color={theme.ink2} />
           </PressableScale>

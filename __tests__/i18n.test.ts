@@ -10,7 +10,7 @@ jest.mock('../src/store/store', () => ({
 jest.mock('react-native', () => ({ I18nManager: { isRTL: false, allowRTL: () => {}, forceRTL: () => {} } }));
 
 import { DICTS } from '../src/i18n/locales';
-import { tr, isRtl, LANGS } from '../src/i18n/i18n';
+import { tr, trMsg, isRtl, LANGS } from '../src/i18n/i18n';
 
 const holes = (s: string) => (s.match(/\{\w+\}/g) ?? []).sort().join(',');
 
@@ -34,6 +34,15 @@ describe('translations', () => {
     expect(tr('A text nobody translated')).toBe('A text nobody translated');
     mockLang = 'en';
     expect(tr('{n} files saved', { n: 2 })).toBe('2 files saved');
+  });
+
+  it('translates engine sentences built from pieces', () => {
+    mockLang = 'es';
+    expect(trMsg('Add at least 2 PDF files to start.')).toBe('Añade al menos 2 archivos PDF para empezar.');
+    expect(trMsg('Add a PDF to start.')).toBe('Añade un PDF para empezar.');
+    expect(trMsg('Something new from the engine.')).toBe('Something new from the engine.');
+    mockLang = 'en';
+    expect(trMsg('Add a PDF to start.')).toBe('Add a PDF to start.');
   });
 
   it('mirrors the layout for Urdu and Arabic only', () => {

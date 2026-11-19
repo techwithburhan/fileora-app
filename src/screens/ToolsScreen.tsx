@@ -72,7 +72,7 @@ export default function ToolsScreen({ theme }: { theme: Theme }) {
                 ref={input}
                 value={q}
                 onChangeText={setQ}
-                placeholder={`Search ${tools.length} tools`}
+                placeholder={tr('Search {n} tools…', { n: tools.length })}
                 placeholderTextColor={theme.muted}
                 style={[styles.input, { color: theme.ink }]}
                 accessibilityLabel={tr('Search tools')}

@@ -82,11 +82,11 @@ export default function ActivityScreen({ theme }: { theme: Theme }) {
       </View>
       <View style={styles.bar}>
         <Text style={[type.caption, { color: theme.muted }]}>
-          {data.length === 1 ? '1 file' : `${data.length} files`}
+          {tr(data.length === 1 ? '1 file' : '{n} files', { n: data.length })}
         </Text>
         <PressableScale
           accessibilityRole="button"
-          accessibilityLabel={tab === 'opened' ? 'Clear the Opened list' : tr(tab === 'downloaded' ? 'Delete all downloaded files' : 'Delete all processed files')}
+          accessibilityLabel={tab === 'opened' ? tr('Clear the Opened list') : tr(tab === 'downloaded' ? 'Delete all downloaded files' : 'Delete all processed files')}
           accessibilityState={{ disabled: data.length === 0 || busy }}
           disabled={data.length === 0 || busy}
           onPress={() => setAsking(true)}

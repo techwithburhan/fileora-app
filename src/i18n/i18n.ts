@@ -65,6 +65,30 @@ function fill(s: string, params?: Record<string, string | number>): string {
   return s.replace(/\{(\w+)\}/g, (m, k: string) => (k in params ? String(params[k]) : m));
 }
 
+/** A noun used inside a sentence: "Archivos PDF" -> "archivos PDF" (not "PDF" -> "pDF"). */
+function midSentence(s: string): string {
+  return /^\p{Lu}\p{Ll}/u.test(s) && !['de'].includes(currentLang()) ? s[0].toLowerCase() + s.slice(1) : s;
+}
+
+/**
+ * Messages the tool engine builds from pieces, such as "Add at least 2 PDF files to start." or
+ * "Add a PDF to start.": the sentence and the noun are translated separately.
+ */
+export function trMsg(s: string): string {
+  if (!s || currentLang() === 'en') return s;
+  const whole = tr(s);
+  if (whole !== s) return whole;
+  let m = /^Add at least (\d+) (.+) to start\.$/.exec(s);
+  if (m) return tr('Add at least {n} {things} to start.', { n: m[1], things: midSentence(tr(m[2])) });
+  m = /^Add (\d+) more (.+)\.$/.exec(s);
+  if (m) return tr('Add {n} more {things}.', { n: m[1], things: midSentence(tr(m[2])) });
+  m = /^Add (.+) to start\.$/.exec(s);
+  if (m) return tr('Add {thing} to start.', { thing: midSentence(tr(m[1])) });
+  m = /^That is larger than (\d+) MB\.$/.exec(s);
+  if (m) return tr('That is larger than {n} MB.', { n: m[1] });
+  return s;
+}
+
 /** The translation of an English text (with {placeholders} filled), or the English text. */
 export function tr(en: string, params?: Record<string, string | number>): string {
   if (!en) return en;

@@ -42,7 +42,7 @@ import { type } from '../typography';
 import { telemetry } from '../remote/telemetry';
 import { busy as task } from '../lib/busy';
 import Appear from '../components/Appear';
-import { tr } from '../i18n/i18n';
+import { tr, trMsg } from '../i18n/i18n';
 
 const PICK: Record<string, Accept> = { pdf: 'pdf', image: 'image', pdfimage: 'pdfimage', heic: 'heic', svg: 'svg', word: 'word', ppt: 'ppt', excel: 'excel', html: 'html', text: 'text' };
 type Done = { title: string; files: FileRec[]; notes: Record<string, string>; extra: RunResult['result'] };
@@ -280,10 +280,10 @@ export default function ProcessScreen({ theme }: { theme: Theme }) {
           </View>
           {ord && (
             <View style={styles.order}>
-              <PressableScale onPress={() => move(i, -1)} disabled={i === 0} accessibilityLabel={`Move ${it.name} up`} hitSlop={6}>
+              <PressableScale onPress={() => move(i, -1)} disabled={i === 0} accessibilityLabel={tr('Move {name} up', { name: it.name })} hitSlop={6}>
                 <Icon name="up" size={18} color={i === 0 ? theme.line : theme.ink2} />
               </PressableScale>
-              <PressableScale onPress={() => move(i, 1)} disabled={i === items.length - 1} accessibilityLabel={`Move ${it.name} down`} hitSlop={6}>
+              <PressableScale onPress={() => move(i, 1)} disabled={i === items.length - 1} accessibilityLabel={tr('Move {name} down', { name: it.name })} hitSlop={6}>
                 <Icon name="down" size={18} color={i === items.length - 1 ? theme.line : theme.ink2} />
               </PressableScale>
             </View>
@@ -514,7 +514,7 @@ export default function ProcessScreen({ theme }: { theme: Theme }) {
               disabled={!state.ok || working}
               accessibilityRole="button"
               accessibilityState={{ disabled: !state.ok }}
-              accessibilityHint={state.ok ? undefined : state.hint}
+              accessibilityHint={state.ok || !state.hint ? undefined : trMsg(state.hint)}
               style={[styles.go, { backgroundColor: state.ok || working ? theme.accent : theme.surface2 }]}>
               {working && progressMode === 'off' ? (
                 <View style={styles.goBusy}>
@@ -526,7 +526,7 @@ export default function ProcessScreen({ theme }: { theme: Theme }) {
               )}
             </PressableScale>
             <Text style={[type.caption, styles.center, { color: state.ok ? theme.muted : theme.ink2 }]}>
-              {state.hint || (onDevice ? 'Processed on your phone. Nothing is uploaded.' : 'Files are deleted from the server after download.')}
+              {(state.hint && trMsg(state.hint)) || (onDevice ? 'Processed on your phone. Nothing is uploaded.' : 'Files are deleted from the server after download.')}
             </Text>
           </>
         )}

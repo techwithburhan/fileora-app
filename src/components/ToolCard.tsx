@@ -7,6 +7,7 @@ import PressableScale from './PressableScale';
 import { isAvailable, Tool, toolState } from '../data/tools';
 import { catColor, Theme } from '../theme';
 import Appear from './Appear';
+import { tr } from '../i18n/i18n';
 
 export function ExecBadge({ tool, theme }: { tool: Tool; theme: Theme }) {
   if (!isAvailable(tool))
@@ -33,7 +34,7 @@ export function ToolCard({ tool, theme, onPress, index = 0 }: { tool: Tool; them
       <PressableScale
         onPress={onPress}
         accessibilityRole="button"
-        accessibilityLabel={`${tool.name}. ${tool.desc}`}
+        accessibilityLabel={`${tr(tool.name)}. ${tr(tool.desc)}`}
         style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.line }]}>
         <View style={[styles.icon, { backgroundColor: c + '1F' }]}>
           <Icon name={tool.cat as IconName} size={22} color={c} />

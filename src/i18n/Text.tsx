@@ -16,7 +16,7 @@ function translate(children: React.ReactNode): React.ReactNode {
   return children;
 }
 
-const Text = forwardRef<React.ElementRef<typeof RNText>, TextProps & { noTranslate?: boolean }>(function Text({ noTranslate, children, ...rest }, ref) {
+const Text = forwardRef<React.ElementRef<typeof RNText>, TextProps & { noTranslate?: boolean }>(function AppText({ noTranslate, children, ...rest }, ref) {
   useLang(); // re-render when the language changes
   return (
     <RNText ref={ref} {...rest}>

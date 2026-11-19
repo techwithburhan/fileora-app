@@ -230,7 +230,7 @@ function ColorField({ choices, custom, value, theme, onChange, label }: { choice
           onPress={() => onChange(c)}
           accessibilityRole="radio"
           accessibilityState={{ checked: c === value }}
-          accessibilityLabel={`Colour ${c}`}
+          accessibilityLabel={tr('Colour {c}', { c })}
           style={[styles.swatch, { backgroundColor: c, borderColor: c === value ? theme.accent : theme.line }]}>
           {c === value && <Icon name="check" size={16} color={/^#(f|e|d)/i.test(c) ? '#16182F' : '#fff'} width={3} />}
         </PressableScale>

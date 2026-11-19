@@ -36,7 +36,7 @@ export default function FileRow({
       scaleTo={0.98}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${file.name}, ${meta}. Open`}
+      accessibilityLabel={`${file.name}, ${meta}. ${tr('Open')}`}
       style={[styles.row, { backgroundColor: theme.surface, borderColor: theme.line }]}>
       <FileThumb path={file.path} mime={file.mime} name={file.name} theme={theme} size={44} />
       <View style={styles.body}>

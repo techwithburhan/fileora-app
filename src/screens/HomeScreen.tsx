@@ -223,7 +223,7 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
                 <PressableScale
                   onPress={() => nav.navigate('Tabs', { screen: 'Tools', params: { cat: c.id } })}
                   accessibilityRole="button"
-                  accessibilityLabel={`${c.name}, ${c.count} tools`}
+                  accessibilityLabel={`${tr(c.name)}, ${tr(c.count === 1 ? '1 tool' : '{n} tools', { n: c.count })}`}
                   style={[styles.cat, { backgroundColor: theme.surface, borderColor: theme.line }]}>
                   <View style={[styles.catIcon, { backgroundColor: col + '1F' }]}>
                     <Icon name={c.id as IconName} size={22} color={col} />

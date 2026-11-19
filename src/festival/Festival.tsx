@@ -75,7 +75,7 @@ export function FestivalBanner({ theme }: { theme: Theme }) {
     </View>
   );
   return (
-    <Animated.View entering={FadeIn.duration(400)} exiting={FadeOut.duration(200)} accessibilityRole="summary" accessibilityLabel={`${f.name}. ${greeting} ${sub}`}>
+    <Animated.View entering={FadeIn.duration(400)} exiting={FadeOut.duration(200)} accessibilityRole="summary" accessibilityLabel={`${f.builtin ? tr(f.name) : f.name}. ${greeting} ${sub}`}>
       {f.link ? (
         <Pressable onPress={() => Linking.openURL(f.link).catch(() => {})} accessibilityRole="link">
           {body}

@@ -14,11 +14,23 @@
 "0 KB": [
 "src/store/files.ts"
 ],
+"1 file": [
+"src/screens/ActivityScreen.tsx"
+],
 "1 item moves to the Recycle Bin. You can restore it from Files → Recycle Bin.": [
 "src/lib/openFile.ts"
 ],
 "1 of 12": [
 "engine:pagenum"
+],
+"1 page": [
+"src/screens/ScannerScreen.tsx"
+],
+"1 tool": [
+"src/screens/HomeScreen.tsx"
+],
+"1 use": [
+"src/components/UsageCharts.tsx"
 ],
 "100 KB": [
 "engine:imgkb"
@@ -150,6 +162,7 @@
 ],
 "Activity": [
 "App.tsx",
+"src/engine/SelfTest.tsx",
 "src/navigation/nav.ts",
 "src/screens/ActivityScreen.tsx",
 "src/screens/HomeScreen.tsx"
@@ -180,6 +193,9 @@
 ],
 "Add a password so only the right people can open the file.": [
 "src/data/tools.ts"
+],
+"Add at least {n} {things} to start.": [
+"engine-pattern"
 ],
 "Add blank pages": [
 "engine:pageops"
@@ -232,6 +248,12 @@
 ],
 "Add your name or brand to photos, once or tiled across the picture.": [
 "src/data/tools.ts"
+],
+"Add {n} more {things}.": [
+"engine-pattern"
+],
+"Add {thing} to start.": [
+"engine-pattern"
 ],
 "Adding text": [
 "engine:headerfooter"
@@ -662,6 +684,9 @@
 ],
 "Colour Palette from Image": [
 "src/data/tools.ts"
+],
+"Colour {c}": [
+"src/components/tool/OptionField.tsx"
 ],
 "Colours": [
 "engine:img2svg"
@@ -1368,11 +1393,20 @@
 "Fileora will stop offering “Upload to {name}”. Nothing is removed from your {name}.": [
 "src/screens/CloudScreen.tsx"
 ],
+"Fileora {v} is available": [
+"src/components/HomeBanners.tsx"
+],
 "Fileora {v} is the newest version.": [
 "src/screens/SettingsScreen.tsx"
 ],
 "Fileora: free PDF, image and file tools.": [
 "src/screens/SettingsScreen.tsx"
+],
+"FileoraLang": [
+"src/engine/SelfTest.tsx"
+],
+"FileoraScreen": [
+"src/engine/SelfTest.tsx"
 ],
 "FileoraSelfTest": [
 "src/engine/SelfTest.tsx"
@@ -1580,9 +1614,11 @@
 "engine:translate"
 ],
 "HEIC photo": [
+"engine-noun",
 "engine:heic2jpg"
 ],
 "HEIC photos": [
+"engine-noun",
 "engine:heic2jpg"
 ],
 "HEIC to JPG": [
@@ -1595,10 +1631,12 @@
 "src/screens/ProcessScreen.tsx"
 ],
 "HTML file": [
+"engine-noun",
 "engine:code2pdf",
 "engine:txt2pdf"
 ],
 "HTML files": [
+"engine-noun",
 "engine:code2pdf",
 "engine:txt2pdf"
 ],
@@ -1829,7 +1867,8 @@
 "engine:imgcrop"
 ],
 "Language": [
-"src/components/AppHeader.tsx"
+"src/components/AppHeader.tsx",
+"src/screens/SettingsScreen.tsx"
 ],
 "Large": [
 "engine:jpg2pdf",
@@ -2122,6 +2161,12 @@
 "Move right": [
 "src/components/tool/RegionEditor.tsx"
 ],
+"Move {name} down": [
+"src/screens/ProcessScreen.tsx"
+],
+"Move {name} up": [
+"src/screens/ProcessScreen.tsx"
+],
 "Moves to the Recycle Bin": [
 "src/components/FileActions.tsx",
 "src/screens/ScanDocScreen.tsx",
@@ -2377,6 +2422,7 @@
 ],
 "Open": [
 "src/components/FileActions.tsx",
+"src/components/FileRow.tsx",
 "src/components/NotificationCheck.tsx",
 "src/lib/downloads.ts",
 "src/screens/PromoScreen.tsx",
@@ -2468,6 +2514,10 @@
 "Outside the corners": [
 "engine:imgborder"
 ],
+"PDF": [
+"engine-noun",
+"src/lib/openFile.ts"
+],
 "PDF Forms": [
 "src/data/tools.ts"
 ],
@@ -2475,6 +2525,7 @@
 "src/data/tools.ts"
 ],
 "PDF files": [
+"engine-noun",
 "engine:bates",
 "engine:booklet",
 "engine:compare",
@@ -2516,10 +2567,12 @@
 "engine:watermark"
 ],
 "PDF or image": [
+"engine-noun",
 "engine:aadhaar",
 "engine:idcard"
 ],
 "PDF or images": [
+"engine-noun",
 "engine:aadhaar",
 "engine:idcard"
 ],
@@ -2618,6 +2671,9 @@
 "engine:idcard"
 ],
 "Page {n}": [
+"src/screens/ScanDocScreen.tsx"
+],
+"Page {n}. Open": [
 "src/screens/ScanDocScreen.tsx"
 ],
 "Pages": [
@@ -2740,9 +2796,11 @@
 "src/screens/HomeScreen.tsx"
 ],
 "PowerPoint file": [
+"engine-noun",
 "engine:ppt2pdf"
 ],
 "PowerPoint files": [
+"engine-noun",
 "engine:ppt2pdf"
 ],
 "PowerPoint to PDF": [
@@ -3075,9 +3133,11 @@
 "engine:translate"
 ],
 "SVG file": [
+"engine-noun",
 "engine:svg2png"
 ],
 "SVG files": [
+"engine-noun",
 "engine:svg2png"
 ],
 "SVG to PNG": [
@@ -3216,6 +3276,9 @@
 "src/screens/HomeScreen.tsx",
 "src/screens/ToolsScreen.tsx"
 ],
+"Search {n} tools…": [
+"src/screens/ToolsScreen.tsx"
+],
 "Searchable PDF": [
 "engine:ocr"
 ],
@@ -3229,7 +3292,8 @@
 "src/data/tools.ts"
 ],
 "Select application language": [
-"src/components/AppHeader.tsx"
+"src/components/AppHeader.tsx",
+"src/screens/SettingsScreen.tsx"
 ],
 "Select at least {n} files.": [
 "src/screens/ProcessScreen.tsx"
@@ -3541,6 +3605,9 @@
 ],
 "That file couldn’t be read.": [
 "engine-msg:converter.js"
+],
+"That is larger than {n} MB.": [
+"engine-pattern"
 ],
 "That size is too large. Choose a smaller scale.": [
 "engine-msg:image.js"
@@ -4089,9 +4156,11 @@
 "festival"
 ],
 "Word file": [
+"engine-noun",
 "engine:word2pdf"
 ],
 "Word files": [
+"engine-noun",
 "engine:word2pdf"
 ],
 "Word to PDF": [
@@ -4169,13 +4238,16 @@
 "src/screens/SettingsScreen.tsx"
 ],
 "a HEIC photo": [
+"engine-noun",
 "engine:heic2jpg"
 ],
 "a HTML file": [
+"engine-noun",
 "engine:code2pdf",
 "engine:txt2pdf"
 ],
 "a PDF": [
+"engine-noun",
 "engine:bates",
 "engine:booklet",
 "engine:compare",
@@ -4217,25 +4289,32 @@
 "engine:watermark"
 ],
 "a PDF or image": [
+"engine-noun",
 "engine:aadhaar",
 "engine:idcard"
 ],
 "a PowerPoint file": [
+"engine-noun",
 "engine:ppt2pdf"
 ],
 "a SVG file": [
+"engine-noun",
 "engine:svg2png"
 ],
 "a Word file": [
+"engine-noun",
 "engine:word2pdf"
 ],
 "a spreadsheet": [
+"engine-noun",
 "engine:excel2pdf"
 ],
 "a web address": [
+"engine-noun",
 "engine:html2pdf"
 ],
 "an image": [
+"engine-noun",
 "engine:avif2jpg",
 "engine:base64",
 "engine:collage",
@@ -4270,6 +4349,9 @@
 "converted PDFs": [
 "src/screens/ScannerScreen.tsx"
 ],
+"downloaded": [
+"src/screens/ActivityScreen.tsx"
+],
 "e-Aadhaar password": [
 "engine:aadhaar"
 ],
@@ -4285,7 +4367,11 @@
 "iPhone settings for Fileora: sound, banners, lock screen": [
 "src/screens/SettingsScreen.tsx"
 ],
+"image": [
+"engine-noun"
+],
 "images": [
+"engine-noun",
 "engine:avif2jpg",
 "engine:base64",
 "engine:collage",
@@ -4314,7 +4400,14 @@
 "engine:scan",
 "engine:webp2jpg"
 ],
+"page": [
+"src/lib/openFile.ts"
+],
+"spreadsheet": [
+"engine-noun"
+],
 "spreadsheets": [
+"engine-noun",
 "engine:excel2pdf"
 ],
 "the Files app (On My iPhone › Fileora)": [
@@ -4323,10 +4416,15 @@
 "the result isn't a PDF": [
 "src/engine/SelfTest.tsx"
 ],
+"tools": [
+"src/screens/ToolScreen.tsx"
+],
 "web address": [
+"engine-noun",
 "engine:html2pdf"
 ],
 "web addresses": [
+"engine-noun",
 "engine:html2pdf"
 ],
 "xMaxYMid slice": [
@@ -4356,6 +4454,9 @@
 "{n} alerts deleted": [
 "src/screens/AlertsScreen.tsx"
 ],
+"{n} files": [
+"src/screens/ActivityScreen.tsx"
+],
 "{n} files are ready": [
 "src/screens/ProcessScreen.tsx"
 ],
@@ -4365,8 +4466,20 @@
 "{n} hours without ads": [
 "src/screens/SettingsScreen.tsx"
 ],
+"{n} items move to the Recycle Bin. You can restore them from Files → Recycle Bin.": [
+"src/lib/openFile.ts"
+],
 "{n} min ago": [
 "src/screens/AlertsScreen.tsx"
+],
+"{n} pages": [
+"src/screens/ScannerScreen.tsx"
+],
+"{n} tools": [
+"src/screens/HomeScreen.tsx"
+],
+"{n} uses": [
+"src/components/UsageCharts.tsx"
 ],
 "{verb} on the server…": [
 "src/screens/ProcessScreen.tsx"

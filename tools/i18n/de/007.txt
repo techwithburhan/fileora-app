@@ -1,0 +1,22 @@
+1286|1 Datei
+1287|1 Seite
+1288|1 Tool
+1289|1 Nutzung
+1290|Füge mindestens {n} {things} hinzu, um zu beginnen.
+1291|Füge noch {n} {things} hinzu.
+1292|Füge {thing} hinzu, um zu beginnen.
+1293|Farbe {c}
+1294|Fileora {v} ist verfügbar
+1297|{name} nach unten
+1298|{name} nach oben
+1300|Seite {n}. Öffnen
+1301|{n} Tools durchsuchen…
+1302|Das ist größer als {n} MB.
+1304|Bild
+1306|Tabelle
+1307|Tools
+1308|{n} Dateien
+1309|{n} Elemente kommen in den Papierkorb. Du kannst sie unter Dateien → Papierkorb wiederherstellen.
+1310|{n} Seiten
+1311|{n} Tools
+1312|{n} Nutzungen

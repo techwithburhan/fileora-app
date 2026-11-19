@@ -1283,3 +1283,30 @@
 1283|“{name}” isn’t a readable PDF.
 1284|“{name}” moves to the Recycle Bin. You can restore it from Files → Recycle Bin.
 1285|“{name}” will be deleted from this phone. This can’t be undone.
+1286|1 file
+1287|1 page
+1288|1 tool
+1289|1 use
+1290|Add at least {n} {things} to start.
+1291|Add {n} more {things}.
+1292|Add {thing} to start.
+1293|Colour {c}
+1294|Fileora {v} is available
+1295|FileoraLang
+1296|FileoraScreen
+1297|Move {name} down
+1298|Move {name} up
+1299|PDF
+1300|Page {n}. Open
+1301|Search {n} tools…
+1302|That is larger than {n} MB.
+1303|downloaded
+1304|image
+1305|page
+1306|spreadsheet
+1307|tools
+1308|{n} files
+1309|{n} items move to the Recycle Bin. You can restore them from Files → Recycle Bin.
+1310|{n} pages
+1311|{n} tools
+1312|{n} uses

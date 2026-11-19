@@ -56,6 +56,28 @@ for dp, _, fs in os.walk(os.path.join(ROOT, 'src')):
         # comments out
         src = re.sub(r'/\*.*?\*/', '', src, flags=re.S)
         src = re.sub(r'(^|\s)//[^\n]*', r'\1', src)
+        # every literal in the first argument of tr(…), also tr(n === 1 ? '1 page' : '{n} pages', …)
+        for m in re.finditer(r'\btr(?:Msg)?\(', src):
+            i, depth, j = m.end(), 1, m.end()
+            while j < len(src) and depth:
+                ch = src[j]
+                if ch in '\'"`':
+                    k = j + 1
+                    while k < len(src) and src[k] != ch:
+                        k += 2 if src[k] == '\\' else 1
+                    j = k + 1
+                    continue
+                if ch in '([{':
+                    depth += 1
+                elif ch in ')]}':
+                    depth -= 1
+                elif ch == ',' and depth == 1:
+                    break
+                j += 1
+            for lm in lit.finditer(src[i:j]):
+                t = lm.group(2).replace("\\'", "'")
+                if '\\u' not in t:
+                    add(t, rel)
         for m in trcall.finditer(src):
             add(m.group(2).encode().decode('unicode_escape').encode('latin1').decode('utf-8') if '\\u' in m.group(2) else m.group(2).replace("\\'", "'"), rel)
         for m in jsx.finditer(src):
@@ -108,6 +130,15 @@ for dp, _, fs in os.walk(os.path.join(ROOT, 'assets-shared/engine')):
             t = m.group(1).replace("\\'", "'")
             if re.search(r'[A-Z][a-z]', t) and ' ' in t and '${' not in t:
                 add(t, 'engine-msg:' + f)
+
+# sentences the engine builds from pieces (translated by trMsg in src/i18n/i18n.ts)
+for t in ['Add at least {n} {things} to start.', 'Add {thing} to start.', 'Add {n} more {things}.', 'That is larger than {n} MB.']:
+    add(t, 'engine-pattern')
+for n in ['PDF', 'image', 'PDF or image', 'HEIC photo', 'SVG file', 'Word file', 'PowerPoint file', 'spreadsheet', 'web address', 'HTML file']:
+    add(n, 'engine-noun')
+    add(('an ' if re.match(r'^[aeiou]', n, re.I) else 'a ') + n, 'engine-noun')
+for n in ['PDF files', 'images', 'PDF or images', 'HEIC photos', 'SVG files', 'Word files', 'PowerPoint files', 'spreadsheets', 'web addresses', 'HTML files']:
+    add(n, 'engine-noun')
 
 # festival themes: the built-in greetings (plugin 2.20 presets) and texts of the festival banner
 for t in ['Happy New Year!', 'Wishing you a bright and productive new year.', 'Happy Valentine’s Day!', 'Share the love with the people who matter.',

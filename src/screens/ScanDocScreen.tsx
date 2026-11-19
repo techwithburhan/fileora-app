@@ -123,7 +123,7 @@ export default function ScanDocScreen({ theme }: { theme: Theme }) {
         }
         renderItem={({ item, index }) => (
           <Animated.View entering={FadeIn.duration(240)} layout={LinearTransition.duration(220)} style={styles.cell}>
-            <PressableScale scaleTo={0.97} onPress={() => openRecord(item)} accessibilityRole="button" accessibilityLabel={`Page ${index + 1}. Open`}>
+            <PressableScale scaleTo={0.97} onPress={() => openRecord(item)} accessibilityRole="button" accessibilityLabel={tr('Page {n}. Open', { n: index + 1 })}>
               <Image source={{ uri: `file://${item.path}` }} style={[styles.page, { backgroundColor: theme.surface2, borderColor: theme.line }]} resizeMode="cover" />
             </PressableScale>
             <View style={styles.cap}>

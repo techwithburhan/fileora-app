@@ -113,7 +113,7 @@ export default function HomeBanners({ theme }: { theme: Theme }) {
           theme={theme}
           tone="offer"
           icon="download"
-          title={`Fileora ${latest} is available`}
+          title={tr('Fileora {v} is available', { v: latest })}
           text={config?.update.notes || tr('You have version {v}. Update to get the newest tools and fixes.', { v: APP_VERSION })}
           action={{ label: 'Update', onPress: () => Linking.openURL(config?.update.url || SHARE_URL).catch(() => {}) }}
           onClose={() => remote.dismiss('update', latest)}
