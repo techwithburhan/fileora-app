@@ -1,0 +1,212 @@
+646|Meine Website
+647|Name (A–Z)
+648|Schmal
+649|Braucht Internet. Die Datei geht per HTTPS an den Fileora-Verarbeitungsserver und wird nach dem Download gelöscht, spätestens automatisch nach 1 Stunde.
+650|Negativ
+651|Keine der Dateien enthält markierbaren Text. Lass Scans zuerst durch OCR PDF laufen.
+652|Netzwerkfehler
+653|Neue App-Versionen
+654|Neue Dateien
+655|Neue Seitengröße
+656|Neuer Scan
+657|Neue Tools
+658|Neu.
+659|Neueste zuerst
+660|Nächste Seite
+661|Weiter: Filter
+662|Noch keine Aktivität
+663|Gerade keine Werbung
+664|Keine Werbung bis {time}.
+665|Noch keine Hinweise
+666|Keine App auf diesem Telefon kann diesen Dateityp öffnen.
+667|Keine leeren Seiten gefunden. Probiere „Fast leer“, falls du welche erwartet hast.
+668|Auf diesem Telefon wurde keine Kamera-App gefunden.
+669|Keine Verbindung zur Website. Versuch es noch einmal.
+670|Keine Dateien gefunden
+671|Noch keine Dateien in Fileora.
+672|Keine Dateien dieses Typs.
+673|Noch keine Dateien. Ergebnisse von Tools und Scans werden hier aufbewahrt.
+674|Keine Bilder in diesem PDF gefunden (oder alle sind kleiner als die gewählte Größe). Gescannte Seiten sind oft ein einziges Bild: Nimm dafür PDF in JPG.
+675|Gerade keine Aktionen
+676|Ohne Anmeldung. Ohne Wasserzeichen. Kostenlos.
+677|Auf diesem Bild wurde keine Unterschrift gefunden. Nimm dunkle Tinte auf weißem Papier.
+678|Kein Tool passt zu „{q}“. Versuch ein anderes Wort.
+679|Noch keine Tools geöffnet.
+680|Gerade kein Video
+681|Keine
+682|Normal
+683|Kommen nicht an oder ohne Ton? Sieh nach, was du an diesem Telefon ändern musst, und sende einen Test
+684|Auf diesem Gerät nicht verfügbar.
+685|Gerade nicht verfügbar.
+686|Nicht jetzt
+687|Noch nichts heruntergeladen. Wenn ein Tool dir eine Datei gibt, wird sie unter {where} gespeichert und hier aufgelistet.
+688|Nichts von Fileora auf dem Sperrbildschirm: Benachrichtigungen siehst du nach dem Entsperren
+689|Noch nichts geöffnet. Dateien, die du aus Fileora öffnest, werden hier aufgelistet.
+690|Noch nichts verarbeitet. Dateien, die du in der App zusammenführst, nummerierst, mit Wasserzeichen versiehst oder umwandelst, werden hier aufgelistet.
+691|Datenschutz bei Benachrichtigungen
+692|Die Benachrichtigungseinstellungen wurden zurückgesetzt.
+693|Benachrichtigungen
+694|Benachrichtigungen & Datenschutz
+695|Benachrichtigungen für Fileora erlaubt
+696|Benachrichtigungen sind blockiert
+697|Benachrichtigungen sind auf diesem Telefon aus. Neue Hinweise erscheinen trotzdem hier. Schalte sie in den Einstellungen ein.
+698|Benachrichtigungen sind aus. Du kannst sie jederzeit einschalten.
+699|Benachrichtigungen sind in dieser Version nicht verfügbar.
+700|Anzahl der Farben
+701|Nummeriere deine Seiten mit Position, Format und Größe deiner Wahl.
+702|Nummerierung
+703|Die Nummern laufen von einer Datei zur nächsten weiter, in der angezeigten Reihenfolge.
+704|OCR PDF
+705|Ungerade
+706|Aus: keine Benachrichtigungen von Fileora
+707|Angebote
+708|Angebote & Neuigkeiten
+709|Älteste zuerst
+710|Auf dem iPhone: Einstellungen → Mitteilungen → Fileora → Vorschauen zeigen → „Wenn entsperrt“ oder „Nie“
+711|Auf deinem Telefon
+712|An: App-Updates, neue Tools und News
+713|An: App-Updates, neue Tools und News. Von Fileora festgelegt.
+714|Einmal
+715|Übereinander
+716|Untereinander
+717|Eine lange Seite
+718|Eine pro Seite
+719|Ein Wort oder eine Wortgruppe pro Zeile
+721|Nur wenn das PDF eins hat
+722|Deckkraft
+723|Öffnen
+724|PDF öffnen
+725|Einstellungen öffnen
+726|Eine .html-Datei öffnen
+727|Datei öffnen
+728|fileora.in öffnen
+729|Im Browser öffnen
+730|Menü öffnen
+731|Auf fileora.in öffnen
+732|Einstellungen öffnen
+733|Geöffnet
+734|Datei wird geöffnet…
+735|Tool wird geöffnet…
+736|Wird geöffnet…
+737|Öffnet sich im Browser
+738|Öffnet www.techdeployers.com
+739|Optional
+740|Optionen
+741|Reihenfolge
+742|PDF ordnen
+743|Ausrichtung
+744|Original
+745|Ursprüngliche Form
+746|Andere
+747|Ausgabe
+748|Außerhalb der Ecken
+749|PDF-Formulare
+750|PDF-Tools
+751|PDF-Dateien
+752|PDF oder Bild
+753|PDF oder Bilder
+754|PDF-Passwort
+755|PDF-Hersteller
+756|PDF gespeichert
+757|PDF in Excel
+758|PDF in JPG
+759|PDF in Markdown
+760|PDF in PDF/A
+761|PDF in PowerPoint
+762|PDF in Text
+763|PDF in Word
+765|PDF/A-2b (empfohlen)
+767|PDFs
+768|PNG & JPG in SVG
+769|PNG (exakt)
+770|PNG oder JPG. Transparentes PNG eignet sich am besten für Logos und Stempel.
+771|PNG in AVIF
+772|PNG in JPG
+773|PNG in PSD
+774|VERARBEITET, LETZTE 7 TAGE
+775|Seite 1
+776|Seite 1 von 12
+777|Seite konnte nicht geladen werden
+778|Seitenränder nicht gefunden: Zieh die Ecken an die Seite.
+779|Seitenzahlen
+780|Seitenbereiche
+781|Seitengröße
+782|Seite mit der Karte
+783|Seite {n}
+784|Seiten
+785|Seiten werden zu Bildern, der Text ist also nicht mehr markierbar.
+786|Seiten pro Blatt (N-up)
+787|Seiten pro Datei
+788|Seiten pro Blatt
+789|Zu extrahierende Seiten
+790|Papier
+791|Absätze
+792|Passfoto-Ersteller
+793|Passwort
+794|Füge HTML und CSS ein, prüfe die Live-Vorschau und lade dann ein PDF mit echtem, markierbarem Text herunter.
+795|Füge HTML und CSS ein, sieh dir die Live-Vorschau an und lade es als PDF herunter.
+796|Prozent
+797|Schwärze Namen, Nummern und andere vertrauliche Texte dauerhaft.
+798|Telefonnummern
+799|Telefonspeicher zu {pct} % belegt
+800|Foto
+801|Foto (3:2)
+802|Fotogröße
+803|Handyfotos speichern oft, wo und wann sie aufgenommen wurden und mit welcher Kamera. Das hier entfernt diese Daten, ohne das Aussehen des Fotos zu ändern.
+804|Bild
+805|Bildgröße
+806|Bildtyp
+807|Verpixeln
+808|Pixel
+809|Platziere ein Logo, einen Stempel, ein Siegel oder ein Foto auf deinen PDF-Seiten.
+810|Bild wird platziert
+811|Bitte aktualisiere Fileora
+812|Beliebte Tools
+813|Hochformat
+814|Hochformat (4:5)
+815|Portugiesisch
+816|Position
+817|Position auf der Seite
+818|Beiträge konnten nicht geladen werden.
+819|PowerPoint-Datei
+820|PowerPoint-Dateien
+821|PowerPoint in PDF
+822|Präfix
+823|Vorschau wird vorbereitet…
+824|Druckseite wird vorbereitet
+825|Vorschauen brauchen beim ersten Mal eine Internetverbindung.
+826|Vorherige Seite
+827|Drucken
+828|Drucke beide Seiten eines Wählerausweises, Führerscheins, einer PAN-Karte oder jeder anderen Karte in Originalgröße auf eine Seite.
+829|Drucken auf
+830|Drucke das Ergebnis beidseitig mit Wenden an der kurzen Kante und falte den Stapel dann in der Mitte.
+831|Datenschutz
+832|Datenschutzerklärung
+833|Datenschutzoptionen
+834|Datenschutzerklärung
+835|Verarbeiten
+836|Verarbeitet
+837|Auf diesem Telefon verarbeitet.
+838|Auf deinem Telefon verarbeitet. Es wird nichts hochgeladen.
+839|Aktion
+840|Aktionen
+841|PDF schützen
+842|Hol Tabellen aus PDFs direkt in Excel-Tabellen.
+843|Hol die Hauptfarben eines Fotos als HEX- und RGB-Codes heraus.
+844|Punjabi
+845|Bring 2, 4, 6 oder 9 Seiten auf jedes Blatt, um beim Drucken Papier zu sparen.
+846|Alle Bereiche in ein PDF
+847|Bring Vorder- und Rückseite deiner e-Aadhaar in Originalgröße auf eine A4-Seite, bereit zum Drucken und Ausschneiden.
+848|Qualität
+849|Fragen & Antworten
+850|Leise Benachrichtigungen
+851|Ramadan Mubarak
+852|Wird gelesen und zusammengefasst
+853|Text wird gelesen
+854|Ordne die Seiten so um, dass die gedruckten Blätter gefaltet eine Broschüre ergeben.
+855|Wird umgeordnet
+856|Zuletzt verwendet
+857|Text auf gescannten Seiten erkennen
+858|Text wird erkannt
+859|Rette, was aus einem beschädigten PDF noch zu retten ist.
+860|Papierkorb

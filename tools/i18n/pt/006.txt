@@ -1,0 +1,204 @@
+1076|O servidor não pôde aceitar esta solicitação (erro {code}).
+1077|O servidor não pôde processar este arquivo.
+1078|O servidor não está conectado.
+1079|O texto dos dois arquivos é idêntico.
+1080|O motor de ferramentas não pôde iniciar. Tente de novo.
+1081|O motor de ferramentas não iniciou. Feche e abra o app de novo.
+1082|O motor de ferramentas não está em execução.
+1083|O motor de ferramentas ficou sem memória. Tente menos arquivos ou arquivos menores.
+1084|O sistema parou o motor de ferramentas. Execute a ferramenta de novo.
+1085|A ferramenta ainda está iniciando. Tente de novo em instantes.
+1086|A ferramenta parou inesperadamente.
+1087|A ferramenta demorou demais para responder. Tente de novo.
+1088|Não há promoções no momento.
+1089|Nenhum vídeo disponível no momento. Tente mais tarde.
+1090|Borda fina em volta de cada página
+1091|Linhas de corte finas
+1092|Este PDF precisa da senha
+1093|Este PDF precisa da senha.
+1094|Esta pasta está vazia.
+1095|Não foi possível abrir esta imagem
+1097|Isto chega em breve.
+1098|Está demorando demais. Tente um arquivo menor.
+1099|Isto não está disponível agora.
+1100|Esta página não foi encontrada. Verifique sua conexão, ou a página talvez ainda não exista no site.
+1101|Este telefone não conseguiu um ID de notificação. Verifique a conexão com a internet e tente de novo.
+1102|Esta imagem quase não tem pixels visíveis.
+1103|Esta imagem é grande demais para vetorizar. Escolha um nível de detalhe menor.
+1104|Este serviço está indisponível no momento por manutenção do servidor. Vamos ativar este recurso assim que o servidor estiver no ar. Obrigado pela paciência.
+1105|Esta ferramenta chega em breve.
+1106|Esta ferramenta não está disponível agora.
+1107|Esta ferramenta ainda não está no motor do app.
+1108|Esta ferramenta foi fechada. Abra-a de novo.
+1109|Essas margens são maiores que a página. Use números menores.
+1110|Lado a lado repetido
+1111|Título
+1112|Para abrir um arquivo da sua nuvem, use Arquivos → Armazenamento interno: Google Drive e OneDrive aparecem no menu do seletor de arquivos do Android.
+1113|Ferramenta
+1114|Ferramentas
+1115|Em cima, no centro
+1116|Em cima, à esquerda
+1117|Em cima, à direita
+1118|Vetorizando
+1119|Traduzir PDF
+1120|Traduza PDFs para outro idioma mantendo a estrutura do texto.
+1121|Traduzir para
+1122|Traduzindo
+1123|Transparente
+1124|Cortar de cada borda (mm)
+1125|Corte as margens de cada página, com pré-visualização ao vivo.
+1126|Tentar de novo
+1127|Turco
+1128|Transforme imagens AVIF em JPG que abre em qualquer lugar.
+1129|Transforme fotos JPG em AVIF, muitas vezes com metade do tamanho e a mesma qualidade.
+1130|Transforme fotos JPG em arquivos WebP cerca de um terço menores, para sites mais rápidos.
+1131|Transforme fotos JPG em imagens PNG sem perdas.
+1132|Transforme PDFs em documentos do Word editáveis que mantêm o layout.
+1133|Transforme imagens PNG em arquivos do Photoshop com a transparência numa camada.
+1134|Transforme imagens PNG em arquivos AVIF bem menores, mantendo a transparência.
+1135|Transforme imagens PNG em arquivos JPG menores. Áreas transparentes ficam brancas.
+1136|Transforme apresentações PPT e PPTX em PDFs fáceis de compartilhar.
+1137|Transforme gráficos SVG em imagens PNG no tamanho que escolher.
+1138|Transforme imagens WebP em JPG (JPEG), aceito por qualquer telefone, app e formulário.
+1139|Transforme Word, Excel, PowerPoint e páginas da web em PDF, e vice-versa.
+1140|Transforme cada página do PDF num slide do PowerPoint pronto para apresentar.
+1141|Transforme PDFs planos em formulários preenchíveis e edite o conteúdo das páginas.
+1142|Transforme logotipos, ícones e assinaturas em arquivos vetoriais SVG nítidos que escalam para qualquer tamanho.
+1143|Ativar
+1144|Ative as notificações de atualizações do app, novas ferramentas e notícias. Você pode escolher quais nas Configurações.
+1145|Girar página {n}
+1146|Deixe as páginas na posição certa, num arquivo ou num lote inteiro de uma vez.
+1147|Transforme fotos e imagens num PDF com o tamanho de página e as margens que escolher.
+1148|Deixe as fotos na posição certa ou espelhe-as.
+1149|Transforme PDFs digitalizados em texto pesquisável que você pode selecionar e copiar.
+1150|Transforma imagens AVIF em JPG, aceito por qualquer app e site.
+1151|O dobro do tamanho da página
+1152|Tipo
+1153|Digite ou cole algum texto primeiro.
+1154|Digite ou cole texto em inglês ou em 10 idiomas indianos, como hindi e tâmil. Títulos, marcadores e parágrafos são formatados para você.
+1155|Digite ou cole texto em hindi, tâmil, inglês e outros, e receba um PDF bem formatado.
+1156|Digite seu nome
+1157|Carta (EUA)
+1158|Indisponível: manutenção
+1159|Desfazer
+1160|Desbloquear PDF
+1161|Desbloqueando
+1162|Atualizar
+1163|Atualizar PDF
+1164|Atualizar agora
+1165|Enviar
+1166|Enviar um arquivo
+1167|Enviar para {name}
+1168|Enviando…
+1169|Urdu
+1170|Use um logotipo quadrado de pelo menos 512 × 512 px para o resultado mais nítido.
+1171|Use uma ferramenta e seus gráficos aparecem aqui. Eles vêm do histórico guardado neste telefone.
+1172|Usar configuração do telefone
+1173|Use o telefone ou a webcam para capturar documentos em papel como um PDF limpo.
+1174|Versão {v}
+1175|Ver digitalização
+1176|NOVIDADES
+1177|Na fila
+1178|Na fila, {n} na sua frente
+1179|Assistir
+1180|Assista a um vídeo e fique horas sem anúncios
+1181|Assistir anúncio
+1182|Assistir a um vídeo curto
+1183|Marca d’água em imagem
+1184|Marca d’água em PDF
+1185|Texto da marca d’água
+1186|Não encontramos texto neste PDF. Se for uma digitalização, passe primeiro pelo OCR PDF.
+1187|Não conseguimos alcançar o servidor. Verifique sua conexão e tente de novo.
+1188|Perdemos a conexão com o servidor. Execute a tarefa de novo.
+1189|Perdemos o rastro desta tarefa. Execute-a de novo.
+1190|Web
+1191|Endereço web
+1193|Arquivos WebP costumam ser de 25 a 35% menores que JPG com a mesma qualidade, então as páginas carregam mais rápido.
+1194|WebP para JPG
+1195|Estamos fazendo algumas melhorias. Volte em breve.
+1196|O que você quer fazer? Tente “comprimir pdf”
+1197|O que fazer
+1198|WhatsApp, e-mail, Bluetooth…
+1199|WhatsApp, mensagens, e-mail…
+1200|Quando o Fileora enviar notícias, novas ferramentas ou atualizações do app, você as encontra aqui.
+1201|Onde
+1202|Quais ferramentas são usadas e os erros, com um ID aleatório (também Firebase Analytics). Sem nomes, números de telefone ou nomes de arquivo. Ajuda a corrigir problemas.
+1203|Branco
+1204|Por que você vê anúncios
+1205|Largo
+1206|Widescreen (16:9)
+1207|Largura
+1208|Desejamos a você um Ramadã abençoado e tranquilo.
+1209|Desejamos a você um ano novo brilhante e produtivo.
+1210|Desejamos a você um Holi colorido e alegre.
+1211|Desejamos alegria e bênçãos a você e à sua família.
+1212|Desejamos alegria, paz e uma temporada feliz.
+1213|Arquivo do Word
+1214|Arquivos do Word
+1215|Word para PDF
+1216|Palavras a tarjar
+1217|Trabalhando
+1218|Planilhas
+1219|Escrever o resumo em
+1221|Você pode usar {page}, {pages}, {date} e {file} no texto.
+1222|Você tem a versão {v}.
+1223|Você tem a versão {v}. Atualize para ter as ferramentas e correções mais recentes.
+1224|Seu código HTML
+1225|Sua atividade
+1226|Seu arquivo está pronto
+1227|Seus arquivos
+1228|Seus arquivos foram concluídos com sucesso.
+1229|Seus arquivos são processados com segurança e depois apagados.
+1230|Seus arquivos estão seguros neste telefone. Toque em “Tentar de novo” para continuar. Se continuar acontecendo, atualize o app ou fale conosco.
+1231|Suas ferramentas mais usadas
+1232|Seu telefone ainda não permite que o Fileora mostre notificações.
+1233|Seu telefone permite que o Fileora mostre notificações.
+1234|Sua assinatura
+1235|Seu resumo está pronto
+1236|Seu texto está pronto
+1237|Sua tradução está pronta
+1238|Você está atualizado
+1239|uma foto HEIC
+1240|um arquivo HTML
+1241|um PDF
+1242|um PDF ou imagem
+1243|um arquivo do PowerPoint
+1244|um arquivo SVG
+1245|um arquivo do Word
+1246|uma planilha
+1247|um endereço web
+1248|uma imagem
+1250|PDFs convertidos
+1251|Senha do e-Aadhaar
+1253|Ajustes do iPhone → Notificações → Fileora: Sons e Faixas ativados, e os modos de Foco permitem o Fileora.
+1254|O iPhone decide o que aparece na tela de bloqueio. Abra Ajustes → Notificações → Fileora → Mostrar Pré-visualizações e escolha “Se Desbloqueado” ou “Nunca”.
+1255|Ajustes do iPhone para o Fileora: som, faixas, tela de bloqueio
+1256|imagens
+1257|planilhas
+1258|o app Arquivos (No Meu iPhone › Fileora)
+1259|o resultado não é um PDF
+1260|endereço web
+1261|endereços web
+1263|seu cartão
+1264|seu PDF do e-Aadhaar
+1265|{hex}, {pct}%. Compartilhe o código.
+1266|É preciso o app {name}
+1267|App {name} não encontrado neste telefone
+1268|{name}, definido pelo Fileora
+1269|{name}: arraste para mover
+1270|{n} alertas excluídos
+1271|{n} arquivos prontos
+1272|{n} arquivos salvos
+1273|{n} horas sem anúncios
+1274|há {n} min
+1275|{verb} no servidor…
+1276|· PDF salvo
+1277|· Toque para abrir
+1278|“Atualizações e notícias” está no silencioso. Ative som e pop-up.
+1279|“Atualizações e notícias” está desativado nas configurações do Android.
+1280|“Atualizações e notícias” toca o som do Fileora.
+1281|“{name}” e suas páginas vão para a Lixeira. Você pode restaurá-los em Arquivos → Lixeira.
+1282|“{name}” está protegido por senha. Remova a senha primeiro com Desbloquear PDF.
+1283|“{name}” não é um PDF legível.
+1284|“{name}” vai para a Lixeira. Você pode restaurá-lo em Arquivos → Lixeira.
+1285|“{name}” será apagado deste telefone. Isso não pode ser desfeito.

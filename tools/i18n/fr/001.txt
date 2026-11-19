@@ -1,0 +1,194 @@
+1|% du petit côté
+2|% de la largeur
+6|1 élément va dans la Corbeille. Vous pouvez le restaurer depuis Fichiers → Corbeille.
+7|1 sur 12
+12|2 fichiers PDF
+13|2 × 2 po (51 × 51 mm)
+22|Photo 4 × 6 po
+27|90° à gauche
+28|90° à droite
+29|Un fichier n’est pas arrivé jusqu’à l’outil. Ajoutez-le à nouveau.
+30|Une photo ou un scan sur papier blanc convient. Le fond blanc est supprimé.
+31|Un petit son discret de confettis quand un fichier est prêt
+32|De A à Z
+33|A4 (les pages sont réduites en A5)
+34|Papier A4
+35|AJOUTER UNE PAGE
+36|Résumé par IA
+37|État de l’API
+38|L’AVIF fait souvent la moitié de la taille d’un JPG pour le même rendu. La première image prend un instant le temps de charger l’encodeur.
+39|AVIF en JPG
+40|Impression de carte Aadhaar
+42|À propos
+43|Qui sommes-nous
+44|Accepter
+45|Accessibilité
+46|Compte
+47|Au milieu, horizontalement
+48|En largeur, puis vers le bas
+49|Activité
+50|Annonce
+51|Sans publicité jusqu’à {time}
+52|Ajouter des numéros Bates
+53|Ajouter une bordure à l’image
+54|Ajouter une connexion
+55|Ajouter une image ou un tampon
+56|Ajoutez un PDF ou une photo recto verso, ou deux photos (recto, puis verso). Placez les cadres sur chaque face de la carte.
+57|Ajouter un cadre
+58|Ajoutez un mot de passe pour que seules les bonnes personnes puissent ouvrir le fichier.
+59|Ajouter des pages blanches
+60|Ajouter une bordure
+61|Ajouter un en-tête et un pied de page
+62|Ajouter une image
+63|Ajouter d’autres {things}
+64|Ajouter une page
+65|Ajouter des numéros de page
+66|Ajouter des pages
+67|Ajoutez d’abord du HTML.
+68|Ajoutez du texte, des images, des formes et des notes à main levée sur n’importe quelle page.
+69|Ajoutez du texte, des numéros de page, la date ou le nom du fichier en haut ou en bas de chaque page.
+70|Ajoutez d’abord la carte.
+71|Ajoutez d’abord l’original, puis la version modifiée.
+72|Ajouter la date du jour en dessous
+73|Ajouter un filigrane
+74|Ajoutez votre PDF e-Aadhaar (ou des photos du recto et du verso). Placez les deux cadres sur le recto et le verso de la carte, puis créez la page à imprimer.
+75|Ajoutez votre nom ou votre marque aux photos, une fois ou en mosaïque sur toute l’image.
+76|Ajout du texte
+77|Ajout de la bordure
+78|Publicités et confidentialité
+79|La publicité permet de garder tous les outils Fileora gratuits, sans inscription. Vos fichiers ne servent jamais à la publicité.
+80|Publicité
+81|Toutes les N pages
+82|Après chaque page
+83|Alerte supprimée
+84|Alertes
+85|Tout
+86|Tous les fichiers
+87|Tous les champs
+88|Tout sur une seule
+89|Tous les articles
+90|Tous les outils
+91|Autoriser
+92|Autorisez d’abord les notifications de Fileora.
+93|Autorisez les notifications de Fileora dans les réglages du téléphone, puis revenez.
+94|Autorisez les notifications de Fileora sur ce téléphone. Touchez pour autoriser.
+95|Presque vide
+96|Déjà optimisé, nous avons donc gardé l’original
+97|Une mise à jour est nécessaire. Fin de votre tâche d’abord…
+99|Réglages des notifications Android pour Fileora : son, vibration, écran de verrouillage
+100|Angle
+101|N’importe quelle couleur, en code hexadécimal
+102|Manifeste de l’application
+103|Apparence
+104|Arabe
+105|Voulez-vous vraiment supprimer ces {n} images ?
+106|Voulez-vous vraiment supprimer cette image ?
+107|Zone
+108|Organiser les pages
+109|Organisation des pages
+110|Assemblage du livret
+111|Autant que possible
+112|Au moins 6 caractères
+113|À la fin
+114|Au début
+115|Auteur
+116|Auto
+117|Démarrage auto
+118|Retour
+119|Retour aux choix d’origine, avec un nouvel identifiant de notification anonyme
+120|Arrière-plan
+121|Couleurs et images d’arrière-plan
+122|Équilibré
+123|Base64 seul
+124|Numérotation Bates
+125|Batterie
+126|Bengali
+127|Noir
+128|Noir et blanc (signature, tampon, dessin au trait)
+129|Noir et blanc
+130|Bloc noir
+131|Encre noire
+132|Pages blanches à chaque fois
+133|Bloquer l’impression et la copie
+134|Bloquées dans les réglages du téléphone. Touchez pour les ouvrir.
+135|Blog
+136|Articles du blog
+137|Encre bleue
+138|Flou
+139|Flouter une partie d’une image
+140|Flouter les zones
+141|Floutage
+142|Création de livret
+143|Bordure
+144|Couleur de la bordure
+145|Détection des bords
+146|En bas au centre
+147|En bas à gauche
+148|En bas à droite
+149|Parcourir les outils
+150|Parcourez votre téléphone et ouvrez un fichier
+151|Création de votre scan
+152|Puces
+153|Média CSS
+154|Appareil photo
+155|Annuler
+156|Annulé.
+157|Impossible d’ouvrir ce fichier
+158|Capture de la page
+159|Catégories
+160|Les catégories, le mode silencieux et la confidentialité reviennent à leurs réglages d’origine, et Fileora obtient un nouvel identifiant de notification anonyme.
+161|Son de célébration
+162|Centre
+163|Centré
+164|Modifier les options
+165|Modifiez ou supprimez le titre, l’auteur, le sujet et les mots-clés enregistrés dans un PDF.
+166|Convertissez des photos entre JPG, PNG, WebP et AVIF.
+167|Changer d’image
+168|Modifiez la taille des photos en pixels ou en pourcentage, une ou plusieurs à la fois.
+169|Revenez plus tard pour les offres et les nouveautés.
+170|Rechercher des mises à jour
+171|Vérifier les notifications
+172|Vérifiez votre connexion internet et réessayez.
+173|Cases à cocher
+174|Vérification…
+175|Chinois (simplifié)
+176|Choisissez JPG, PNG, WebP ou AVIF.
+177|Choisissez une image PNG, JPG ou WebP.
+178|Choisir une image
+179|Choisissez une image de votre signature
+180|Choisissez un fichier .html ou .htm.
+181|Choisir un autre fichier
+182|Choisir une autre image
+183|Choisissez comment Google utilise les données pour les annonces
+184|Choisissez le fichier sur la page
+185|Choisissez {things}
+186|Image choisie
+187|Nettoyage
+188|Effacer
+189|Tout effacer
+190|Tout effacer ({what}) ?
+191|Effacer la recherche
+192|Vider la liste Ouverts
+193|Vider la liste Ouverts ?
+194|Videz d’abord l’éditeur pour ne pas remplacer votre propre code.
+195|Fermer
+196|Fermer le menu
+197|Cloud
+198|Stockage cloud
+199|Couleur
+200|Palette de couleurs d’une image
+201|Couleurs
+202|Combiner des images
+203|Combiner les images
+204|Combinez plusieurs PDF en un seul fichier, exactement dans l’ordre voulu.
+205|Combinaison
+206|Bientôt disponible
+207|Comparer des PDF
+208|Comparer les fichiers
+209|Comparaison
+210|Complètement vide
+211|Compresser une image
+212|Compresser une image en Ko
+213|Compresser un PDF
+214|Compresser les images
+215|Compresser à la taille

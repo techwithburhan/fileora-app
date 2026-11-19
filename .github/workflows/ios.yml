@@ -160,6 +160,21 @@ jobs:
             sleep 18
             xcrun simctl io "$DEV" screenshot "out/simulator/tool-$t.png"
           done
+          # app 1.1: Downloads, Home in Hindi and Arabic, and Arabic after a restart (right to left)
+          xcrun simctl terminate "$DEV" in.fileora.app || true
+          xcrun simctl launch "$DEV" in.fileora.app -FileoraScreen downloads
+          sleep 15
+          xcrun simctl io "$DEV" screenshot out/simulator/v11-downloads.png
+          for l in hi ar; do
+            xcrun simctl terminate "$DEV" in.fileora.app || true
+            xcrun simctl launch "$DEV" in.fileora.app -FileoraLang "$l"
+            sleep 15
+            xcrun simctl io "$DEV" screenshot "out/simulator/v11-home-$l.png"
+          done
+          xcrun simctl terminate "$DEV" in.fileora.app || true
+          xcrun simctl launch "$DEV" in.fileora.app
+          sleep 15
+          xcrun simctl io "$DEV" screenshot out/simulator/v11-home-ar-restart.png
           xcrun simctl spawn "$DEV" log show --last 2m --style compact --predicate 'process == "FileoraApp"' 2>/dev/null | grep -iE "error|exception|fatal|crash" | grep -v "nw_\|CFNetwork" | tail -40 > out/simulator/log.txt || true
           if xcrun simctl spawn "$DEV" launchctl list | grep -q "in.fileora.app"; then echo "RUNNING" > out/simulator/status.txt; echo "Fileora is running in the simulator"; else echo "NOT RUNNING" > out/simulator/status.txt; echo "::error::Fileora is not running in the simulator (crash at start?)"; fi
           ls -la ~/Library/Logs/DiagnosticReports 2>/dev/null | grep -i fileora || true

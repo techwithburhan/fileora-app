@@ -59,6 +59,8 @@
             <category android:name="android.intent.category.DEFAULT" />
             <data android:scheme="fileora" android:host="selftest" />
             <data android:scheme="fileora" android:host="tool" />
+            <data android:scheme="fileora" android:host="lang" />
+            <data android:scheme="fileora" android:host="screen" />
         </intent-filter>
         <intent-filter android:label="@string/share_label">
             <action android:name="android.intent.action.SEND" />

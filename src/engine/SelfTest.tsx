@@ -19,6 +19,7 @@ import PressableScale from '../components/PressableScale';
 import { brand } from '../theme';
 import { navigationRef } from '../navigation/types';
 import { toolById } from '../data/tools';
+import { LANGS, setLang, LangCode } from '../i18n/i18n';
 
 const PNG =
   'iVBORw0KGgoAAAANSUhEUgAAAEAAAAAwCAIAAAAuKetIAAAAeElEQVR4Xu3ZsQ2AIBQGYTFuwgRW7mYsjTOxBSsZGweA4vIn9/WQ93J0lHq0JdmaPPzHBWgWoFmAZgGaBWjbzAD9vGaO//bnHr7HJ0SzAM0CNAvQLECzAM0CNAvQLECzAM0CtPgCxT8yWPwTcgGaBWgWoFmAFl/gBeCDBYUf80jsAAAAAElFTkSuQmCC';
@@ -83,6 +84,19 @@ export default function SelfTest() {
     const go = (url?: string | null) => {
       const tool = url ? /^fileora:\/\/tool\/([a-z0-9]+)/i.exec(url) : null;
       if (tool) return openTool(tool[1].toLowerCase());
+      // app 1.1 (used by the CI screenshots): fileora://lang/hi switches the language,
+      // fileora://screen/downloads opens Downloads.
+      const lang = url ? /^fileora:\/\/lang\/([a-z]{2})/i.exec(url) : null;
+      if (lang) {
+        const code = lang[1].toLowerCase();
+        if (LANGS.some(l => l.code === code)) setLang(code as LangCode);
+        return;
+      }
+      if (url && /^fileora:\/\/screen\/downloads/i.test(url)) {
+        const open = () => (navigationRef.isReady() ? navigationRef.navigate('Activity', { tab: 'downloaded' }) : setTimeout(open, 300));
+        open();
+        return;
+      }
       if (!url || !/^fileora:\/\/selftest/i.test(url)) return;
       setRunning(true);
       setErr(null);
@@ -101,6 +115,10 @@ export default function SelfTest() {
       if (Settings.get('FileoraSelfTest')) go('fileora://selftest');
       const t = Settings.get('FileoraTool');
       if (typeof t === 'string' && t) go(`fileora://tool/${t}`);
+      const l = Settings.get('FileoraLang');
+      if (typeof l === 'string' && l) go(`fileora://lang/${l}`);
+      const sc = Settings.get('FileoraScreen');
+      if (typeof sc === 'string' && sc) go(`fileora://screen/${sc}`);
     }
     const sub = Linking.addEventListener('url', e => go(e.url));
     return () => sub.remove();
