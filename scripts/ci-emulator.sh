@@ -113,6 +113,39 @@ adb exec-out screencap -p > "$OUT/v11-downloads-ar.png"
 adb shell input keyevent 4
 adb shell am start -W -a android.intent.action.VIEW -d fileora://lang/en in.fileora.app
 sleep 2
+# app 1.1.2: tab switching (the logo must not show a frame edge or a second logo while the tabs
+# change), caught in several frames right after each tap; and the result screen (party popper inside
+# the top area, "Keep going" in two full columns, the ZIP card and the failed-files box).
+adb shell am force-stop in.fileora.app
+adb shell am start -W -n in.fileora.app/.MainActivity
+sleep 10
+close_popup
+tab_frames() { # $1 = accessibility label pattern of the tab, $2 = file name part
+  adb shell uiautomator dump /sdcard/ui.xml > /dev/null 2>&1 || return 0
+  B=$(adb exec-out cat /sdcard/ui.xml | tr '>' '\n' | grep -E "(content-desc|text)=\"($1)" | grep -o 'bounds="[^"]*"' | tail -1 | grep -o '[0-9]\+' | tr '\n' ' ')
+  [ -n "$B" ] || { echo "tab not found: $1"; return 0; }
+  set -- $B
+  adb shell input tap $((($1 + $3) / 2)) $((($2 + $4) / 2))
+  for f in 1 2 3; do adb exec-out screencap -p > "$OUT/v112-tab-$TAB-$f.png"; done
+}
+TAB=tools; tab_frames 'Tools'
+sleep 1
+TAB=files; tab_frames 'Files|Downloads'
+sleep 1
+TAB=home; tab_frames 'Home'
+sleep 1
+for n in 1 2 6; do
+  adb shell am start -W -a android.intent.action.VIEW -d "fileora://demo/result/$n" in.fileora.app
+  sleep 0.6
+  adb exec-out screencap -p > "$OUT/v112-result-$n-popper.png"
+  sleep 3
+  adb exec-out screencap -p > "$OUT/v112-result-$n.png"
+  adb shell input swipe $X $((H * 80 / 100)) $X $((H * 25 / 100)) 500
+  sleep 1
+  adb exec-out screencap -p > "$OUT/v112-result-$n-down.png"
+  adb shell input keyevent 4
+  sleep 2
+done
 adb logcat -d | grep -iE "FATAL|AndroidRuntime" | tail -40 > "$OUT/crash.txt" || true
 if adb shell pidof in.fileora.app > /dev/null; then echo RUNNING > "$OUT/status.txt"; else echo "NOT RUNNING" > "$OUT/status.txt"; fi
 cat "$OUT/status.txt"

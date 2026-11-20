@@ -935,7 +935,8 @@ function mountTool(root) {
   const T = Object.assign({ min: 1, multi: false, opts: [], cta: 'Run', verb: 'Working', name: meta.name || id, desc: meta.desc || '' }, def, { name: meta.name || def.name || id, desc: meta.desc || def.desc || '' });
   const useServer = !!def.server && (!def.run || meta.runs === 'server');
   const accept = ACCEPT[T.accept] || ACCEPT.pdf;
-  const maxFiles = T.max || (useServer && meta.maxFiles ? meta.maxFiles : 0);
+  /* server tools: up to CFG.batchMax files, sent in parts of meta.maxFiles (60-server.js) */
+  const maxFiles = T.max || (useServer && meta.maxFiles ? (T.multi ? Math.max(meta.maxFiles, CFG.batchMax || 0) : meta.maxFiles) : 0);
   /* Server tools on PDFs get a "PDF password" field. It appears when an added PDF is locked (or the
      server said it needs its password); the server opens the file with it for this task only. */
   const askPw = useServer && T.accept === 'pdf' && id !== 'unlock';
@@ -1485,8 +1486,61 @@ function uploadForm(url, fd, onProgress) {
     x.send(fd);
   });
 }
+/* 2.21: big selections go to the server in parts (at most "maxFiles" files and what PHP accepts in one
+   upload per part), one part after the other. A part that fails doesn't stop the others: its files are
+   listed as not processed. Results of every part come back one by one. */
 async function serverRun(t, items, o, ctx) {
   if (!CFG.rest || !CFG.backend) throw new NoServer();
+  const meta = (CFG.tools || {})[t.id] || {};
+  const per = Math.max(1, meta.maxFiles || CFG.maxFiles || 20);
+  const cap = Math.max(8 * 1048576, Math.floor((CFG.maxPost || 64 * 1048576) * .9));
+  const parts = [];
+  let cur = [], bytes = 0;
+  items.forEach(it => {
+    const size = it.size || (it.file && it.file.size) || 0;
+    if (cur.length && (cur.length >= per || bytes + size > cap)) { parts.push(cur); cur = []; bytes = 0; }
+    cur.push(it); bytes += size;
+  });
+  if (cur.length) parts.push(cur);
+  if (parts.length <= 1) return serverJob(t, items, o, ctx);
+  const outs = [], failed = [];
+  for (let p = 0; p < parts.length; p++) {
+    if (ctx.alive && !ctx.alive()) throw new Error('cancelled');
+    const sub = Object.assign({}, ctx, { failed: null, progress: (f, l) => ctx.progress(f < 0 ? -1 : (p + Math.min(1, f)) / parts.length, `Part ${p + 1} of ${parts.length}: ${l}`) });
+    try {
+      (await serverJob(t, parts[p], o, sub)).forEach(x => outs.push(x));
+      (sub.failed || []).forEach(x => failed.push(x));
+      if (sub.result && !ctx.result) ctx.result = sub.result;
+    } catch (e) {
+      if (e instanceof NoServer || (e && e.message === 'cancelled')) throw e;
+      const msg = e instanceof UserError ? e.message : friendly(e);
+      parts[p].forEach(it => failed.push({ name: it.name, error: msg }));
+    }
+  }
+  ctx.failed = failed;
+  if (!outs.length) throw new UserError(`None of the ${items.length} files could be processed. First problem: ${failed[0].error}`);
+  return outs;
+}
+
+/* A ZIP from the server (several results): opened here, so the page shows every file on its own
+   (1–2 files: direct downloads, 3 or more: our ZIP box, as for tools that run in the browser). */
+async function unzipResults(blob, st) {
+  const JSZip = await lib('jszip');
+  const zip = await JSZip.loadAsync(blob);
+  const order = (st.files || []).map(f => f.name);
+  const names = Object.keys(zip.files).filter(n => !zip.files[n].dir);
+  names.sort((a, b) => (order.indexOf(a) + 1 || 1e6) - (order.indexOf(b) + 1 || 1e6));
+  const out = [];
+  for (const n of names) {
+    const ext = extOf(n);
+    const type = { pdf: 'application/pdf', txt: 'text/plain', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' }[ext] || 'application/octet-stream';
+    const meta = (st.files || []).find(f => f.name === n) || {};
+    out.push({ name: n.split('/').pop(), blob: new Blob([await zip.files[n].async('arraybuffer')], { type }), note: meta.note || '' });
+  }
+  return out;
+}
+
+async function serverJob(t, items, o, ctx) {
   const fd = new FormData();
   items.forEach(it => fd.append('files[]', it.file, it.name));
   const rest = {};
@@ -1530,7 +1584,9 @@ async function serverRun(t, items, o, ctx) {
     misses = 0;
     if (st.status === 'done') break;
     if (st.status === 'failed') { const err = new UserError(st.error || 'The server couldn’t process this file.'); err.need = st.need || ''; throw err; }
-    ctx.progress(.32 + Math.min(.55, (Date.now() - started) / 90000), st.status === 'queued' ? (st.ahead ? `Waiting in line, ${st.ahead} ahead of you` : 'Waiting in line') : `${t.verb} on the server`);
+    const pr = st.progress && st.progress.total > 1 ? st.progress : null;
+    ctx.progress(pr ? .32 + .55 * (pr.done / pr.total) : .32 + Math.min(.55, (Date.now() - started) / 90000),
+      st.status === 'queued' ? (st.ahead ? `Waiting in line, ${st.ahead} ahead of you` : 'Waiting in line') : pr ? `${t.verb} on the server, file ${pr.done + 1} of ${pr.total}` : `${t.verb} on the server`);
     if (Date.now() - started > 30 * 60000) throw new UserError('This is taking too long. Try a smaller file.');
   }
   if (st.kind === 'text') {
@@ -1540,7 +1596,18 @@ async function serverRun(t, items, o, ctx) {
   ctx.progress(.92, 'Downloading the result');
   const r = await fetch(apiUrl('/jobs/' + job + '/file'), { headers, cache: 'no-store' });
   if (!r.ok) { const b = await r.json().catch(() => ({})); throw new UserError(b.error || 'The result couldn’t be downloaded. Please run the task again.'); }
-  return [{ name: st.name, blob: await r.blob(), note: st.note || '' }];
+  const blob = await r.blob();
+  /* server 2.8 reports per-file failures; a failed file doesn't stop the others */
+  if (Array.isArray(st.failed) && st.failed.length) ctx.failed = (ctx.failed || []).concat(st.failed.map(f => ({ name: f.name, error: f.error })));
+  const several = (st.count || 0) > 1 || (st.name === 'fileora-results.zip' && !/zip/.test(t.accept || ''));
+  if (several) {
+    ctx.progress(.96, 'Opening the results');
+    try {
+      const outs = await unzipResults(blob, st);
+      if (outs.length) { if (!outs.some(x => x.note)) outs[0].note = st.note || ''; return outs; }
+    } catch (e) { /* not readable here: offer the server's ZIP as it is */ }
+  }
+  return [{ name: st.name, blob, note: st.note || '' }];
 }
 
 /* ---- 90-boot.js ---- */

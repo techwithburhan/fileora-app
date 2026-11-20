@@ -26,7 +26,7 @@ import { afterTask, prepareInterstitial } from '../ads/ads';
 import { toolById } from '../data/tools';
 import { call, EngineError, Item, readOutput, RunResult } from '../engine/engine';
 import { useToolSession } from '../engine/useToolSession';
-import { runServerTool, JobStatus, NeedPassword } from '../lib/serverJob';
+import { runServerTool, JobFile, JobStatus, NeedPassword, SERVER_BATCH } from '../lib/serverJob';
 import Dialog from '../components/Dialog';
 import { uiConfig } from '../remote/remote';
 import { Accept, pickFiles, Picked } from '../lib/pick';
@@ -91,6 +91,19 @@ export default function ProcessScreen({ theme }: { theme: Theme }) {
       cancel.current.cancelled = true; // leaving the screen stops a server task
     };
   }, [params.tool]);
+
+  // CI screenshots only (fileora://demo/result/<n>): the result screen with n sample files. Nothing is
+  // saved or logged and the files don't exist, so opening one just fails quietly.
+  useEffect(() => {
+    const n = params.demo;
+    if (!n) return;
+    const rec = (i: number, name: string, mime = 'application/pdf'): FileRec => ({ id: `demo-${i}`, name, mime, size: 180000 + i * 3100, path: `/nonexistent/${name}`, source: 'processed' as FileRec['source'], tool: 'compress', createdAt: Date.now() });
+    const files = n >= 3 ? [] : Array.from({ length: n }, (_, i) => rec(i, `sample-${i + 1}-compressed.pdf`));
+    const zips = n >= 3 ? [{ rec: rec(999, 'fileora-compress-demo.zip', 'application/zip'), count: n - 1 }] : [];
+    const failed = n >= 3 ? [{ name: 'locked.pdf', error: 'locked.pdf is password-protected.' }] : [];
+    const notes: Record<string, string> = Object.fromEntries(files.map(f => [f.id, '2.1 MB → 640 KB (69% smaller)']));
+    setDone({ title: n > 1 ? tr('{n} files are ready', { n: files.length || n - 1 }) : 'Your file is ready', files, notes, extra: null, zips, failed });
+  }, [params.demo]);
 
   // option values: the person's edits stay local; values a tool sets itself (e.g. PDF details read from the file) come from the engine
   useEffect(() => {
@@ -197,14 +210,39 @@ export default function ProcessScreen({ theme }: { theme: Theme }) {
         }
         setServerLabel('Uploading…');
         const label = (s: JobStatus) =>
-          s.status === 'queued' ? (s.ahead ? tr('Waiting in line, {n} ahead of you', { n: s.ahead }) : 'Waiting in line') : s.status === 'running' ? tr('{verb} on the server…', { verb: tr(def.verb) }) : 'Downloading the result…';
+          s.status === 'queued' ? (s.ahead ? tr('Waiting in line, {n} ahead of you', { n: s.ahead }) : 'Waiting in line') : s.status === 'running' ? tr('{verb} on the server…', { verb: tr(def.verb) }) + (s.progress && s.progress.total > 1 ? ` ${s.progress.done + 1}/${s.progress.total}` : '') : 'Downloading the result…';
         const options = { ...(r.options ?? {}), ...(pdfPw.current ? { opw: pdfPw.current } : {}) };
-        const res = await runServerTool(tool.id, up, options, st => !signal.cancelled && setServerLabel(label(st)), signal, r.url);
-        setServerLabel('Saving…');
-        const rec = await saveResult({ name: res.name, fromPath: res.path, move: true, tool: tool.id, bytesIn });
-        files.push(rec);
-        if (res.note) notes[rec.id] = res.note;
-        if (res.text) extra = { md: res.text, title: r.textTitle || 'Your text is ready' };
+        // 2.21: big selections go in parts (the server takes up to SERVER_BATCH files per task); a part
+        // that fails doesn't stop the others. 1–2 results are saved one by one, 3 or more as a ZIP.
+        const parts: JobFile[][] = [];
+        for (let i = 0; i < up.length; i += SERVER_BATCH) parts.push(up.slice(i, i + SERVER_BATCH));
+        if (!parts.length) parts.push([]);
+        for (const [pi, part] of parts.entries()) {
+          const partLabel = (s: JobStatus) => (parts.length > 1 ? `${pi + 1}/${parts.length} · ` : '') + label(s);
+          let res;
+          try {
+            res = await runServerTool(tool.id, part, options, st => !signal.cancelled && setServerLabel(partLabel(st)), signal, r.url);
+          } catch (e) {
+            if (parts.length === 1 || e instanceof NeedPassword || signal.cancelled) throw e;
+            const m = e instanceof Error ? e.message : String(e);
+            part.forEach(f => failed.push({ name: f.name, error: m }));
+            continue;
+          }
+          setServerLabel('Saving…');
+          failed.push(...(res.failed ?? []));
+          if (res.zip) {
+            const zname = `fileora-${tool.id}-${stamp()}${parts.length > 1 ? `-part-${pi + 1}` : ''}.zip`;
+            zips.push({ rec: await saveResult({ name: zname, fromPath: res.zip.path, move: true, mime: 'application/zip', tool: tool.id, bytesIn, log: pi === 0 }), count: res.zip.count });
+          } else {
+            for (const [n, f] of (res.files ?? [{ path: res.path, name: res.name, note: res.note }]).entries()) {
+              const rec = await saveResult({ name: f.name, fromPath: f.path, move: true, tool: tool.id, bytesIn, log: pi === 0 && n === 0 });
+              files.push(rec);
+              if (f.note) notes[rec.id] = f.note;
+            }
+          }
+          if (res.text) extra = { md: res.text, title: r.textTitle || 'Your text is ready' };
+        }
+        if (!files.length && !zips.length) throw new Error(failed[0]?.error ?? 'The server couldn’t process these files.');
       } else {
         const outs = r.outputs ?? [];
         failed = r.failed ?? [];
@@ -238,9 +276,10 @@ export default function ProcessScreen({ theme }: { theme: Theme }) {
       }
       setWorking(false);
       await afterTask(); // App Center → Ads: maybe a full-screen ad first, within its limits
-      const title = extra?.title || (files.length > 1 ? tr('{n} files are ready', { n: files.length }) : 'Your file is ready');
+      const ready = files.length || zips.reduce((n, z) => n + z.count, 0);
+      const title = extra?.title || (ready > 1 ? tr('{n} files are ready', { n: ready }) : 'Your file is ready');
       setDone({ title, files, notes, extra, zips, failed });
-      if (files.length === 1 && !failed.length && !extra?.md && !extra?.text && !extra?.diff && !extra?.palette) setSingle(files[0]);
+      if (files.length === 1 && !zips.length && !failed.length && !extra?.md && !extra?.text && !extra?.diff && !extra?.palette) setSingle(files[0]);
     } catch (e) {
       setWorking(false);
       if (signal.cancelled || (e instanceof EngineError && e.message === 'cancelled')) return;

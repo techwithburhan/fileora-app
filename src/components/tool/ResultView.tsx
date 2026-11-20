@@ -86,7 +86,7 @@ export default function ResultView({ title, files, notes, extra, zips = [], fail
 
       {failed.length > 0 && (
         <View style={[styles.failBox, { borderColor: theme.danger }]} accessibilityRole="summary">
-          <Text style={[type.heading, { color: theme.ink }]}>{tr('{done} done, {failed} couldn’t be processed', { done: files.length, failed: failed.length })}</Text>
+          <Text style={[type.heading, { color: theme.ink }]}>{tr('{done} done, {failed} couldn’t be processed', { done: files.length || zips.reduce((n, z) => n + z.count, 0), failed: failed.length })}</Text>
           {failed.slice(0, 20).map(f => (
             <Text key={f.name} style={[type.caption, { color: theme.ink2 }]} numberOfLines={3}>
               <Text noTranslate style={[type.caption, styles.bold, { color: theme.ink }]}>{f.name}</Text>

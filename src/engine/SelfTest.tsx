@@ -95,6 +95,14 @@ export default function SelfTest() {
         if (LANGS.some(l => l.code === code)) apply();
         return;
       }
+      // app 1.1.2 (CI screenshots): fileora://demo/result/5 shows the result screen of 5 sample files
+      // (nothing is saved; the files don't exist), to check the layout and the party popper.
+      const demo = url ? /^fileora:\/\/demo\/result\/(\d{1,3})/i.exec(url) : null;
+      if (demo) {
+        const n = Math.max(1, Math.min(120, Number(demo[1])));
+        const open = () => (navigationRef.isReady() ? navigationRef.navigate('Process', { tool: 'compress', demo: n }) : setTimeout(open, 300));
+        return open();
+      }
       if (url && /^fileora:\/\/screen\/downloads/i.test(url)) {
         const open = () => (navigationRef.isReady() ? navigationRef.navigate('Activity', { tab: 'downloaded' }) : setTimeout(open, 300));
         open();

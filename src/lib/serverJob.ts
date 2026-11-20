@@ -14,9 +14,24 @@ import { apiBase } from '../remote/remote';
 import { safeName, stripScheme } from '../store/files';
 import { tr } from '../i18n/i18n';
 
-export type JobStatus = { status: 'queued' | 'running' | 'done' | 'failed'; ahead?: number; name?: string; size?: number; error?: string; kind?: string; text?: string; need?: string; note?: string };
+export type JobStatus = {
+  status: 'queued' | 'running' | 'done' | 'failed'; ahead?: number; name?: string; size?: number; error?: string; kind?: string;
+  text?: string; need?: string; note?: string;
+  /** server 2.8: how many results, each result, the files that couldn't be processed, progress */
+  count?: number; files?: { n: number; name: string; size: number; note?: string }[];
+  failed?: { n: number; name: string; error: string; need?: string }[]; progress?: { done: number; total: number };
+};
 export type JobFile = { uri: string; name: string; mime: string };
-export type JobResult = { path: string; name: string; text?: string; kind?: string; note?: string };
+/**
+ * One result: path/name. 2.21: 2 results come as `files` (each downloaded on its own); 3 or more as one
+ * ZIP (`zip`, the server's archive); `failed` lists the files the server couldn't process.
+ */
+export type JobResult = {
+  path: string; name: string; text?: string; kind?: string; note?: string;
+  files?: { path: string; name: string; note?: string }[];
+  zip?: { path: string; name: string; count: number };
+  failed?: { name: string; error: string }[];
+};
 
 class Unreachable extends Error {}
 
@@ -156,13 +171,30 @@ export async function runServerTool(
     await BlobUtil.fs.writeFile(path, st.text ?? '', 'utf8');
     return { path, name, text: st.text, kind: 'text', note: st.note };
   }
-  const name = safeName(st.name ?? `${tool}-result`);
-  const path = `${BlobUtil.fs.dirs.CacheDir}/${Date.now()}-${name}`;
-  const res = await BlobUtil.config({ path }).fetch('GET', `${base}/jobs/${job}/file`, { 'X-Fileora-Token': token });
-  const code = res.info().status;
-  if (code !== 200) {
-    await BlobUtil.fs.unlink(path).catch(() => {});
-    throw new Error(code === 410 ? 'The result was already downloaded. Please run the task again.' : tr('Download failed (HTTP {code}).', { code }));
+  const failed = (st.failed ?? []).map(f => ({ name: f.name, error: f.error }));
+  const fetchTo = async (name: string, query: string) => {
+    const path = `${BlobUtil.fs.dirs.CacheDir}/${Date.now()}-${safeName(name)}`;
+    const res = await BlobUtil.config({ path }).fetch('GET', `${base}/jobs/${job}/file${query}`, { 'X-Fileora-Token': token });
+    const code = res.info().status;
+    if (code !== 200) {
+      await BlobUtil.fs.unlink(path).catch(() => {});
+      throw new Error(code === 410 ? 'The result was already downloaded. Please run the task again.' : tr('Download failed (HTTP {code}).', { code }));
+    }
+    return stripScheme(res.path() ?? path);
+  };
+  const count = st.count ?? 1;
+  const list = st.files ?? [];
+  // 2 results: each one on its own (no ZIP for 1–2 files). "of" tells the website when all were sent.
+  if (count === 2 && list.length === 2) {
+    const got = [];
+    for (const f of list) got.push({ path: await fetchTo(f.name, `?n=${f.n}&of=2`), name: safeName(f.name), note: f.note });
+    return { path: got[0].path, name: got[0].name, note: got[0].note, files: got, failed };
   }
-  return { path: stripScheme(res.path() ?? path), name, note: st.note };
+  const name = safeName(st.name ?? `${tool}-result`);
+  const path = await fetchTo(name, '');
+  if (count >= 3) return { path, name, zip: { path, name, count }, failed, note: st.note };
+  return { path, name, note: list[0]?.note ?? st.note, failed };
 }
+
+/** Very large selections go to the server in parts of this many files, one part after the other. */
+export const SERVER_BATCH = 20;
