@@ -3,7 +3,7 @@ import { FlatList, Image, StyleSheet, View } from 'react-native';
 import Text from '../i18n/Text';
 import Animated, { Easing, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, useReducedMotion, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
-import AppHeader from '../components/AppHeader';
+import { headerScroll, useHeaderScroll } from '../components/headerScroll';
 import Icon, { IconName } from '../components/Icon';
 import PressableScale from '../components/PressableScale';
 import { ToolChip } from '../components/ToolCard';
@@ -70,8 +70,10 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
   const nav = useNavigation();
   const catGrid = useCells(2, 10); // two category cards per row on every screen size
   const scrollY = useSharedValue(0);
+  useHeaderScroll(scrollY);
   const onScroll = useAnimatedScrollHandler(e => {
     scrollY.value = e.contentOffset.y;
+    headerScroll.value = e.contentOffset.y;
   });
   const [posts, setPosts] = useState<Post[] | null>(null);
   const [postsError, setPostsError] = useState(false);
@@ -121,7 +123,6 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
 
   return (
     <View style={[styles.flex, { backgroundColor: theme.bg }]}>
-      <AppHeader theme={theme} scrollY={scrollY} />
       <PullRefresh theme={theme} onRefresh={() => remote.refresh(true)} scrollY={scrollY}>
         <Animated.ScrollView onScroll={onScroll} scrollEventThrottle={16} contentContainerStyle={styles.content}>
         {/* Festival theme (App Center → Festival Themes) */}

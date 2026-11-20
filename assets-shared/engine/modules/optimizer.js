@@ -4,7 +4,7 @@
 (function (E) {
   'use strict';
   if (!E) return;
-  const { baseName, fmtSize, UserError, lib, pdfOut, loadPdf, savePdf, rasterize, LANGS } = E.h;
+  const { baseName, tagName, fmtSize, UserError, lib, pdfOut, loadPdf, savePdf, rasterize, LANGS } = E.h;
   const server = () => (E.config.tools.compress || {}).runs === 'server';
 
   E.register({ id: 'compress', server: true, accept: 'pdf', multi: true, cta: 'Compress PDF', verb: 'Compressing',
@@ -23,7 +23,7 @@
         let blob = new Blob([bytes], { type: 'application/pdf' }), note, good = false;
         if (blob.size >= it.size) { blob = it.file; note = 'Already well optimized, so we kept the original size'; }
         else { note = `${Math.round((1 - blob.size / it.size) * 100)}% smaller (${fmtSize(it.size)} to ${fmtSize(blob.size)})`; good = true; }
-        outs.push({ name: baseName(it.name) + '-compressed.pdf', blob, note, good });
+        outs.push({ name: tagName(it.name, '-compressed', 'pdf'), blob, note, good });
       }
       return outs;
     } });

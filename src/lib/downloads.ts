@@ -66,3 +66,10 @@ export function handleDownloadMessage(msg: DownloadMessage, tool?: string) {
     })
     .finally(p.done);
 }
+
+/**
+ * Several results (app 1.1.1, same rule as the website 2.21): 1 or 2 files are saved straight to
+ * Downloads; 3 or more are saved to Downloads as one ZIP (several ZIP files of at most 100 files
+ * for very large batches) and kept one by one in the app (Downloads → Processed).
+ */
+export const ZIP_FROM = 3;

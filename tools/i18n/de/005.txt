@@ -186,7 +186,6 @@
 1050|Diese Größe ist zu groß. Wähle eine kleinere Skalierung.
 1051|Die Liste „Geöffnet“ wird geleert. Keine Datei wird gelöscht: Sie bleiben unter „Heruntergeladen“ und „Verarbeitet“.
 1052|Das PDF konnte nicht erstellt werden
-1053|Die ZIP-Datei konnte nicht erstellt werden. Speichere die Dateien stattdessen einzeln.
 1054|Die Rückseiten sind in umgekehrter Reihenfolge
 1055|Der Zuschnittbereich liegt außerhalb des Bildes.
 1056|Der Download startet im Browser: Öffne ihn, wenn er fertig ist, und tippe auf Aktualisieren.

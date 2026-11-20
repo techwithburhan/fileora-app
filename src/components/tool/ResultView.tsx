@@ -18,7 +18,7 @@ import { formatBytes, SAVED_WHERE } from '../../store/files';
 import { FileRec } from '../../store/store';
 import { Theme } from '../../theme';
 import { type } from '../../typography';
-import { tr } from '../../i18n/i18n';
+import { tr, trMsg } from '../../i18n/i18n';
 
 type Extra = NonNullable<RunResult['result']>;
 type Props = {
@@ -26,6 +26,10 @@ type Props = {
   files: FileRec[];
   notes: Record<string, string>;
   extra: Extra | null;
+  /** 3 or more results: the ZIP file(s) saved to Downloads */
+  zips?: { rec: FileRec; count: number }[];
+  /** files that couldn't be processed while the others were */
+  failed?: { name: string; error: string }[];
   tool: string;
   theme: Theme;
   onOpen: (f: FileRec) => void;
@@ -35,22 +39,63 @@ type Props = {
   onStartOver: () => void;
 };
 
-export default function ResultView({ title, files, notes, extra, tool, theme, onOpen, onShare, onNext, onAgain, onStartOver }: Props) {
+export default function ResultView({ title, files, notes, extra, zips = [], failed = [], tool, theme, onOpen, onShare, onNext, onAgain, onStartOver }: Props) {
   const text = extra?.md || extra?.text || '';
   const next = files.length ? relatedFor(tool, files[0].mime).slice(0, 4) : [];
+  const [hero, setHero] = useState<{ width: number; height: number } | null>(null);
   return (
     <View style={styles.wrap}>
-      <Confetti play />
-      <View style={[styles.ok, { backgroundColor: theme.accent }]}>
-        <Icon name="check" size={30} color={theme.onAccent} width={3} />
+      {/* the party popper stays inside this top area (clipped), never over the files below */}
+      <View style={styles.hero} onLayout={e => { const { width, height } = e.nativeEvent.layout; setHero(h => h ?? { width, height }); }}>
+        <Confetti play={!!hero} box={hero ?? undefined} />
+        <View style={[styles.ok, { backgroundColor: theme.accent }]}>
+          <Icon name="check" size={30} color={theme.onAccent} width={3} />
+        </View>
+        <Text style={[type.title, styles.center, { color: theme.ink }]} accessibilityRole="header">
+          {title}
+        </Text>
       </View>
-      <Text style={[type.title, styles.center, { color: theme.ink }]} accessibilityRole="header">
-        {title}
-      </Text>
       {files.length > 0 && (
         <Text style={[type.bodySm, styles.center, { color: theme.muted }]}>
-          {files.length === 1 ? 'Saved' : tr('{n} files saved', { n: files.length })} in Fileora and {SAVED_WHERE} · {formatBytes(files.reduce((s, f) => s + f.size, 0))}
+          {zips.length
+            ? tr('{n} files saved in Fileora. In {where} as a ZIP file.', { n: files.length, where: tr(SAVED_WHERE) })
+            : `${files.length === 1 ? tr('Saved') : tr('{n} files saved', { n: files.length })} ${tr('in Fileora and {where}', { where: tr(SAVED_WHERE) })}`}{' '}
+          · {formatBytes(files.reduce((s, f) => s + f.size, 0))}
         </Text>
+      )}
+
+      {/* 3 or more results: the ZIP file(s), first and largest */}
+      {zips.map((z, i) => (
+        <View key={z.rec.id} style={[styles.zip, { backgroundColor: theme.surface, borderColor: theme.accent }]}>
+          <View style={[styles.zipIcon, { backgroundColor: theme.accent }]}>
+            <Icon name="download" size={22} color={theme.onAccent} />
+          </View>
+          <Pressable style={styles.flex} onPress={() => onOpen(z.rec)} accessibilityRole="button" accessibilityLabel={z.rec.name}>
+            <Text style={[type.heading, { color: theme.ink }]}>
+              {zips.length > 1 ? tr('ZIP part {i} of {n}', { i: i + 1, n: zips.length }) : tr('All files in one ZIP')}
+            </Text>
+            <Text style={[type.caption, { color: theme.muted }]} numberOfLines={1}>
+              {tr(z.count === 1 ? '1 file' : '{n} files', { n: z.count })} · {formatBytes(z.rec.size)}
+            </Text>
+          </Pressable>
+          <PressableScale onPress={() => onShare(z.rec)} hitSlop={6} style={styles.icon} accessibilityRole="button" accessibilityLabel={tr('Share')}>
+            <Icon name="share" size={20} color={theme.ink2} />
+          </PressableScale>
+        </View>
+      ))}
+
+      {failed.length > 0 && (
+        <View style={[styles.failBox, { borderColor: theme.danger }]} accessibilityRole="summary">
+          <Text style={[type.heading, { color: theme.ink }]}>{tr('{done} done, {failed} couldn’t be processed', { done: files.length, failed: failed.length })}</Text>
+          {failed.slice(0, 20).map(f => (
+            <Text key={f.name} style={[type.caption, { color: theme.ink2 }]} numberOfLines={3}>
+              <Text noTranslate style={[type.caption, styles.bold, { color: theme.ink }]}>{f.name}</Text>
+              {': '}
+              {trMsg(f.error)}
+            </Text>
+          ))}
+          {failed.length > 20 ? <Text style={[type.caption, { color: theme.muted }]}>{tr('And {n} more.', { n: failed.length - 20 })}</Text> : null}
+        </View>
       )}
 
       {text ? (
@@ -106,12 +151,15 @@ export default function ResultView({ title, files, notes, extra, tool, theme, on
       {next.length > 0 && files.length === 1 && (
         <View style={styles.block}>
           <Text style={[type.heading, { color: theme.ink }]}>Keep going with this file</Text>
-          <View style={styles.chips}>
-            {next.map(id => {
-              const t = toolById(id);
-              return t ? <ToolChip key={id} tool={t} theme={theme} onPress={() => onNext(id, files[0])} /> : null;
-            })}
-          </View>
+          {/* two equal columns on every screen width (fixed-width chips left a gap on the right) */}
+          {pairs(next.map(toolById).filter(Boolean) as NonNullable<ReturnType<typeof toolById>>[]).map((row, r) => (
+            <View key={r} style={styles.pair}>
+              {row.map(t => (
+                <ToolChip key={t.id} tool={t} theme={theme} fill onPress={() => onNext(t.id, files[0])} />
+              ))}
+              {row.length === 1 && <View style={styles.flex} />}
+            </View>
+          ))}
         </View>
       )}
 
@@ -127,6 +175,12 @@ export default function ResultView({ title, files, notes, extra, tool, theme, on
       </View>
     </View>
   );
+}
+
+function pairs<T>(a: T[]): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < a.length; i += 2) out.push(a.slice(i, i + 2));
+  return out;
 }
 
 /* Compare PDF: changed lines with two lines around them; the rest folds away */
@@ -203,6 +257,10 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   bold: { fontWeight: '700' },
   center: { textAlign: 'center' },
+  zip: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1.5, borderRadius: 16, padding: 10 },
+  zipIcon: { width: 46, height: 46, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  failBox: { borderWidth: 1, borderRadius: 14, padding: 12, gap: 6 },
+  hero: { gap: 14, paddingVertical: 6, overflow: 'hidden', borderRadius: 18 },
   ok: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', alignSelf: 'center' },
   block: { gap: 10 },
   textBox: { borderWidth: 1, borderRadius: 14, padding: 12, maxHeight: 360, overflow: 'hidden' },
@@ -211,7 +269,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: 10, alignItems: 'center' },
   file: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 16, padding: 10 },
   icon: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  pair: { flexDirection: 'row', gap: 10 },
   palette: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   swatchCard: { width: '30%', borderWidth: 1, borderRadius: 14, padding: 8, gap: 2 },
   swatch: { height: 54, borderRadius: 10, marginBottom: 4 },

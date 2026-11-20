@@ -1,4 +1,4 @@
-/*! Fileora tool engine for the app. Built 2026-11-18 by scripts/build-engine.sh from the website's public/js/src and engine/app-bridge.js. */
+/*! Fileora tool engine for the app. Built 2026-11-20 by scripts/build-engine.sh from the website's public/js/src and engine/app-bridge.js. */
 (function () {
 'use strict';
 
@@ -33,6 +33,14 @@ const store = {
 };
 function fmtSize(b) { if (b < 1024) return b + ' B'; if (b < 1048576) return (b / 1024).toFixed(b < 10240 ? 1 : 0) + ' KB'; return (b / 1048576).toFixed(b < 10485760 ? 2 : 1) + ' MB'; }
 function baseName(n) { return String(n).replace(/\.[^.]+$/, '') || 'file'; }
+/* "report.pdf" + "-compressed" → "report-compressed.pdf", but "report-compressed.pdf" stays
+   "report-compressed.pdf" instead of "report-compressed-compressed.pdf" when a result goes
+   through the same tool again (2.21). */
+function tagName(n, tag, ext) {
+  let b = baseName(n);
+  if (tag && b.toLowerCase().endsWith(tag.toLowerCase())) b = b.slice(0, -tag.length) || b;
+  return b + (tag || '') + '.' + ext;
+}
 function extOf(n) { const m = /\.([^.]+)$/.exec(n || ''); return m ? m[1].toLowerCase() : ''; }
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -488,7 +496,7 @@ async function encodeCanvas(c, type, q = 0.9, opts = {}) {
 const IMG_EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
 const OUT_EXT = Object.assign({ 'image/avif': 'avif', [MIME_PSD]: 'psd' }, IMG_EXT);
 const sameType = file => IMG_EXT[file.type] ? file.type : 'image/jpeg';
-const renameImg = (name, type, suffix) => baseName(name) + (suffix || '') + '.' + (OUT_EXT[type] || 'jpg');
+const renameImg = (name, type, suffix) => tagName(name, suffix || '', OUT_EXT[type] || 'jpg');
 const Img = {
   /* Draw an image region onto a canvas of the target size and encode it. */
   async render(file, { sx = 0, sy = 0, sw, sh, width, height, type, quality = 0.9, suffix }) {
@@ -594,6 +602,58 @@ async function padJpeg(blob, minBytes) {
     segs.push(seg); need -= seg.length;
   }
   return new Blob([bytes.slice(0, 2), ...segs, bytes.slice(2)], { type: 'image/jpeg' });
+}
+
+/* ---- several files (2.21) ----
+   Tools that treat every file on its own run file by file, so one bad file doesn't stop the
+   others; the files that failed are listed with the results (ctx.failed). Tools that combine
+   files (Merge, JPG to PDF, Collage, Compare, Bates numbering…) still get all files at once. */
+const EACH_TOOLS = new Set(['compress', 'rotate', 'pagenum', 'watermark', 'pdf2jpg', 'headerfooter', 'flatten', 'resizepages', 'stamp',
+  'imgcompress', 'imgresize', 'imgconvert', 'jpg2png', 'png2jpg', 'imgkb', 'heic2jpg', 'exif', 'imgwatermark', 'imgrotate', 'svg2png', 'img2svg', 'imgborder']);
+async function runEach(T, items, opts, ctx) {
+  if (!(T.each || EACH_TOOLS.has(T.id)) || items.length < 2) return T.run(items, opts, ctx);
+  const outs = [], failed = [];
+  for (let i = 0; i < items.length; i++) {
+    if (ctx.alive && !ctx.alive()) throw new Error('cancelled');
+    const it = items[i];
+    const sub = Object.assign({}, ctx, { result: null, progress: (f, l) => ctx.progress((i + Math.min(1, f || 0)) / items.length, `${i + 1}/${items.length} ${it.name}${l ? ': ' + l : ''}`) });
+    try {
+      (await T.run([it], opts, sub) || []).forEach(o => outs.push(o));
+      if (sub.result && !ctx.result) ctx.result = sub.result;
+    } catch (e) {
+      if (e && e.message === 'cancelled') throw e;
+      failed.push({ name: it.name, error: e instanceof UserError ? e.message : friendly(e) });
+    }
+  }
+  ctx.failed = failed;
+  if (!outs.length) throw new UserError(failed.length === 1 ? failed[0].error : `None of the ${items.length} files could be processed. First problem: ${failed[0].error}`);
+  return outs;
+}
+
+/* Downloads: 1 or 2 results download directly; 3 or more come as a ZIP. Very large batches are
+   split into several ZIP files (at most ZIP_MAX_FILES files or ZIP_MAX_BYTES each), so the browser
+   or phone never has to hold one huge archive in memory. */
+const ZIP_FROM = 3, ZIP_MAX_FILES = 100, ZIP_MAX_BYTES = 450 * 1048576;
+function zipParts(outs) {
+  const parts = [];
+  let cur = [], bytes = 0;
+  outs.forEach(o => {
+    const size = (o.blob && o.blob.size) || o.size || 0;
+    if (cur.length && (cur.length >= ZIP_MAX_FILES || bytes + size > ZIP_MAX_BYTES)) { parts.push(cur); cur = []; bytes = 0; }
+    cur.push(o); bytes += size;
+  });
+  if (cur.length) parts.push(cur);
+  return parts;
+}
+async function makeZip(list, nameOf, blobOf) {
+  const JSZip = await lib('jszip'), zip = new JSZip(), used = {};
+  list.forEach(o => {
+    let n = nameOf(o) || 'file';
+    if (used[n]) n = baseName(n) + '-' + (++used[n]) + (extOf(n) ? '.' + extOf(n) : ''); else used[n] = 1;
+    zip.file(n, blobOf(o));
+  });
+  /* PDFs and images are compressed already: STORE is much faster and uses far less memory */
+  return zip.generateAsync({ type: 'blob', compression: 'STORE', streamFiles: true });
 }
 
 /* ---- 30-options.js ---- */
@@ -920,7 +980,7 @@ function mountTool(root) {
   /* ---- state helpers ---- */
   const goodItems = () => WS.items.filter(i => !i.err);
   const mkItem = file => ({ id: 'f' + (++itemSeq), file, name: file.name, size: file.size, kind: kindOf(file), pages: null, thumb: null, err: null, note: '' });
-  function clearOutputs() { WS.outputs.forEach(o => URL.revokeObjectURL(o.url)); WS.outputs = []; WS.result = null; }
+  function clearOutputs() { WS.outputs.forEach(o => URL.revokeObjectURL(o.url)); (WS.zips || []).forEach(z => z.url && URL.revokeObjectURL(z.url)); WS.outputs = []; WS.zips = null; WS.failed = []; WS.result = null; }
   function clearItems() { WS.items = []; WS.pages = null; WS.allPages = null; WS.source = null; WS.regions = null; WS.seq++; WS.queue = Promise.resolve(); clearOutputs(); }
   function setPhase(p) {
     const keep = p === 'working' && progressMode === 'off';   /* hidden processing screen: the files stay, locked */
@@ -1123,12 +1183,17 @@ function mountTool(root) {
     const title = r.title || (outs.length > 1 ? `${outs.length} files are ready` : 'Your file is ready');
     const isPdf = o => /\.pdf$/i.test(o.name), isImg = o => /\.(jpe?g|png|webp|gif|ico|svg)$/i.test(o.name), isRaster = o => /\.(jpe?g|png|webp|gif|ico)$/i.test(o.name);
     const iconFor = o => isPdf(o) ? ['file', 'from'] : isImg(o) ? ['image', 'image'] : /\.(md|txt)$/i.test(o.name) ? ['text', 'from'] : /\.zip$/i.test(o.name) ? ['zip', 'organize'] : ['file', 'organize'];
-    const rows = outs.length > 1 ? `<div class="fo-outs">${outs.slice(0, 80).map(o => { const [ic, c] = iconFor(o); return `<div class="fo-out"><span class="fo-tile fo-tile-sm" data-cat="${c}">${icon(ic)}</span><div><b>${esc(o.name)}</b><small class="${o.good ? 'good' : ''}">${esc(o.note || fmtSize(o.blob.size))}</small></div>${isPdf(o) || isImg(o) ? `<a class="fo-icon-btn" href="${o.url}" target="_blank" rel="noopener" aria-label="Preview ${esc(o.name)}">${icon('eye', 'fo-ic fo-ic-sm')}</a>` : ''}<a class="fo-btn fo-btn-line fo-btn-sm" href="${o.url}" download="${esc(o.name)}">${icon('download', 'fo-ic fo-ic-sm')}Save</a></div>`; }).join('')}${outs.length > 80 ? `<p class="fo-plabel">And ${outs.length - 80} more in the ZIP file.</p>` : ''}</div>` : '';
+    const rows = outs.length > 1 ? `<div class="fo-outs">${outs.slice(0, 80).map(o => { const [ic, c] = iconFor(o); return `<div class="fo-out"><span class="fo-tile fo-tile-sm" data-cat="${c}">${icon(ic)}</span><div><b>${esc(o.name)}</b><small class="${o.good ? 'good' : ''}">${esc(o.note || fmtSize(o.blob.size))}</small></div>${isPdf(o) || isImg(o) ? `<a class="fo-icon-btn" href="${o.url}" target="_blank" rel="noopener" aria-label="Preview ${esc(o.name)}">${icon('eye', 'fo-ic fo-ic-sm')}</a>` : ''}<a class="fo-btn fo-btn-line fo-btn-sm" href="${o.url}" download="${esc(o.name)}">${icon('download', 'fo-ic fo-ic-sm')}Save</a></div>`; }).join('')}${outs.length > 80 ? `<p class="fo-plabel">And ${outs.length - 80} more in the ZIP file${WS.zips && WS.zips.length > 1 ? 's' : ''}.</p>` : ''}</div>` : '';
     const o1 = outs[0];
     const sub = !o1 ? '' : outs.length === 1 ? `<p><b>${esc(o1.name)}</b><br><span class="${o1.good ? 'fo-good' : ''}">${esc(o1.note ? o1.note + ', ' + fmtSize(o1.blob.size) : fmtSize(o1.blob.size))}</span></p>` : `<p>${fmtSize(outs.reduce((s, o) => s + o.blob.size, 0))} in total.</p>`;
+    /* 2.21: 1 or 2 files download directly, 3 or more as a ZIP made right away (several ZIPs for very large batches) */
     const mainBtn = !o1 ? '' : outs.length === 1
       ? `<a class="fo-btn fo-btn-ink fo-btn-lg" href="${o1.url}" download="${esc(o1.name)}">${icon('download')}Download ${esc(extOf(o1.name).toUpperCase() || 'file')}</a>${isPdf(o1) || isImg(o1) ? `<a class="fo-btn fo-btn-line fo-btn-lg" href="${o1.url}" target="_blank" rel="noopener">${icon('eye')}Preview</a>` : ''}`
-      : `<button type="button" class="fo-btn fo-btn-ink fo-btn-lg" data-zip>${icon('zip')}Download all as ZIP</button>`;
+      : outs.length < ZIP_FROM
+        ? outs.map((o, i) => `<a class="fo-btn ${i ? 'fo-btn-line' : 'fo-btn-ink'} fo-btn-lg fo-dl-direct" href="${o.url}" download="${esc(o.name)}">${icon('download')}<span>${esc(o.name)}</span></a>`).join('')
+        : `<div class="fo-zipbox" data-zipbox aria-live="polite">${zipBoxHtml()}</div>`;
+    const failed = WS.failed || [];
+    const failHtml = failed.length ? `<div class="fo-failbox" role="status"><p><b>${outs.length} done, ${failed.length} couldn’t be processed</b></p><ul>${failed.slice(0, 30).map(f => `<li><b>${esc(f.name)}</b>: ${esc(f.error)}</li>`).join('')}${failed.length > 30 ? `<li>And ${failed.length - 30} more.</li>` : ''}</ul></div>` : '';
     const copyText = r.md || r.text;
     let extra = '';
     if (copyText) extra += (r.textNote ? `<p class="fo-plabel">${esc(r.textNote)}</p>` : '') + `<pre class="fo-md">${esc(copyText.length > 20000 ? copyText.slice(0, 20000) + '\n…' : copyText)}</pre>`;
@@ -1138,9 +1203,34 @@ function mountTool(root) {
       .filter(x => x !== id && CFG.catalog.some(c => c.id === x && c.ready)).slice(0, 6);
     return `<div class="fo-state"><span class="fo-ok">${icon('check')}</span><h2>${esc(title)}</h2>${sub}
       <div class="fo-res-actions">${mainBtn}${copyText ? `<button type="button" class="fo-btn fo-btn-line fo-btn-lg" data-copy>${icon('copy')}Copy text</button>` : ''}</div>
-      ${extra}${rows}
+      ${failHtml}${extra}${rows}
       ${nextIds.length ? `<div class="fo-next"><h4>Keep going with ${outs.length > 1 ? 'these files' : 'this file'}</h4><div>${nextIds.map(x => { const c = CFG.catalog.find(k => k.id === x); return `<button type="button" class="fo-chip" data-cat="${esc(c.color)}" data-next="${x}">${icon(c.icon)}${esc(c.name)}</button>`; }).join('')}</div></div>` : ''}
       <div class="fo-res-actions"><button type="button" class="fo-btn fo-btn-quiet" data-again>${icon('rotate-ccw', 'fo-ic fo-ic-sm')}Start over</button></div></div>`;
+  }
+  function zipBoxHtml() {
+    const z = WS.zips;
+    if (!z) return `<span class="fo-btn fo-btn-ink fo-btn-lg is-wait" aria-disabled="true"><span class="fo-spin-sm" aria-hidden="true"></span>Preparing the ZIP file…</span>`;
+    if (z.error) return `<button type="button" class="fo-btn fo-btn-ink fo-btn-lg" data-zip>${icon('zip')}Try the ZIP again</button><p class="fo-plabel">${esc(z.error)}</p>`;
+    return z.map((p, i) => `<a class="fo-btn ${i ? 'fo-btn-line' : 'fo-btn-ink'} fo-btn-lg" href="${p.url}" download="${esc(p.name)}">${icon('zip')}${z.length > 1 ? `ZIP part ${i + 1} of ${z.length}` : 'Download all as ZIP'} <small>(${p.count} files, ${fmtSize(p.blob.size)})</small></a>`).join('');
+  }
+  async function prepareZips() {
+    const seq = WS.seq, outs = WS.outputs;
+    if (outs.length < ZIP_FROM) return;
+    WS.zips = null;
+    try {
+      const parts = zipParts(outs), made = [];
+      for (let i = 0; i < parts.length; i++) {
+        const blob = await makeZip(parts[i], o => o.name, o => o.blob);
+        if (seq !== WS.seq) return;
+        made.push({ blob, url: URL.createObjectURL(blob), count: parts[i].length, name: parts.length > 1 ? `fileora-${id}-part-${i + 1}.zip` : `fileora-${id}.zip` });
+      }
+      WS.zips = made;
+    } catch (e) {
+      console.error(e);
+      WS.zips = { error: 'The ZIP file couldn’t be created. Save the files one by one instead.' };
+    }
+    const box = $('[data-zipbox]', root);
+    if (box && seq === WS.seq) box.innerHTML = zipBoxHtml();
   }
   function diffHtml(r) {
     const rows = r.diff, show = new Array(rows.length).fill(false);
@@ -1272,12 +1362,14 @@ function mountTool(root) {
     const ctx = { progress: setProgress, pages: WS.pages && WS.pages.map(p => ({ i: p.i, rot: p.rot })), regions: WS.regions, source: WS.source, result: null, alive: () => seq === WS.seq, ws: WS };
     const exec = useServer ? 'server' : 'browser';
     try {
-      const outs = useServer ? await serverRun(T, items, WS.opts, ctx) : await T.run(items, WS.opts, ctx);
+      const outs = useServer ? await serverRun(T, items, WS.opts, ctx) : await runEach(T, items, WS.opts, ctx);
       if (seq !== WS.seq) return;
       setProgress(1, 'Done');
       WS.outputs = (outs || []).map(o => ({ ...o, url: URL.createObjectURL(o.blob) }));
       WS.result = ctx.result;
+      WS.failed = ctx.failed || [];
       setPhase('done');
+      prepareZips();
       track({ type: 'tool_run', tool: id, exec, status: 'done', ms: Math.round(performance.now() - WS.started), files: items.length, name: runName(items) });
       if (HAS_GSAP() && !REDUCED) gsap.from($('.fo-ok', main), { scale: .6, opacity: 0, duration: .45, ease: 'back.out(2.2)' });
       const top = root.getBoundingClientRect().top;
@@ -1297,18 +1389,11 @@ function mountTool(root) {
     if (list && list.length) return list[0].name + (list.length > 1 ? ' (+' + (list.length - 1) + ')' : '');
     try { return WS.opts.url ? new URL(/^https?:/i.test(WS.opts.url) ? WS.opts.url : 'https://' + WS.opts.url).host : ''; } catch (e) { return ''; }
   }
-  async function downloadZip(btn) {
-    btn.disabled = true; const old = btn.innerHTML; btn.textContent = 'Preparing ZIP…';
-    try {
-      const JSZip = await lib('jszip'), zip = new JSZip();
-      const used = {};
-      WS.outputs.forEach(o => { let n = o.name; if (used[n]) n = baseName(n) + '-' + (++used[n]) + (extOf(n) ? '.' + extOf(n) : ''); else used[n] = 1; zip.file(n, o.blob); });
-      const blob = await zip.generateAsync({ type: 'blob' });
-      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-      a.download = `fileora-${id}.zip`; document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-    } catch (e) { toast('The ZIP file couldn’t be created. Save the files one by one instead.', 'error'); }
-    btn.disabled = false; btn.innerHTML = old;
+  /* the ZIP is made right after the task (prepareZips); this button only appears to try again */
+  async function downloadZip() {
+    const box = $('[data-zipbox]', root);
+    WS.zips = null; if (box) box.innerHTML = zipBoxHtml();
+    await prepareZips();
   }
   function pickFiles(camera) {
     const inp = camera ? $('.fo-cam-in', root) : $('.fo-file-in', root);
@@ -1329,7 +1414,7 @@ function mountTool(root) {
     if ('retry' in d) return setPhase(WS.items.length ? 'ready' : 'empty');
     if ('sort' in d) { WS.items.sort((a, c) => a.name.localeCompare(c.name, undefined, { numeric: true })); return renderMain(); }
     if ('swap' in d) { WS.items.reverse(); return renderMain(); }
-    if ('zip' in d) return downloadZip(b);
+    if ('zip' in d) return downloadZip();
     if ('copy' in d) { const t = (WS.result && (WS.result.md || WS.result.text)) || ''; navigator.clipboard.writeText(t).then(() => toast('Copied to the clipboard', 'ok'), () => toast('Copy isn’t allowed here. Download the file instead.', 'error')); return; }
     if ('copyval' in d) { navigator.clipboard.writeText(d.copyval).then(() => toast(`Copied ${d.copyval}`, 'ok'), () => {}); return; }
     if ('next' in d) { e.preventDefault(); const files = WS.outputs.length ? WS.outputs.map(o => new File([o.blob], o.name, { type: o.blob.type || 'application/octet-stream' })) : WS.items.map(i => i.file); return goToTool(d.next, files); }
@@ -1436,7 +1521,8 @@ async function serverRun(t, items, o, ctx) {
     wait = Math.min(3000, wait + 300);
     if (ctx.alive && !ctx.alive()) throw new Error('cancelled');
     let r;
-    try { r = await fetch(apiUrl('/jobs/' + job + '?t=' + Date.now()), { headers, cache: 'no-store' }); }
+    /* '&t=' when the REST address already has a query (sites without pretty permalinks: ?rest_route=) */
+    try { r = await fetch(apiUrl('/jobs/' + job) + (CFG.rest.includes('?') ? '&' : '?') + 't=' + Date.now(), { headers, cache: 'no-store' }); }
     catch (e) { if (++misses > 20) throw new UserError('We lost the connection to the server. Please run the task again.'); continue; } /* brief network hiccup: keep polling */
     st = await r.json().catch(() => ({}));
     if (r.status === 502 && ++misses <= 20) continue;
@@ -1470,7 +1556,7 @@ const API = {
   instances: [],
   /* helpers for module scripts */
   h: {
-    $, $$, esc, icon, fmtSize, baseName, extOf, clamp, sleep, toast, UserError,
+    $, $$, esc, icon, fmtSize, baseName, tagName, extOf, runEach, zipParts, makeZip, ZIP_FROM, clamp, sleep, toast, UserError,
     lib, libUrl, pdfjsDoc, renderPage, canvasToBlob, pdfOut, loadPdf, savePdf, vis, visRect, parseRanges, rangeLabel, PAGE, MM,
     decodeImage, canvasOf, imageCanvas, filterPixels, imageForPdf, embedCanvas, imagesToPdf, rasterize, textPng, textWidth,
     pdfLines, toMarkdown, diffLines, Img, IMG_EXT, OUT_EXT, MIME_PSD, encodeCanvas, fontBytes, isAvif, sameType, renameImg, cropRect, imageNote, eachImage, encodeToSize, padJpeg,
@@ -1876,11 +1962,11 @@ async function runSession(S) {
     alive: () => S.run === run && APPS[S.sid] === S, ws: S
   };
   S.outputs.forEach(o => { delete APPO[o.oid]; if (o.url) URL.revokeObjectURL(o.url); });
-  const outs = await T.run(items, S.opts, ctx);
+  const outs = await runEach(T, items, S.opts, ctx);   /* 2.21: file by file for tools that treat files separately */
   if (!ctx.alive()) throw new Error('cancelled');
   S.outputs = (outs || []).map(o => ({ ...o, oid: putOut(o.blob), url: URL.createObjectURL(o.blob) }));
   S.result = ctx.result;
-  return { outputs: S.outputs.map(o => ({ oid: o.oid, name: o.name, size: o.blob.size, type: o.blob.type || '', note: o.note || '', good: !!o.good })), result: resultJson(ctx.result) };
+  return { outputs: S.outputs.map(o => ({ oid: o.oid, name: o.name, size: o.blob.size, type: o.blob.type || '', note: o.note || '', good: !!o.good })), result: resultJson(ctx.result), failed: ctx.failed || [] };
 }
 
 /* ---- commands ---- */
@@ -2029,10 +2115,18 @@ const CMDS = {
   },
   /* several results as one ZIP */
   zip: async ({ oids, names }) => {
-    const JSZip = await lib('jszip'), zip = new JSZip(), used = {};
-    oids.forEach((o, i) => { let n = names[i] || 'file'; if (used[n]) n = baseName(n) + '-' + (++used[n]) + (extOf(n) ? '.' + extOf(n) : ''); else used[n] = 1; zip.file(n, APPO[o]); });
-    const blob = await zip.generateAsync({ type: 'blob' });
+    const blob = await makeZip(oids.map((o, i) => ({ o, n: names[i] })), x => x.n, x => APPO[x.o]);
     return { oid: putOut(blob), size: blob.size };
+  },
+  /* 2.21: 3 or more results → ZIP files of at most 100 files / 450 MB each */
+  zipParts: async ({ oids, names }) => {
+    const list = oids.map((o, i) => ({ o, name: names[i], blob: APPO[o] })).filter(x => x.blob);
+    const out = [];
+    for (const part of zipParts(list)) {
+      const blob = await makeZip(part, x => x.name, x => x.blob);
+      out.push({ oid: putOut(blob), size: blob.size, count: part.length });
+    }
+    return out;
   }
 };
 window.FileoraApp = {

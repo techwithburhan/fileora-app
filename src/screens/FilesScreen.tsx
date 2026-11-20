@@ -9,7 +9,7 @@ import Text from '../i18n/Text';
 
 import BlobUtil from 'react-native-blob-util';
 import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
-import AppHeader from '../components/AppHeader';
+import { useHeaderScroll } from '../components/headerScroll';
 import FileRow from '../components/FileRow';
 import Icon, { IconName } from '../components/Icon';
 import PressableScale from '../components/PressableScale';
@@ -32,6 +32,7 @@ const FOLDERS: { id: Source[]; key: string; label: string; icon: IconName }[] = 
 ];
 
 export default function FilesScreen({ theme }: { theme: Theme }) {
+  useHeaderScroll();
   const nav = useNavigation();
   const { params } = useRoute<RouteProp<TabParamList, 'Files'>>();
   const files = useStore(s => s.files);
@@ -220,7 +221,6 @@ export default function FilesScreen({ theme }: { theme: Theme }) {
 
   return (
     <View style={[styles.flex, { backgroundColor: theme.bg }]}>
-      <AppHeader theme={theme} />
       <FlatList<FileRec>
         data={shown}
         keyExtractor={f => f.id}

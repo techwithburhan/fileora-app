@@ -1,0 +1,7 @@
+1313|Tous les fichiers dans un ZIP
+1314|Et {n} de plus.
+1315|Création du fichier ZIP
+1316|ZIP partie {i} sur {n}
+1317|dans Fileora et dans {where}
+1318|{done} terminés, {failed} n’ont pas pu être traités
+1319|{n} fichiers enregistrés dans Fileora. Dans {where} sous forme de fichier ZIP.

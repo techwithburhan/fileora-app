@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, TextInput, TextInputInstance, View } from 'reac
 import Text from '../i18n/Text';
 import Animated, { LinearTransition, useAnimatedScrollHandler, useSharedValue } from 'react-native-reanimated';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import AppHeader from '../components/AppHeader';
+import { headerScroll, useHeaderScroll } from '../components/headerScroll';
 import Icon from '../components/Icon';
 import PressableScale from '../components/PressableScale';
 import { ToolCard } from '../components/ToolCard';
@@ -23,8 +23,10 @@ export default function ToolsScreen({ theme }: { theme: Theme }) {
   const [cat, setCat] = useState<CategoryId | 'all'>('all');
   const input = useRef<TextInputInstance>(null);
   const scrollY = useSharedValue(0);
+  useHeaderScroll(scrollY);
   const onScroll = useAnimatedScrollHandler(e => {
     scrollY.value = e.contentOffset.y;
+    headerScroll.value = e.contentOffset.y;
   });
 
   useEffect(() => {
@@ -52,7 +54,6 @@ export default function ToolsScreen({ theme }: { theme: Theme }) {
 
   return (
     <View style={[styles.flex, { backgroundColor: theme.bg }]}>
-      <AppHeader theme={theme} scrollY={scrollY} search={false} />
       <PullRefresh theme={theme} onRefresh={() => remote.refresh(true)} scrollY={scrollY}>
         <Animated.FlatList
         data={list}

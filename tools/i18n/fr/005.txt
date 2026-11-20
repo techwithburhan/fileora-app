@@ -186,7 +186,6 @@
 1050|Cette taille est trop grande. Choisissez une échelle plus petite.
 1051|La liste Ouverts est vidée. Aucun fichier n’est supprimé : ils restent dans Téléchargés et Traités.
 1052|Le PDF n’a pas pu être créé
-1053|Le fichier ZIP n’a pas pu être créé. Enregistrez plutôt les fichiers un par un.
 1054|Les versos sont en ordre inverse
 1055|La zone de recadrage est en dehors de l’image.
 1056|Le téléchargement démarre dans votre navigateur : ouvrez-le une fois terminé et touchez Mettre à jour.

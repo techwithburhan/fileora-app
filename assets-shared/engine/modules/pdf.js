@@ -2,7 +2,7 @@
 (function (E) {
   'use strict';
   if (!E) return;
-  const { esc, fmtSize, baseName, clamp, UserError, lib, pdfjsDoc, renderPage, canvasToBlob, pdfOut, loadPdf, savePdf, vis, visRect, parseRanges, rangeLabel, PAGE, MM, decodeImage, canvasOf, imageCanvas, embedCanvas, imagesToPdf, rasterize, textPng, textWidth, pdfLines, toMarkdown, diffLines, cropCanvas, pageSizeOpt, orientOpt, marginOpt, kindOf } = E.h;
+  const { esc, fmtSize, baseName, tagName, clamp, UserError, lib, pdfjsDoc, renderPage, canvasToBlob, pdfOut, loadPdf, savePdf, vis, visRect, parseRanges, rangeLabel, PAGE, MM, decodeImage, canvasOf, imageCanvas, embedCanvas, imagesToPdf, rasterize, textPng, textWidth, pdfLines, toMarkdown, diffLines, cropCanvas, pageSizeOpt, orientOpt, marginOpt, kindOf } = E.h;
   const R = def => E.register(def);
   const pc = (v, d) => (v / d * 100).toFixed(3) + '%';
   const dateText = () => new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -56,7 +56,7 @@
       const copied = await d.copyPages(src, ctx.pages.map(p => p.i));
       copied.forEach((p, k) => { const r = ctx.pages[k].rot; if (r) p.setRotation(degrees((p.getRotation().angle + r) % 360)); d.addPage(p); });
       ctx.progress(.9, 'Saving');
-      return [pdfOut(baseName(items[0].name) + '-organized.pdf', await savePdf(d), `${copied.length} pages`)];
+      return [pdfOut(tagName(items[0].name, '-organized', 'pdf'), await savePdf(d), `${copied.length} pages`)];
     } });
 
   R({ id: 'rotate', accept: 'pdf', multi: true, cta: 'Rotate PDF', verb: 'Rotating',
@@ -75,7 +75,7 @@
           if ((o.which === 'odd' && k % 2) || (o.which === 'even' && !(k % 2))) return;
           p.setRotation(degrees((p.getRotation().angle + +o.angle) % 360));
         });
-        outs.push(pdfOut(baseName(items[i].name) + '-rotated.pdf', await savePdf(doc)));
+        outs.push(pdfOut(tagName(items[i].name, '-rotated', 'pdf'), await savePdf(doc)));
       }
       return outs;
     } });
@@ -99,7 +99,7 @@
         p.setCropBox(box.x + L, box.y + B, nw, nh);
       });
       ctx.progress(.9, 'Saving');
-      return [pdfOut(baseName(items[0].name) + '-cropped.pdf', await savePdf(doc))];
+      return [pdfOut(tagName(items[0].name, '-cropped', 'pdf'), await savePdf(doc))];
     } });
 
   /* ---------------- edit and sign ---------------- */
@@ -136,7 +136,7 @@
           const pt = V.map(u, v);
           p.drawText(label, { x: pt.x, y: pt.y, size, font, color: rgb(.2, .21, .3), rotate: degrees(V.r) });
         });
-        outs.push(pdfOut(baseName(items[f].name) + '-numbered.pdf', await savePdf(doc)));
+        outs.push(pdfOut(tagName(items[f].name, '-numbered', 'pdf'), await savePdf(doc)));
       }
       return outs;
     } });
@@ -182,7 +182,7 @@
             p.drawImage(img, { x: pt.x, y: pt.y, width: w, height: h, rotate: degrees(V.r + +o.angle), opacity: +o.opacity / 100 });
           }
         }
-        outs.push(pdfOut(baseName(items[f].name) + '-watermarked.pdf', await savePdf(doc)));
+        outs.push(pdfOut(tagName(items[f].name, '-watermarked', 'pdf'), await savePdf(doc)));
       }
       return outs;
     } });
@@ -228,7 +228,7 @@
         if (o.date) { pt = V.map(u + 2, v - 11); p.drawText(date, { x: pt.x, y: pt.y, size: 9, font, color: rgb(.3, .32, .45), rotate: degrees(V.r) }); }
       }
       ctx.progress(.9, 'Saving');
-      return [pdfOut(baseName(items[0].name) + '-signed.pdf', await savePdf(doc), `Signed on ${targets.length} page${targets.length > 1 ? 's' : ''}`)];
+      return [pdfOut(tagName(items[0].name, '-signed', 'pdf'), await savePdf(doc), `Signed on ${targets.length} page${targets.length > 1 ? 's' : ''}`)];
     } });
 
   /* ---------------- convert ---------------- */
@@ -413,7 +413,7 @@
       const pb = await out.copyPages(B, bi);
       for (let i = 0; i < Math.max(na, nb); i++) { if (pa[i]) out.addPage(pa[i]); if (pb[i]) out.addPage(pb[i]); }
       ctx.progress(.9, 'Saving');
-      return [pdfOut(baseName(items[0].name) + '-interleaved.pdf', await savePdf(out), `${out.getPageCount()} pages${na !== nb ? ` (the files had ${na} and ${nb} pages, so the extra pages are at the end)` : ''}`)];
+      return [pdfOut(tagName(items[0].name, '-interleaved', 'pdf'), await savePdf(out), `${out.getPageCount()} pages${na !== nb ? ` (the files had ${na} and ${nb} pages, so the extra pages are at the end)` : ''}`)];
     } });
 
   R({ id: 'splithalf', accept: 'pdf', cta: 'Split pages', verb: 'Cutting the pages',
@@ -443,7 +443,7 @@
         });
       }
       ctx.progress(.95, 'Saving');
-      return [pdfOut(baseName(items[0].name) + '-split-pages.pdf', await savePdf(out), `${n} pages became ${out.getPageCount()}`)];
+      return [pdfOut(tagName(items[0].name, '-split-pages', 'pdf'), await savePdf(out), `${n} pages became ${out.getPageCount()}`)];
     } });
 
   R({ id: 'removeblank', accept: 'pdf', cta: 'Remove blank pages', verb: 'Looking for blank pages',
@@ -471,7 +471,7 @@
       (await out.copyPages(src, keep)).forEach(p => out.addPage(p));
       ctx.progress(.95, 'Saving');
       const list = removed.map(i => i + 1);
-      return [pdfOut(baseName(items[0].name) + '-no-blank-pages.pdf', await savePdf(out), `Removed ${removed.length} of ${n} pages (page${list.length > 1 ? 's' : ''} ${list.slice(0, 12).join(', ')}${list.length > 12 ? '…' : ''})`)];
+      return [pdfOut(tagName(items[0].name, '-no-blank-pages', 'pdf'), await savePdf(out), `Removed ${removed.length} of ${n} pages (page${list.length > 1 ? 's' : ''} ${list.slice(0, 12).join(', ')}${list.length > 12 ? '…' : ''})`)];
     } });
 
   R({ id: 'nup', accept: 'pdf', cta: 'Arrange pages', verb: 'Arranging pages',
@@ -544,7 +544,7 @@
         const b = out.addPage([pw, ph]); put(b, back[0], true); put(b, back[1], false);
       }
       ctx.progress(.95, 'Saving');
-      return [pdfOut(baseName(items[0].name) + '-booklet.pdf', await savePdf(out), `${n0} pages on ${n / 4} sheet${n / 4 > 1 ? 's' : ''}${n > n0 ? `, ${n - n0} blank page${n - n0 > 1 ? 's' : ''} added at the end` : ''}`)];
+      return [pdfOut(tagName(items[0].name, '-booklet', 'pdf'), await savePdf(out), `${n0} pages on ${n / 4} sheet${n / 4 > 1 ? 's' : ''}${n > n0 ? `, ${n - n0} blank page${n - n0 > 1 ? 's' : ''} added at the end` : ''}`)];
     } });
 
   /* ---------------- stamping text ---------------- */
@@ -581,7 +581,7 @@
           const pt = V.map(u, v);
           p.drawText(label, { x: pt.x, y: pt.y, size, font, color: rgb(0, 0, 0), rotate: degrees(V.r) });
         }
-        outs.push(pdfOut(baseName(items[f].name) + '-bates.pdf', await savePdf(doc), `${batesLabel(o, startHere)} to ${batesLabel(o, n - 1)}`));
+        outs.push(pdfOut(tagName(items[f].name, '-bates', 'pdf'), await savePdf(doc), `${batesLabel(o, startHere)} to ${batesLabel(o, n - 1)}`));
       }
       if (outs.length > 1) outs[0].note += ` (all files: ${batesLabel(o, first)} to ${batesLabel(o, n - 1)})`;
       return outs;
@@ -623,7 +623,7 @@
             p.drawText(label, { x: pt.x, y: pt.y, size, font, color: rgb(.2, .21, .3), rotate: degrees(V.r) });
           });
         });
-        outs.push(pdfOut(baseName(items[f].name) + '-header-footer.pdf', await savePdf(doc)));
+        outs.push(pdfOut(tagName(items[f].name, '-header-footer', 'pdf'), await savePdf(doc)));
       }
       return outs;
     } });
@@ -670,14 +670,14 @@
       const outs = [];
       for (let f = 0; f < items.length; f++) {
         const it = items[f], prog = (x, l) => ctx.progress((f + x) / items.length, `${items.length > 1 ? it.name + ': ' : ''}${l}`);
-        if (o.mode === 'all') { outs.push(pdfOut(baseName(it.name) + '-flat.pdf', await rasterize(it.file, +o.dpi, .86, prog), 'Every page is now an image')); continue; }
+        if (o.mode === 'all') { outs.push(pdfOut(tagName(it.name, '-flat', 'pdf'), await rasterize(it.file, +o.dpi, .86, prog), 'Every page is now an image')); continue; }
         prog(.2, 'Locking the fields');
         const doc = await loadPdf(it);
         const form = doc.getForm(), n = form.getFields().length;
         if (!n) throw new UserError(`${it.name} has no form fields. Use “Everything” to flatten comments and stamps.`);
         try { form.updateFieldAppearances(); } catch (e) { /* keep existing appearances */ }
         try { form.flatten(); } catch (e) { throw new UserError(`The form in ${it.name} couldn’t be flattened this way. Try “Everything”.`); }
-        outs.push(pdfOut(baseName(it.name) + '-flat.pdf', await savePdf(doc), `${n} field${n > 1 ? 's' : ''} locked`));
+        outs.push(pdfOut(tagName(it.name, '-flat', 'pdf'), await savePdf(doc), `${n} field${n > 1 ? 's' : ''} locked`));
       }
       return outs;
     } });
@@ -848,7 +848,7 @@
           const pt = V.map(u, v);
           p.drawImage(img, { x: pt.x, y: pt.y, width: w, height: h, rotate: degrees(V.r), opacity: +o.opacity / 100 });
         }
-        outs.push(pdfOut(baseName(items[f].name) + '-stamped.pdf', await savePdf(doc), `Added on ${targets.length} page${targets.length > 1 ? 's' : ''}`));
+        outs.push(pdfOut(tagName(items[f].name, '-stamped', 'pdf'), await savePdf(doc), `Added on ${targets.length} page${targets.length > 1 ? 's' : ''}`));
       }
       return outs;
     } });

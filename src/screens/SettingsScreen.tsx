@@ -10,7 +10,7 @@ import Alert from '../i18n/Alert';
 import Text from '../i18n/Text';
 
 import { useNavigation } from '@react-navigation/native';
-import AppHeader from '../components/AppHeader';
+import { useHeaderScroll } from '../components/headerScroll';
 import { Logo } from '../components/Brand';
 import Icon, { IconName } from '../components/Icon';
 import PressableScale from '../components/PressableScale';
@@ -43,6 +43,7 @@ import { openLanguageSheet } from '../i18n/LanguageSheet';
 type Row = { key: string; icon: IconName; label: string; sub?: string; onPress?: () => void; right?: React.ReactNode; external?: boolean; dim?: boolean };
 
 export default function SettingsScreen({ theme }: { theme: Theme }) {
+  useHeaderScroll();
   const nav = useNavigation();
   const pref = useStore(s => s.theme);
   const config = useRemote(s => s.config);
@@ -373,7 +374,6 @@ export default function SettingsScreen({ theme }: { theme: Theme }) {
   const shown = groups.filter(g => g.rows.length > 0);
   return (
     <View style={[styles.flex, { backgroundColor: theme.bg }]}>
-      <AppHeader theme={theme} />
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={[type.title, { color: theme.ink }]} accessibilityRole="header">
           Settings

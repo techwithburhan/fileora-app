@@ -9,6 +9,12 @@
 | ImageTracer.js | 1.2.6 | `public/vendor/imagetracer.min.js` (minified, unchanged) | The Unlicense (public domain), https://github.com/jankovicsandras/imagetracerjs |
 | Chart.js | 4.5.1 | `admin/assets/vendor/chart.umd.min.js` (admin only) | MIT, see `chart.js-LICENSE.md` |
 | MaxMind DB Reader (PHP) | current | `includes/lib/MaxMind/` | Apache License 2.0, see `includes/lib/MaxMind/LICENSE` |
+| @pdf-lib/fontkit (2.18) | 1.1.1 | `public/vendor/fontkit.min.js` (Text to PDF) | MIT |
+| HarfBuzz / harfbuzzjs (2.18) | harfbuzzjs 1.6.4 | `public/vendor/hb.min.js` (WebAssembly inside; Text to PDF shaping) | HarfBuzz: "Old MIT"; harfbuzzjs: MIT |
+| jSquash AVIF (2.18) | 2.1.1 | `public/vendor/avifenc.min.js`, `avifdec.min.js` (WebAssembly inside) | Apache License 2.0; contains libavif (BSD-2-Clause), libaom (BSD-2-Clause + AOMedia patent licence), dav1d (BSD-2-Clause) |
+| jSquash WebP (2.18) | 1.5.0 | `public/vendor/webp.min.js` (WebAssembly inside; WebP on Safari) | Apache License 2.0; contains libwebp (BSD-3-Clause) |
+| ag-psd (2.18) | 34.2.1 | `public/vendor/psd.min.js` (PNG to PSD) | MIT |
+| Noto Sans, Noto Sans Devanagari / Tamil / Bengali / Gujarati / Gurmukhi / Kannada / Malayalam / Oriya / Telugu (2.18) | system build 2020 | `public/vendor/fonts/*.js` (fonts as base64, Text to PDF) | SIL Open Font License 1.1, see `public/vendor/fonts/OFL.txt` |
 
 Data downloaded at runtime (not included in the plugin):
 

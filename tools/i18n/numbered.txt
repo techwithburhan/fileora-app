@@ -1050,7 +1050,6 @@
 1050|That size is too large. Choose a smaller scale.
 1051|The Opened list is emptied. No file is deleted: they stay in Downloaded and Processed.
 1052|The PDF couldn’t be made
-1053|The ZIP file couldn’t be created. Save the files one by one instead.
 1054|The back sides are in reverse order
 1055|The crop area is outside the image.
 1056|The download starts in your browser: open it when it finishes and tap Update.
@@ -1310,3 +1309,10 @@
 1310|{n} pages
 1311|{n} tools
 1312|{n} uses
+1313|All files in one ZIP
+1314|And {n} more.
+1315|Making the ZIP file
+1316|ZIP part {i} of {n}
+1317|in Fileora and {where}
+1318|{done} done, {failed} couldn’t be processed
+1319|{n} files saved in Fileora. In {where} as a ZIP file.

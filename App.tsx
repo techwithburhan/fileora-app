@@ -13,7 +13,9 @@ import { AppState, StatusBar, StyleSheet, View } from 'react-native';
 import Alert from './src/i18n/Alert';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, NavigationContainer, getFocusedRouteNameFromRoute, useRoute } from '@react-navigation/native';
+import AppHeader from './src/components/AppHeader';
+import { headerScroll } from './src/components/headerScroll';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import AnimatedTabBar from './src/components/AnimatedTabBar';
@@ -69,7 +71,11 @@ const Tabs = createBottomTabNavigator<TabParamList>();
 
 function TabsScreen({ theme }: { theme: Theme }) {
   const renderBar = useCallback((props: React.ComponentProps<typeof AnimatedTabBar>) => <AnimatedTabBar {...props} theme={theme} />, [theme]);
+  const tab = getFocusedRouteNameFromRoute(useRoute()) ?? 'Home';
   return (
+    <View style={[styles.flex, { backgroundColor: theme.bg }]}>
+    {/* one top bar for every tab: it stays still while the tabs switch (no second logo or shadow edge) */}
+    <AppHeader theme={theme} scrollY={headerScroll} search={tab !== 'Tools'} />
     <Tabs.Navigator
       screenOptions={{ headerShown: false, animation: 'shift', sceneStyle: { backgroundColor: theme.bg } }}
       tabBar={props => renderBar({ ...props, theme })}>
@@ -80,6 +86,7 @@ function TabsScreen({ theme }: { theme: Theme }) {
       <Tabs.Screen name="Alerts">{() => <AlertsScreen theme={theme} />}</Tabs.Screen>
       <Tabs.Screen name="Settings">{() => <SettingsScreen theme={theme} />}</Tabs.Screen>
     </Tabs.Navigator>
+    </View>
   );
 }
 
@@ -218,7 +225,7 @@ export default function App() {
   );
 }
 
-const styles = StyleSheet.create({ root: { flex: 1 } });
+const styles = StyleSheet.create({ root: { flex: 1 }, flex: { flex: 1 } });
 
 // pull to refresh (components/PullRefresh) needs the gesture handler's root view
 const rootStyle = { flex: 1 };

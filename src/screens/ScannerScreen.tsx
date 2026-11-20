@@ -10,7 +10,7 @@ import Text from '../i18n/Text';
 import Animated, { FadeInDown, FadeOut, LinearTransition } from 'react-native-reanimated';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
-import AppHeader from '../components/AppHeader';
+import { useHeaderScroll } from '../components/headerScroll';
 import ActionSheet, { SheetAction } from '../components/ActionSheet';
 import Dialog from '../components/Dialog';
 import FileRow from '../components/FileRow';
@@ -41,6 +41,7 @@ function sortBy<T extends { createdAt: number; name: string }>(list: T[], s: Sor
 }
 
 export default function ScannerScreen({ theme }: { theme: Theme }) {
+  useHeaderScroll();
   const nav = useNavigation();
   const files = useStore(s => s.files);
   const docsAll = useStore(s => s.docs);
@@ -175,7 +176,6 @@ export default function ScannerScreen({ theme }: { theme: Theme }) {
 
   return (
     <View style={[styles.flex, { backgroundColor: theme.bg }]}>
-      <AppHeader theme={theme} />
       {tab === 'images' ? (
         <FlatList<ScanDoc>
           key="images"

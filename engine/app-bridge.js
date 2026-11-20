@@ -365,11 +365,11 @@ async function runSession(S) {
     alive: () => S.run === run && APPS[S.sid] === S, ws: S
   };
   S.outputs.forEach(o => { delete APPO[o.oid]; if (o.url) URL.revokeObjectURL(o.url); });
-  const outs = await T.run(items, S.opts, ctx);
+  const outs = await runEach(T, items, S.opts, ctx);   /* 2.21: file by file for tools that treat files separately */
   if (!ctx.alive()) throw new Error('cancelled');
   S.outputs = (outs || []).map(o => ({ ...o, oid: putOut(o.blob), url: URL.createObjectURL(o.blob) }));
   S.result = ctx.result;
-  return { outputs: S.outputs.map(o => ({ oid: o.oid, name: o.name, size: o.blob.size, type: o.blob.type || '', note: o.note || '', good: !!o.good })), result: resultJson(ctx.result) };
+  return { outputs: S.outputs.map(o => ({ oid: o.oid, name: o.name, size: o.blob.size, type: o.blob.type || '', note: o.note || '', good: !!o.good })), result: resultJson(ctx.result), failed: ctx.failed || [] };
 }
 
 /* ---- commands ---- */
@@ -518,10 +518,18 @@ const CMDS = {
   },
   /* several results as one ZIP */
   zip: async ({ oids, names }) => {
-    const JSZip = await lib('jszip'), zip = new JSZip(), used = {};
-    oids.forEach((o, i) => { let n = names[i] || 'file'; if (used[n]) n = baseName(n) + '-' + (++used[n]) + (extOf(n) ? '.' + extOf(n) : ''); else used[n] = 1; zip.file(n, APPO[o]); });
-    const blob = await zip.generateAsync({ type: 'blob' });
+    const blob = await makeZip(oids.map((o, i) => ({ o, n: names[i] })), x => x.n, x => APPO[x.o]);
     return { oid: putOut(blob), size: blob.size };
+  },
+  /* 2.21: 3 or more results → ZIP files of at most 100 files / 450 MB each */
+  zipParts: async ({ oids, names }) => {
+    const list = oids.map((o, i) => ({ o, name: names[i], blob: APPO[o] })).filter(x => x.blob);
+    const out = [];
+    for (const part of zipParts(list)) {
+      const blob = await makeZip(part, x => x.name, x => x.blob);
+      out.push({ oid: putOut(blob), size: blob.size, count: part.length });
+    }
+    return out;
   }
 };
 window.FileoraApp = {

@@ -31,7 +31,8 @@ import Dialog from '../components/Dialog';
 import { uiConfig } from '../remote/remote';
 import { Accept, pickFiles, Picked } from '../lib/pick';
 import { takePhoto } from '../lib/capture';
-import { saveResult } from '../lib/output';
+import { saveResult, stamp } from '../lib/output';
+import { ZIP_FROM } from '../lib/downloads';
 import { openRecord, shareRecord } from '../lib/openFile';
 import { useKeepGoing } from '../lib/keepGoing';
 import { formatBytes, safeName } from '../store/files';
@@ -45,7 +46,7 @@ import Appear from '../components/Appear';
 import { tr, trMsg } from '../i18n/i18n';
 
 const PICK: Record<string, Accept> = { pdf: 'pdf', image: 'image', pdfimage: 'pdfimage', heic: 'heic', svg: 'svg', word: 'word', ppt: 'ppt', excel: 'excel', html: 'html', text: 'text' };
-type Done = { title: string; files: FileRec[]; notes: Record<string, string>; extra: RunResult['result'] };
+type Done = { title: string; files: FileRec[]; notes: Record<string, string>; extra: RunResult['result']; zips?: { rec: FileRec; count: number }[]; failed?: { name: string; error: string }[] };
 
 /* the website's thumbStyle (CSS variables) as a native transform: rotation and flips */
 function thumbTransform(css: string) {
@@ -183,6 +184,8 @@ export default function ProcessScreen({ theme }: { theme: Theme }) {
       const r = await call<RunResult>('run', { sid }, 30 * 60000);
       if (signal.cancelled) return;
       const files: FileRec[] = [];
+      const zips: { rec: FileRec; count: number }[] = [];
+      let failed: { name: string; error: string }[] = [];
       const notes: Record<string, string> = {};
       let extra: RunResult['result'] = r.result ?? null;
       if (r.server) {
@@ -204,11 +207,30 @@ export default function ProcessScreen({ theme }: { theme: Theme }) {
         if (res.text) extra = { md: res.text, title: r.textTitle || 'Your text is ready' };
       } else {
         const outs = r.outputs ?? [];
+        failed = r.failed ?? [];
+        // 2.21: 1 or 2 results go straight to Downloads; 3 or more go there as one ZIP (several for
+        // very large batches) and stay in the app one by one (Downloads → Processed)
+        const zipped = outs.length >= ZIP_FROM;
+        if (zipped) {
+          S.setProgress({ f: 1, label: tr('Making the ZIP file') });
+          try {
+            const parts = await call<{ oid: string; size: number; count: number }[]>('zipParts', { oids: outs.map(o => o.oid), names: outs.map(o => o.name) }, 10 * 60000);
+            for (const [i, p] of parts.entries()) {
+              const name = `fileora-${tool.id}-${stamp()}${parts.length > 1 ? `-part-${i + 1}` : ''}.zip`;
+              const tmp = `${BlobUtil.fs.dirs.CacheDir}/${Date.now()}-${name}`;
+              await readOutput(p.oid, p.size, tmp);
+              zips.push({ rec: await saveResult({ name, fromPath: tmp, move: true, mime: 'application/zip', tool: tool.id, log: false }), count: p.count });
+            }
+            call('outFree', { oids: parts.map(p => p.oid) }).catch(() => {});
+          } catch {
+            zips.length = 0; // no ZIP: every file is published on its own instead
+          }
+        }
         for (const [n, o] of outs.entries()) {
           S.setProgress({ f: 1, label: outs.length > 1 ? `Saving ${n + 1} of ${outs.length}` : 'Saving' });
           const tmp = `${BlobUtil.fs.dirs.CacheDir}/${Date.now()}-${n}-${safeName(o.name)}`;
           await readOutput(o.oid, o.size, tmp);
-          const rec = await saveResult({ name: o.name, fromPath: tmp, move: true, tool: tool.id, bytesIn, log: n === 0 });
+          const rec = await saveResult({ name: o.name, fromPath: tmp, move: true, tool: tool.id, bytesIn, log: n === 0, publish: !(zipped && zips.length) });
           files.push(rec);
           if (o.note) notes[rec.id] = o.note;
         }
@@ -217,8 +239,8 @@ export default function ProcessScreen({ theme }: { theme: Theme }) {
       setWorking(false);
       await afterTask(); // App Center → Ads: maybe a full-screen ad first, within its limits
       const title = extra?.title || (files.length > 1 ? tr('{n} files are ready', { n: files.length }) : 'Your file is ready');
-      setDone({ title, files, notes, extra });
-      if (files.length === 1 && !extra?.md && !extra?.text && !extra?.diff && !extra?.palette) setSingle(files[0]);
+      setDone({ title, files, notes, extra, zips, failed });
+      if (files.length === 1 && !failed.length && !extra?.md && !extra?.text && !extra?.diff && !extra?.palette) setSingle(files[0]);
     } catch (e) {
       setWorking(false);
       if (signal.cancelled || (e instanceof EngineError && e.message === 'cancelled')) return;
@@ -473,6 +495,8 @@ export default function ProcessScreen({ theme }: { theme: Theme }) {
             files={done.files}
             notes={done.notes}
             extra={done.extra ?? null}
+            zips={done.zips ?? []}
+            failed={done.failed ?? []}
             tool={tool.id}
             theme={theme}
             onOpen={openRecord}

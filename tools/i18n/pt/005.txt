@@ -186,7 +186,6 @@
 1050|Esse tamanho é grande demais. Escolha uma escala menor.
 1051|A lista de Abertos é esvaziada. Nenhum arquivo é apagado: eles continuam em Baixados e Processados.
 1052|Não foi possível criar o PDF
-1053|Não foi possível criar o arquivo ZIP. Salve os arquivos um por um.
 1054|Os versos estão em ordem inversa
 1055|A área de recorte está fora da imagem.
 1056|O download começa no navegador: abra-o quando terminar e toque em Atualizar.

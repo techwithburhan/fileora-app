@@ -52,14 +52,14 @@ export function ToolCard({ tool, theme, onPress, index = 0 }: { tool: Tool; them
 }
 
 /** Compact card for horizontal carousels. */
-export function ToolChip({ tool, theme, onPress }: { tool: Tool; theme: Theme; onPress: () => void }) {
+export function ToolChip({ tool, theme, onPress, fill }: { tool: Tool; theme: Theme; onPress: () => void; fill?: boolean }) {
   const c = catColor(tool.cat, theme);
   return (
     <PressableScale
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={tool.name}
-      style={[styles.chip, { backgroundColor: theme.surface, borderColor: theme.line }]}>
+      style={[styles.chip, fill && styles.chipFill, { backgroundColor: theme.surface, borderColor: theme.line }]}>
       <View style={[styles.icon, { backgroundColor: c + '1F' }]}>
         <Icon name={tool.cat as IconName} size={22} color={c} />
       </View>
@@ -79,5 +79,7 @@ const styles = StyleSheet.create({
   badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 'auto' },
   where: { fontSize: 11.5, fontWeight: '700' },
   chip: { width: 128, borderWidth: 1, borderRadius: 18, padding: 12, gap: 8, minHeight: 112 },
+  /* in a grid: the cell decides the width ("Keep going with this file") */
+  chipFill: { width: undefined, flex: 1, minHeight: 96 },
   chipName: { fontSize: 14, fontWeight: '700', lineHeight: 18 },
 });

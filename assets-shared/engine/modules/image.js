@@ -2,7 +2,7 @@
 (function (E) {
   'use strict';
   if (!E) return;
-  const { esc, fmtSize, baseName, extOf, clamp, UserError, lib, libUrl, canvasToBlob, decodeImage, canvasOf, imageCanvas, Img, IMG_EXT, MIME_PSD, encodeCanvas, isAvif, sameType, renameImg, cropRect, imageNote, eachImage, encodeToSize, padJpeg, cropCanvas, textWidth } = E.h;
+  const { esc, fmtSize, baseName, tagName, extOf, clamp, UserError, lib, libUrl, canvasToBlob, decodeImage, canvasOf, imageCanvas, Img, IMG_EXT, MIME_PSD, encodeCanvas, isAvif, sameType, renameImg, cropRect, imageNote, eachImage, encodeToSize, padJpeg, cropCanvas, textWidth } = E.h;
   const R = def => E.register(def);
   const pc = (v, d) => (v / d * 100).toFixed(3) + '%';
   const COLORS = ['#FFFFFF', '#16182F', '#E0464C', '#2F6BF3', '#0E9F57', '#FFD43B'];
@@ -328,7 +328,7 @@
           outs.push({ name: baseName(f.name) + '-clean.' + (ext === 'jpeg' ? 'jpeg' : 'jpg'), blob, note, good: info.gps });
         } else if (bytes[0] === 0x89 && bytes[1] === 0x50) {
           const r = stripPng(bytes);
-          outs.push({ name: baseName(f.name) + '-clean.png', blob: r.blob, note: r.removed ? `Removed ${r.removed} text or data block${r.removed > 1 ? 's' : ''}` : 'No hidden data found, kept clean' });
+          outs.push({ name: tagName(f.name, '-clean', 'png'), blob: r.blob, note: r.removed ? `Removed ${r.removed} text or data block${r.removed > 1 ? 's' : ''}` : 'No hidden data found, kept clean' });
         } else {
           const type = f.type === 'image/webp' ? 'image/webp' : 'image/png';
           const c = await imageCanvas(f, 0); blob = await canvasToBlob(c, type, .95);
@@ -700,7 +700,7 @@
       list.forEach((x, i) => { sg.fillStyle = x.hex; sg.fillRect(i * 160, 0, 160, 160); sg.fillStyle = '#16182F'; sg.font = '600 20px Geist, Arial, sans-serif'; sg.fillText(x.hex, i * 160 + 14, 196); });
       const text = list.map(x => `${x.hex}  rgb(${x.rgb.map(Math.round).join(', ')})  ${x.pct}%`).join('\n') + '\n\n:root {\n' + list.map((x, i) => `  --color-${i + 1}: ${x.hex};`).join('\n') + '\n}\n';
       ctx.result = { palette: list, title: `${list.length} main colours` };
-      return [{ name: baseName(items[0].name) + '-palette.png', blob: await canvasToBlob(sw, 'image/png'), note: 'Swatches with their codes' }, { name: baseName(items[0].name) + '-palette.txt', blob: new Blob([text], { type: 'text/plain' }), note: 'HEX, RGB and CSS variables' }];
+      return [{ name: tagName(items[0].name, '-palette', 'png'), blob: await canvasToBlob(sw, 'image/png'), note: 'Swatches with their codes' }, { name: tagName(items[0].name, '-palette', 'txt'), blob: new Blob([text], { type: 'text/plain' }), note: 'HEX, RGB and CSS variables' }];
     } });
 
   /* ---------------- Base64 ---------------- */
@@ -712,7 +712,7 @@
       const raw = uri.slice(uri.indexOf(',') + 1);
       const text = { uri, raw, css: `background-image: url("${uri}");`, html: `<img src="${uri}" alt="">` }[o.fmt];
       ctx.result = { text, title: 'Your Base64 code is ready' };
-      return [{ name: baseName(f.name) + '-base64.txt', blob: new Blob([text], { type: 'text/plain' }), note: `${fmtSize(text.length)} of text${f.size > 1048576 ? '. That’s large: images over 1 MB slow pages down when embedded.' : ''}` }];
+      return [{ name: tagName(f.name, '-base64', 'txt'), blob: new Blob([text], { type: 'text/plain' }), note: `${fmtSize(text.length)} of text${f.size > 1048576 ? '. That’s large: images over 1 MB slow pages down when embedded.' : ''}` }];
     } });
 
   /* ---------------- border and corners ---------------- */

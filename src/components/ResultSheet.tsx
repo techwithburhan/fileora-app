@@ -50,6 +50,8 @@ export default function ResultSheet({
       <Animated.View entering={FadeIn.duration(200)} style={styles.backdrop}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={tr('Close')} />
       </Animated.View>
+      {/* behind the sheet: the confetti shows in the dimmed area above it, never over the file or buttons */}
+      <Confetti play={!!file} />
       <Animated.View
         entering={FadeInUp.duration(320).easing(Easing.out(Easing.cubic))}
         style={[styles.sheet, { backgroundColor: theme.bg, paddingBottom: insets.bottom + 18 }]}>
@@ -109,7 +111,6 @@ export default function ResultSheet({
           <AdBanner placement="result_rect" theme={theme} />
         </ScrollView>
       </Animated.View>
-      <Confetti play={!!file} />
     </Modal>
   );
 }

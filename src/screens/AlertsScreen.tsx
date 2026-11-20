@@ -13,7 +13,7 @@ import {
   useIsFocused,
   useNavigation,
 } from '@react-navigation/native';
-import AppHeader from '../components/AppHeader';
+import { useHeaderScroll } from '../components/headerScroll';
 import Icon, { IconName } from '../components/Icon';
 import PressableScale from '../components/PressableScale';
 import { inbox, useInbox } from '../remote/inbox';
@@ -48,6 +48,7 @@ function ago(at: number) {
 }
 
 export default function AlertsScreen({ theme }: { theme: Theme }) {
+  useHeaderScroll();
   const nav = useNavigation();
   const focused = useIsFocused(); // tabs stay mounted: only the visible screen marks alerts as read
   const items = useInbox();
@@ -180,7 +181,6 @@ export default function AlertsScreen({ theme }: { theme: Theme }) {
 
   return (
     <View style={[styles.flex, { backgroundColor: theme.bg }]}>
-      <AppHeader theme={theme} />
       <PullRefresh theme={theme} onRefresh={() => remote.refresh(true)}>
         <Animated.FlatList
         data={items}

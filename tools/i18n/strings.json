@@ -15,6 +15,7 @@
 "src/store/files.ts"
 ],
 "1 file": [
+"src/components/tool/ResultView.tsx",
 "src/screens/ActivityScreen.tsx"
 ],
 "1 item moves to the Recycle Bin. You can restore it from Files → Recycle Bin.": [
@@ -299,6 +300,9 @@
 "All fields": [
 "engine:forms"
 ],
+"All files in one ZIP": [
+"src/components/tool/ResultView.tsx"
+],
 "All in one": [
 "engine:pdf2excel"
 ],
@@ -328,6 +332,9 @@
 ],
 "An update is needed. Finishing your task first…": [
 "src/components/RemoteGate.tsx"
+],
+"And {n} more.": [
+"src/components/tool/ResultView.tsx"
 ],
 "Android": [
 "src/components/MenuSheet.tsx",
@@ -634,7 +641,6 @@
 ],
 "Clear all": [
 "src/lib/openFile.ts",
-"src/screens/ActivityScreen.tsx",
 "src/screens/AlertsScreen.tsx",
 "src/screens/ScannerScreen.tsx"
 ],
@@ -2042,6 +2048,9 @@
 "Making the PDF…": [
 "src/screens/ScanEditorScreen.tsx"
 ],
+"Making the ZIP file": [
+"src/screens/ProcessScreen.tsx"
+],
 "Making the sheet": [
 "engine:passport"
 ],
@@ -3319,6 +3328,7 @@
 ],
 "Share": [
 "src/components/FileActions.tsx",
+"src/components/tool/ResultView.tsx",
 "src/screens/ScannerScreen.tsx"
 ],
 "Share PDF": [
@@ -3617,9 +3627,6 @@
 ],
 "The PDF couldn’t be made": [
 "src/screens/ScanDocScreen.tsx"
-],
-"The ZIP file couldn’t be created. Save the files one by one instead.": [
-"engine-msg:engine.js"
 ],
 "The back sides are in reverse order": [
 "engine:interleave"
@@ -4237,6 +4244,9 @@
 "You’re up to date": [
 "src/screens/SettingsScreen.tsx"
 ],
+"ZIP part {i} of {n}": [
+"src/components/tool/ResultView.tsx"
+],
 "a HEIC photo": [
 "engine-noun",
 "engine:heic2jpg"
@@ -4400,6 +4410,9 @@
 "engine:scan",
 "engine:webp2jpg"
 ],
+"in Fileora and {where}": [
+"src/components/tool/ResultView.tsx"
+],
 "page": [
 "src/lib/openFile.ts"
 ],
@@ -4436,6 +4449,9 @@
 "your e-Aadhaar PDF": [
 "engine:aadhaar"
 ],
+"{done} done, {failed} couldn’t be processed": [
+"src/components/tool/ResultView.tsx"
+],
 "{hex}, {pct}%. Share the code.": [
 "src/components/tool/ResultView.tsx"
 ],
@@ -4455,12 +4471,16 @@
 "src/screens/AlertsScreen.tsx"
 ],
 "{n} files": [
+"src/components/tool/ResultView.tsx",
 "src/screens/ActivityScreen.tsx"
 ],
 "{n} files are ready": [
 "src/screens/ProcessScreen.tsx"
 ],
 "{n} files saved": [
+"src/components/tool/ResultView.tsx"
+],
+"{n} files saved in Fileora. In {where} as a ZIP file.": [
 "src/components/tool/ResultView.tsx"
 ],
 "{n} hours without ads": [

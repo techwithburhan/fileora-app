@@ -32,19 +32,27 @@ function Bit({ p, g }: { p: Piece; g: number }) {
   return <Animated.View style={[styles.bit, { width: p.w, height: p.h, borderRadius: radius, backgroundColor: p.color }, style]} />;
 }
 
-export default function Confetti({ play }: { play: boolean }) {
-  const { width, height } = useWindowDimensions();
+/**
+ * box: draw only inside that area (its parent clips it), e.g. around the "done" tick on a results
+ * screen, so the pieces never fly over the result files or the download buttons.
+ */
+export default function Confetti({ play, box }: { play: boolean; box?: { width: number; height: number } }) {
+  const win = useWindowDimensions();
+  const width = box?.width ?? win.width;
+  const height = box?.height ?? win.height;
+  // smaller area: slower, shorter bursts that stay inside it
+  const f = box ? Math.min(1, Math.max(0.25, (box.height / win.height) * 1.8)) : 1;
   const reduced = useReducedMotion();
   const pieces = useMemo<Piece[]>(() => {
     const out: Piece[] = [];
     for (let i = 0; i < COUNT; i++) {
       const left = i % 2 === 0;
       const ang = ((left ? -62 : -118) + (Math.random() - 0.5) * 34) * (Math.PI / 180);
-      const speed = 900 + Math.random() * 650;
+      const speed = (900 + Math.random() * 650) * f;
       const round = Math.random() < 0.3;
       out.push({
         x0: left ? -6 : width + 6,
-        y0: height * 0.42,
+        y0: box ? height * 0.92 : height * 0.42,
         vx: Math.cos(ang) * speed,
         vy: Math.sin(ang) * speed,
         spin: (Math.random() - 0.5) * 720,
@@ -53,23 +61,23 @@ export default function Confetti({ play }: { play: boolean }) {
         round,
         color: COLORS[i % COLORS.length],
         delay: Math.floor(i / 2) * 9,
-        dur: 2200 + Math.random() * 900,
+        dur: box ? 1500 + Math.random() * 600 : 2200 + Math.random() * 900,
         sway: Math.random() * 6,
       });
     }
     return out;
     // new bursts each time it plays
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [play, width, height]);
+  }, [play, width, height, f]);
   // the quiet party-popper sound plays with the confetti (Settings → Appearance → Celebration sound)
   useEffect(() => {
     if (play) celebrate();
   }, [play]);
-  if (!play || reduced) return null;
+  if (!play || reduced || (box && !box.width)) return null;
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
       {pieces.map((p, i) => (
-        <Bit key={i} p={p} g={1500} />
+        <Bit key={i} p={p} g={1500 * f} />
       ))}
     </View>
   );
