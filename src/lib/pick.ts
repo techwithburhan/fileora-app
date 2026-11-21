@@ -1,7 +1,7 @@
 /** Android's own file picker (no storage permission). Picked files are copied into the app's cache. */
 import { errorCodes, isErrorWithCode, keepLocalCopy, pick, types } from '@react-native-documents/picker';
 import { Platform } from 'react-native';
-import { mimeOf, stripScheme } from '../store/files';
+import { decodeName, mimeOf, stripScheme } from '../store/files';
 
 export type Picked = { key: string; name: string; size: number; path: string; mime: string };
 export type Accept = 'pdf' | 'image' | 'jpgpng' | 'pdfimage' | 'heic' | 'svg' | 'html' | 'text' | 'word' | 'excel' | 'ppt' | 'any';
@@ -56,7 +56,7 @@ export async function pickFiles(accept: Accept, multiple: boolean): Promise<Pick
   copies.forEach((c, i) => {
     if (c.status !== 'success') return;
     const f = res[i];
-    const name = f.name ?? files[i].fileName;
+    const name = decodeName(f.name ?? files[i].fileName);
     out.push({ key: `p${++n}-${Date.now()}`, name, size: f.size ?? 0, path: stripScheme(c.localUri), mime: f.type ?? mimeOf(name) });
   });
   return out;

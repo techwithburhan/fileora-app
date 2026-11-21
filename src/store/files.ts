@@ -61,6 +61,16 @@ export function kindOf(mime: string, name = ''): Kind {
   return 'other';
 }
 
+/** Some file providers hand over URL-encoded names ("My%20File.pdf"): shown and saved as "My File.pdf". */
+export function decodeName(n: string): string {
+  if (!/%[0-9a-f]{2}/i.test(n)) return n;
+  try {
+    return decodeURIComponent(n);
+  } catch {
+    return n;
+  }
+}
+
 export function safeName(n: string): string {
   // eslint-disable-next-line no-control-regex
   const clean = n.replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_').trim().slice(0, 120);

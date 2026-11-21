@@ -61,6 +61,7 @@
             <data android:scheme="fileora" android:host="tool" />
             <data android:scheme="fileora" android:host="lang" />
             <data android:scheme="fileora" android:host="screen" />
+            <data android:scheme="fileora" android:host="demo" />
         </intent-filter>
         <intent-filter android:label="@string/share_label">
             <action android:name="android.intent.action.SEND" />
