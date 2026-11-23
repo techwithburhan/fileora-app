@@ -17,7 +17,8 @@
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import { AppState, Platform, ScrollView, StyleSheet, View } from 'react-native';
-import Animated, { FadeIn, FadeInDown, FadeOut } from 'react-native-reanimated';
+import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
+import Appear from './Appear';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Text from '../i18n/Text';
 import Icon, { IconName } from './Icon';
@@ -42,6 +43,14 @@ export default function Onboarding({ theme }: { theme: Theme }) {
   const android = Platform.OS === 'android';
   const oldAndroid = android && Number(Platform.Version) < 29;
   const canNotify = pushAvailable() && settingShown('notify');
+  // fade in with opacity only: a layout ("entering") animation that starts while the app's first
+  // layout is still settling can keep a full-screen view at its first size on Android (see Appear)
+  const reduced = useReducedMotion();
+  const fade = useSharedValue(reduced ? 1 : 0);
+  useEffect(() => {
+    if (!reduced) fade.value = withTiming(1, { duration: 260, easing: Easing.out(Easing.cubic) });
+  }, [fade, reduced]);
+  const fadeStyle = useAnimatedStyle(() => ({ opacity: fade.value }));
 
   const check = useCallback(() => {
     permission().then(p =>
@@ -105,9 +114,9 @@ export default function Onboarding({ theme }: { theme: Theme }) {
   });
 
   return (
-    <Animated.View entering={FadeIn.duration(260)} exiting={FadeOut.duration(220)} style={[StyleSheet.absoluteFill, styles.root, { backgroundColor: theme.bg }]} accessibilityViewIsModal>
+    <Animated.View style={[StyleSheet.absoluteFill, styles.root, { backgroundColor: theme.bg }, fadeStyle]} accessibilityViewIsModal>
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 28, paddingBottom: insets.bottom + 24 }]}>
-        <Animated.View entering={FadeInDown.duration(380)} style={styles.head}>
+        <Appear duration={380} style={styles.head}>
           <View style={[styles.logo, { backgroundColor: theme.surface, borderColor: theme.line }]}>
             <FIcon height={30} />
           </View>
@@ -115,9 +124,9 @@ export default function Onboarding({ theme }: { theme: Theme }) {
             Welcome to Fileora
           </Text>
           <Text style={[type.body, styles.center, { color: theme.ink2 }]}>Here is what Fileora may use, and why. You can change all of this later in Settings.</Text>
-        </Animated.View>
+        </Appear>
         {rows.map((r, i) => (
-          <Animated.View key={r.key} entering={FadeInDown.duration(380).delay(120 + i * 90)} style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.line }]}>
+          <Appear key={r.key} delay={120 + i * 90} duration={380} style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.line }]}>
             <View style={styles.cardTop}>
               <View style={[styles.icon, { backgroundColor: theme.accent + '1F' }]}>
                 <Icon name={r.icon} size={21} color={theme.accentInk} />
@@ -136,9 +145,9 @@ export default function Onboarding({ theme }: { theme: Theme }) {
                 <Text style={[type.button, { color: theme.onAccent }]}>{r.button.label}</Text>
               </PressableScale>
             ) : null}
-          </Animated.View>
+          </Appear>
         ))}
-        <Animated.View entering={FadeInDown.duration(380).delay(120 + rows.length * 90)}>
+        <Appear delay={120 + rows.length * 90} duration={380}>
           <PressableScale onPress={done} accessibilityRole="button" accessibilityLabel={tr('Continue')} style={[styles.btn, { backgroundColor: theme.ink }]}>
             <Text style={[type.button, { color: theme.bg }]}>Continue</Text>
             <Icon name="chevron" size={18} color={theme.bg} width={2.3} />
@@ -146,7 +155,7 @@ export default function Onboarding({ theme }: { theme: Theme }) {
           {canNotify && notif !== 'granted' ? (
             <Text style={[type.caption, styles.center, styles.later, { color: theme.muted }]}>Without notifications, news and updates still appear in Alerts.</Text>
           ) : null}
-        </Animated.View>
+        </Appear>
       </ScrollView>
     </Animated.View>
   );

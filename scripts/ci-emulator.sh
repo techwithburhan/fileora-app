@@ -11,6 +11,7 @@ adb shell am start -W -n in.fileora.app/.MainActivity
 sleep 25
 # app 1.2: the first-launch permissions screen, then Android's own notification question (API 33+)
 adb exec-out screencap -p > "$OUT/v12-setup.png"
+adb shell uiautomator dump /sdcard/ui.xml > /dev/null 2>&1 && adb exec-out cat /sdcard/ui.xml > "$OUT/v12-setup-ui.xml" || true
 B=$(adb shell uiautomator dump /sdcard/ui.xml > /dev/null 2>&1; adb exec-out cat /sdcard/ui.xml | tr '>' '\n' | grep -E '(text|content-desc)="Allow"' | grep -o 'bounds="[^"]*"' | head -1 | grep -o '[0-9]\+' | tr '\n' ' ')
 if [ -n "$B" ]; then set -- $B; adb shell input tap $((($1 + $3) / 2)) $((($2 + $4) / 2)); sleep 3; adb exec-out screencap -p > "$OUT/v12-setup-system-question.png"; adb shell input keyevent 4; sleep 2; adb exec-out screencap -p > "$OUT/v12-setup-after.png"; fi
 adb shell am start -W -a android.intent.action.VIEW -d fileora://setup/done in.fileora.app

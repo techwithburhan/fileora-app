@@ -11,6 +11,7 @@ You can build in two ways. **GitHub Actions** builds both files for you on every
 | This source folder | `fileora-app-1.2.0-source.zip`, or the GitHub repository |
 | `android/app/google-services.json` | Firebase Console → Project settings → Your apps → Android app `in.fileora.app` → download. It isn't in the source ZIP. Without it the build fails, because Gradle applies the Google Services plugin. |
 | Release signing key (`.keystore` / `.jks`) | Your own key. It must be the same key every time, or phones refuse the update. Keep it in a password manager. Never put it in Git or send it in chat. |
+| `android/app/debug.keystore` (development key) | In the GitHub repository already. From the source ZIP, create it once: `keytool -genkeypair -v -keystore android/app/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"` |
 | Node.js 22+, JDK 17, Android SDK platform 37 (compile) and 36 (target), minimum Android 7.0 (API 24). Android Studio installs the SDK. | nodejs.org, adoptium.net, developer.android.com/studio |
 
 The version number comes from `package.json` (`"version": "1.2.0"`). Gradle turns it into `versionName 1.2.0` and `versionCode 10200`, and the app checks force updates against the same number. **To release a new version, change only `package.json`.** In App Center → Force Update, use a number that an APK you have actually published really has.
