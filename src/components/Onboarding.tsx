@@ -25,7 +25,7 @@ import Icon, { IconName } from './Icon';
 import PressableScale from './PressableScale';
 import { FIcon } from './Brand';
 import { enableNotifications, openSystemSettings, permission, pushAvailable, syncTopics } from '../remote/push';
-import { remote, settingShown, useRemote } from '../remote/remote';
+import { remote, settingCtl, useRemote } from '../remote/remote';
 import { Theme } from '../theme';
 import { type } from '../typography';
 import { tr } from '../i18n/i18n';
@@ -42,7 +42,10 @@ export default function Onboarding({ theme }: { theme: Theme }) {
   const [asking, setAsking] = useState(false);
   const android = Platform.OS === 'android';
   const oldAndroid = android && Number(Platform.Version) < 29;
-  const canNotify = pushAvailable() && settingShown('notify');
+  // App Center may hide or lock the app's notification switch (Notification & Privacy settings);
+  // the phone's own permission is still needed unless App Center switched notifications off
+  const ctl = settingCtl('notify');
+  const canNotify = pushAvailable() && ctl.mode !== 'disable' && !((ctl.mode === 'hide' || ctl.mode === 'fix') && ctl.value === false);
   // fade in with opacity only: a layout ("entering") animation that starts while the app's first
   // layout is still settling can keep a full-screen view at its first size on Android (see Appear)
   const reduced = useReducedMotion();
