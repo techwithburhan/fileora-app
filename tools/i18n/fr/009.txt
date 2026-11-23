@@ -1,0 +1,56 @@
+1320|Bienvenue dans Fileora
+1321|Voici ce que Fileora peut utiliser, et pourquoi. Vous pourrez tout modifier plus tard dans les Réglages.
+1322|Mises à jour de l’app, nouveaux outils, actualités du jour et offres. Vous choisissez les catégories dans les Réglages, et chaque notification est aussi conservée dans Alertes.
+1323|Autorisé
+1324|Bloqué dans les réglages du téléphone
+1325|Non autorisé
+1326|Pas encore demandé
+1327|Redemander
+1328|Fichiers et photos
+1329|Vous choisissez les fichiers avec le sélecteur du téléphone : Fileora ne voit que ce que vous choisissez. Android demande l’accès au stockage une fois, la première fois que vous enregistrez un fichier dans Téléchargements.
+1330|Vous choisissez fichiers et photos avec le sélecteur du téléphone : Fileora ne voit que ce que vous choisissez, aucune autorisation n’est donc nécessaire.
+1331|Vous choisissez photos et fichiers avec le sélecteur de l’iPhone : Fileora ne voit que ce que vous choisissez. Enregistrer une image dans Photos le demande une fois.
+1332|Demandé au premier enregistrement
+1333|Aucune autorisation nécessaire
+1334|Appareil photo (scanner)
+1335|Le scanner utilise le scanner de documents de Google ou votre app d’appareil photo : Fileora n’a donc pas besoin de l’autorisation caméra.
+1336|Le scanner utilise l’appareil photo. Votre iPhone le demande à la première ouverture ; les photos restent sur votre iPhone sauf si vous choisissez un outil en ligne.
+1337|Demandé au premier scan
+1338|Continuer
+1339|Sans notifications, les actualités et mises à jour apparaissent quand même dans Alertes.
+1340|Fileora a besoin de l’appareil photo pour scanner
+1341|Le scanner photographie vos pages et les redresse. Votre iPhone va maintenant demander l’autorisation. Les photos restent sur votre iPhone sauf si vous choisissez un outil en ligne.
+1342|L’accès à l’appareil photo est désactivé
+1343|Activez l’Appareil photo pour Fileora dans Réglages pour scanner.
+1344|Autorisez l’appareil photo pour Fileora dans Paramètres Android → Applications → Fileora pour scanner.
+1345|Nouvelle notification : {title}. Touchez pour la lire.
+1346|Important
+1347|Ouvrir {tool}
+1348|Ouvrir le lien
+1349|Ouvrir le Scanner
+1350|Ouvrir Fichiers
+1351|Voir les offres
+1352|Alerte
+1353|Chargement
+1354|Cette alerte n’est plus disponible
+1355|Elle a peut-être été supprimée ou elle est plus ancienne que la durée de conservation des alertes.
+1356|Chargement du message complet…
+1357|1 alerte marquée comme lue
+1358|{n} alertes marquées comme lues
+1359|1 jour
+1360|{n} jours
+1361|{n} heures
+1362|Non lue.
+1363|Ouvre le message complet
+1364|Touchez pour lire
+1365|Tout marquer comme lu
+1366|Tout lire
+1367|Mises à jour, nouveaux outils et actualités de Fileora. Les alertes sont conservées {time}. Tirez vers le bas pour vérifier les nouvelles.
+1368|1 non lue
+1369|{n} non lues
+1370|Mis à jour
+1371|Actualisation impossible. Informations enregistrées affichées.
+1372|INSTALLÉE
+1373|REQUISE
+1374|Vérifié à l’instant : ce téléphone a toujours la version {version} ; la {required} ou plus récente est nécessaire. Si vous avez déjà installé la mise à jour, le téléchargement contenait peut-être une version plus ancienne.
+1375|Cette version ({version}) n’est plus prise en charge. Installez la version {required} ou plus récente pour continuer à utiliser l’app. Vos fichiers restent sur ce téléphone.

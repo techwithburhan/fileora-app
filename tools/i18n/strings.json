@@ -14,6 +14,12 @@
 "0 KB": [
 "src/store/files.ts"
 ],
+"1 alert marked as read": [
+"app 1.2"
+],
+"1 day": [
+"app 1.2"
+],
 "1 file": [
 "src/components/tool/ResultView.tsx",
 "src/screens/ActivityScreen.tsx"
@@ -29,6 +35,9 @@
 ],
 "1 tool": [
 "src/screens/HomeScreen.tsx"
+],
+"1 unread": [
+"app 1.2"
 ],
 "1 use": [
 "src/components/UsageCharts.tsx"
@@ -277,6 +286,9 @@
 "After every page": [
 "engine:pageops"
 ],
+"Alert": [
+"app 1.2"
+],
 "Alert deleted": [
 "src/screens/AlertsScreen.tsx"
 ],
@@ -324,6 +336,12 @@
 "Allow notifications for Fileora on this phone. Tap to allow.": [
 "src/screens/SettingsScreen.tsx"
 ],
+"Allow the camera for Fileora in Android Settings → Apps → Fileora to scan.": [
+"app 1.2"
+],
+"Allowed": [
+"app 1.2"
+],
 "Almost empty": [
 "engine:removeblank"
 ],
@@ -353,6 +371,9 @@
 "App manifest": [
 "engine-msg:image.js"
 ],
+"App updates, new tools, daily news and offers. You choose the categories in Settings, and every notification is also kept in Alerts.": [
+"app 1.2"
+],
 "Appearance": [
 "src/screens/SettingsScreen.tsx"
 ],
@@ -381,6 +402,15 @@
 ],
 "As many as fit": [
 "engine:passport"
+],
+"Ask again": [
+"app 1.2"
+],
+"Asked when you first save": [
+"app 1.2"
+],
+"Asked when you first scan": [
+"app 1.2"
 ],
 "At least 6 characters": [
 "engine:protect"
@@ -457,6 +487,9 @@
 "Block printing and copying": [
 "engine:protect"
 ],
+"Blocked in the phone’s settings": [
+"app 1.2"
+],
 "Blocked in your phone’s settings. Tap to open them.": [
 "src/screens/SettingsScreen.tsx"
 ],
@@ -526,6 +559,12 @@
 "src/screens/ScanEditorScreen.tsx",
 "src/screens/ScannerScreen.tsx"
 ],
+"Camera (scanner)": [
+"app 1.2"
+],
+"Camera access is off": [
+"app 1.2"
+],
 "Cancel": [
 "src/components/Dialog.tsx",
 "src/lib/openFile.ts",
@@ -591,6 +630,9 @@
 ],
 "Checkboxes": [
 "engine:forms"
+],
+"Checked just now: this phone still has version {version}; {required} or newer is needed. If you already installed the update, the download may have given an older version.": [
+"app 1.2"
 ],
 "Checking…": [
 "src/screens/SettingsScreen.tsx"
@@ -782,6 +824,9 @@
 "src/remote/push.ts",
 "src/remote/telemetry.ts"
 ],
+"Continue": [
+"app 1.2"
+],
 "Convert DOC and DOCX files into PDFs that look the same everywhere.": [
 "src/data/tools.ts"
 ],
@@ -928,6 +973,9 @@
 ],
 "Couldn’t reach fileora.in. Check your internet connection and try again.": [
 "src/components/RemoteGate.tsx"
+],
+"Couldn’t refresh. Showing saved info.": [
+"app 1.2"
 ],
 "Couldn’t restore": [
 "src/screens/RecycleBinScreen.tsx"
@@ -1393,6 +1441,9 @@
 "Fileora isn’t limited by battery saving.": [
 "src/components/NotificationCheck.tsx"
 ],
+"Fileora needs the camera to scan": [
+"app 1.2"
+],
 "Fileora server": [
 "src/components/ToolCard.tsx"
 ],
@@ -1425,6 +1476,9 @@
 "src/navigation/nav.ts",
 "src/remote/push.ts",
 "src/screens/FilesScreen.tsx"
+],
+"Files and photos": [
+"app 1.2"
 ],
 "Files are deleted from the server after download.": [
 "src/screens/ProcessScreen.tsx"
@@ -1686,6 +1740,9 @@
 "Help & information": [
 "src/components/MenuSheet.tsx"
 ],
+"Here is what Fileora may use, and why. You can change all of this later in Settings.": [
+"app 1.2"
+],
 "Hide": [
 "src/components/tool/OptionField.tsx"
 ],
@@ -1726,6 +1783,9 @@
 "ID Card Print": [
 "src/data/tools.ts"
 ],
+"INSTALLED": [
+"app 1.2"
+],
 "If notifications don’t arrive with the app closed, set Fileora’s Battery to “Unrestricted” / “No restrictions”.": [
 "src/components/NotificationCheck.tsx"
 ],
@@ -1745,6 +1805,9 @@
 "src/screens/FilesScreen.tsx",
 "src/screens/ScanEditorScreen.tsx",
 "src/screens/ScannerScreen.tsx"
+],
+"Important": [
+"app 1.2"
 ],
 "Include speaker notes": [
 "engine:ppt2pdf"
@@ -1768,6 +1831,9 @@
 ],
 "Invert colours or switch to greyscale for comfortable reading at night.": [
 "src/data/tools.ts"
+],
+"It may have been deleted or is older than the time alerts are kept.": [
+"app 1.2"
 ],
 "Italian": [
 "engine:ocr",
@@ -1929,8 +1995,14 @@
 "Light or dark, like the rest of your phone": [
 "src/screens/SettingsScreen.tsx"
 ],
+"Loading": [
+"app 1.2"
+],
 "Loading pages…": [
 "src/screens/ProcessScreen.tsx"
+],
+"Loading the whole message…": [
+"app 1.2"
 ],
 "Lock filled-in form fields and annotations so nobody can change them.": [
 "src/data/tools.ts"
@@ -2077,6 +2149,9 @@
 "engine:code2pdf",
 "engine:txt2pdf"
 ],
+"Mark all as read": [
+"app 1.2"
+],
 "Mark page breaks": [
 "engine:pdf2md"
 ],
@@ -2211,6 +2286,9 @@
 "New files": [
 "src/components/tool/ResultView.tsx"
 ],
+"New notification: {title}. Tap to read it.": [
+"app 1.2"
+],
 "New page size": [
 "engine:resizepages"
 ],
@@ -2273,6 +2351,9 @@
 "No images found in this PDF (or they are all smaller than the size you chose). Scanned pages are often one image: use PDF to JPG for those.": [
 "engine-msg:pdf.js"
 ],
+"No permission needed": [
+"app 1.2"
+],
 "No promotions right now": [
 "src/screens/PromoScreen.tsx"
 ],
@@ -2303,8 +2384,14 @@
 "engine:code2pdf",
 "engine:txt2pdf"
 ],
+"Not allowed": [
+"app 1.2"
+],
 "Not arriving, or no sound? See what to change on this phone, and send a test": [
 "src/screens/SettingsScreen.tsx"
+],
+"Not asked yet": [
+"app 1.2"
 ],
 "Not available on this device.": [
 "src/lib/native.ts"
@@ -2438,10 +2525,16 @@
 "src/screens/ScanDocScreen.tsx",
 "src/screens/ScannerScreen.tsx"
 ],
+"Open Files": [
+"app 1.2"
+],
 "Open PDF": [
 "src/screens/ScanDocScreen.tsx",
 "src/screens/ScanEditorScreen.tsx",
 "src/screens/ScannerScreen.tsx"
+],
+"Open Scanner": [
+"app 1.2"
 ],
 "Open Settings": [
 "src/screens/SettingsScreen.tsx"
@@ -2458,6 +2551,9 @@
 "Open in browser": [
 "src/screens/WebScreen.tsx"
 ],
+"Open link": [
+"app 1.2"
+],
 "Open menu": [
 "src/components/AppHeader.tsx"
 ],
@@ -2466,6 +2562,9 @@
 ],
 "Open settings": [
 "src/screens/SettingsScreen.tsx"
+],
+"Open {tool}": [
+"app 1.2"
 ],
 "Opened": [
 "src/screens/ActivityScreen.tsx",
@@ -2483,6 +2582,9 @@
 ],
 "Opens in your browser": [
 "src/components/DailyPopup.tsx"
+],
+"Opens the whole message": [
+"app 1.2"
 ],
 "Opens www.techdeployers.com": [
 "src/screens/SettingsScreen.tsx"
@@ -2931,8 +3033,14 @@
 "Quiet notifications": [
 "src/screens/SettingsScreen.tsx"
 ],
+"REQUIRED": [
+"app 1.2"
+],
 "Ramadan Mubarak": [
 "festival"
+],
+"Read all": [
+"app 1.2"
 ],
 "Reading and summarizing": [
 "engine:summarize"
@@ -3300,6 +3408,9 @@
 "See exactly what changed between two versions of a document.": [
 "src/data/tools.ts"
 ],
+"See offers": [
+"app 1.2"
+],
 "Select application language": [
 "src/components/AppHeader.tsx",
 "src/screens/SettingsScreen.tsx"
@@ -3567,6 +3678,9 @@
 "Tap the + button to scan with the camera or pick photos from the gallery.": [
 "src/screens/ScannerScreen.tsx"
 ],
+"Tap to read": [
+"app 1.2"
+],
 "Target": [
 "engine:imgkb"
 ],
@@ -3692,6 +3806,15 @@
 "The scan couldn’t be saved": [
 "src/screens/ScanEditorScreen.tsx"
 ],
+"The scanner takes pictures of your pages and straightens them. Your iPhone asks for permission next. Photos stay on your iPhone unless you choose an online tool.": [
+"app 1.2"
+],
+"The scanner uses Google’s document scanner or your camera app, so Fileora itself needs no camera permission.": [
+"app 1.2"
+],
+"The scanner uses the camera. Your iPhone asks the first time you open it; photos stay on your iPhone unless you choose an online tool.": [
+"app 1.2"
+],
 "The server answered with HTTP {code}.": [
 "src/lib/serverJob.ts"
 ],
@@ -3749,6 +3872,9 @@
 "This PDF needs its password.": [
 "src/lib/serverJob.ts"
 ],
+"This alert is no longer available": [
+"app 1.2"
+],
 "This folder is empty.": [
 "src/screens/FilesScreen.tsx"
 ],
@@ -3794,6 +3920,9 @@
 ],
 "This tool was closed. Open it again.": [
 "engine-msg:engine.js"
+],
+"This version ({version}) is no longer supported. Install version {required} or later to keep using the app. Your files stay on this phone.": [
+"app 1.2"
 ],
 "Those margins are bigger than the page. Use smaller numbers.": [
 "engine-msg:pdf.js"
@@ -3924,6 +4053,9 @@
 "Turn on": [
 "src/components/HomeBanners.tsx"
 ],
+"Turn on Camera for Fileora in Settings to scan.": [
+"app 1.2"
+],
 "Turn on notifications for app updates, new tools and news. You can choose which ones in Settings.": [
 "src/components/HomeBanners.tsx"
 ],
@@ -3988,6 +4120,9 @@
 "Unlocking": [
 "engine:unlock"
 ],
+"Unread.": [
+"app 1.2"
+],
 "Update": [
 "src/components/HomeBanners.tsx",
 "src/screens/SettingsScreen.tsx"
@@ -3997,6 +4132,12 @@
 ],
 "Update now": [
 "src/components/RemoteGate.tsx"
+],
+"Updated": [
+"app 1.2"
+],
+"Updates, new tools and news from Fileora. Alerts are kept for {time}. Pull down to check for new ones.": [
+"app 1.2"
 ],
 "Upload": [
 "src/components/tool/SignatureField.tsx"
@@ -4103,6 +4244,9 @@
 "WebP to JPG": [
 "src/data/tools.ts"
 ],
+"Welcome to Fileora": [
+"app 1.2"
+],
 "We’re making some improvements. Please check back soon.": [
 "src/components/RemoteGate.tsx"
 ],
@@ -4162,6 +4306,9 @@
 "Wishing you joy, peace and a season of happiness.": [
 "festival"
 ],
+"Without notifications, news and updates still appear in Alerts.": [
+"app 1.2"
+],
 "Word file": [
 "engine-noun",
 "engine:word2pdf"
@@ -4196,6 +4343,15 @@
 ],
 "You have version {v}. Update to get the newest tools and fixes.": [
 "src/components/HomeBanners.tsx"
+],
+"You pick files and photos with the phone’s own picker: Fileora sees only what you choose, so no permission is needed.": [
+"app 1.2"
+],
+"You pick files with the phone’s own picker: Fileora sees only what you choose. Android asks for storage once, the first time you save a file to Downloads.": [
+"app 1.2"
+],
+"You pick photos and files with the iPhone’s own picker: Fileora sees only what you choose. Saving an image to Photos asks once.": [
+"app 1.2"
 ],
 "Your HTML code": [
 "src/screens/ProcessScreen.tsx"
@@ -4470,6 +4626,12 @@
 "{n} alerts deleted": [
 "src/screens/AlertsScreen.tsx"
 ],
+"{n} alerts marked as read": [
+"app 1.2"
+],
+"{n} days": [
+"app 1.2"
+],
 "{n} files": [
 "src/components/tool/ResultView.tsx",
 "src/screens/ActivityScreen.tsx"
@@ -4482,6 +4644,9 @@
 ],
 "{n} files saved in Fileora. In {where} as a ZIP file.": [
 "src/components/tool/ResultView.tsx"
+],
+"{n} hours": [
+"app 1.2"
 ],
 "{n} hours without ads": [
 "src/screens/SettingsScreen.tsx"
@@ -4497,6 +4662,9 @@
 ],
 "{n} tools": [
 "src/screens/HomeScreen.tsx"
+],
+"{n} unread": [
+"app 1.2"
 ],
 "{n} uses": [
 "src/components/UsageCharts.tsx"

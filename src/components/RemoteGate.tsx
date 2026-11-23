@@ -21,6 +21,7 @@ import { useBusy } from '../lib/busy';
 import { flushAll } from '../lib/safeFile';
 import { brand } from '../theme';
 import { APP_VERSION } from '../version';
+import { tr } from '../i18n/i18n';
 
 export function useGate(): 'maintenance' | 'update' | null {
   const config = useRemote(s => s.config);
@@ -70,7 +71,7 @@ export default function RemoteGate() {
     setBusy(false);
     if (e) setErr('Couldn’t reach fileora.in. Check your internet connection and try again.');
     else if (mustUpdate(APP_VERSION, remote.get().config?.update))
-      setErr(`Checked just now: this phone still has version ${APP_VERSION}; ${required} or newer is needed. If you already installed the update, the download may have given an older version.`);
+      setErr(tr('Checked just now: this phone still has version {version}; {required} or newer is needed. If you already installed the update, the download may have given an older version.', { version: APP_VERSION, required }));
   };
   const update = () => {
     flushAll();
@@ -90,8 +91,8 @@ export default function RemoteGate() {
           text:
             (config.update.message
               ? config.update.message.split('{version}').join(APP_VERSION).split('{required}').join(required)
-              : `This version (${APP_VERSION}) is no longer supported. Install version ${required} or later to keep using the app. Your files stay on this phone.`) +
-            (isApk ? ' The download starts in your browser: open it when it finishes and tap Update.' : ''),
+              : tr('This version ({version}) is no longer supported. Install version {required} or later to keep using the app. Your files stay on this phone.', { version: APP_VERSION, required })) +
+            (isApk ? ' ' + tr('The download starts in your browser: open it when it finishes and tap Update.') : ''),
           notes: config.update.notes,
         };
 

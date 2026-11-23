@@ -1316,3 +1316,59 @@
 1317|in Fileora and {where}
 1318|{done} done, {failed} couldn’t be processed
 1319|{n} files saved in Fileora. In {where} as a ZIP file.
+1320|Welcome to Fileora
+1321|Here is what Fileora may use, and why. You can change all of this later in Settings.
+1322|App updates, new tools, daily news and offers. You choose the categories in Settings, and every notification is also kept in Alerts.
+1323|Allowed
+1324|Blocked in the phone’s settings
+1325|Not allowed
+1326|Not asked yet
+1327|Ask again
+1328|Files and photos
+1329|You pick files with the phone’s own picker: Fileora sees only what you choose. Android asks for storage once, the first time you save a file to Downloads.
+1330|You pick files and photos with the phone’s own picker: Fileora sees only what you choose, so no permission is needed.
+1331|You pick photos and files with the iPhone’s own picker: Fileora sees only what you choose. Saving an image to Photos asks once.
+1332|Asked when you first save
+1333|No permission needed
+1334|Camera (scanner)
+1335|The scanner uses Google’s document scanner or your camera app, so Fileora itself needs no camera permission.
+1336|The scanner uses the camera. Your iPhone asks the first time you open it; photos stay on your iPhone unless you choose an online tool.
+1337|Asked when you first scan
+1338|Continue
+1339|Without notifications, news and updates still appear in Alerts.
+1340|Fileora needs the camera to scan
+1341|The scanner takes pictures of your pages and straightens them. Your iPhone asks for permission next. Photos stay on your iPhone unless you choose an online tool.
+1342|Camera access is off
+1343|Turn on Camera for Fileora in Settings to scan.
+1344|Allow the camera for Fileora in Android Settings → Apps → Fileora to scan.
+1345|New notification: {title}. Tap to read it.
+1346|Important
+1347|Open {tool}
+1348|Open link
+1349|Open Scanner
+1350|Open Files
+1351|See offers
+1352|Alert
+1353|Loading
+1354|This alert is no longer available
+1355|It may have been deleted or is older than the time alerts are kept.
+1356|Loading the whole message…
+1357|1 alert marked as read
+1358|{n} alerts marked as read
+1359|1 day
+1360|{n} days
+1361|{n} hours
+1362|Unread.
+1363|Opens the whole message
+1364|Tap to read
+1365|Mark all as read
+1366|Read all
+1367|Updates, new tools and news from Fileora. Alerts are kept for {time}. Pull down to check for new ones.
+1368|1 unread
+1369|{n} unread
+1370|Updated
+1371|Couldn’t refresh. Showing saved info.
+1372|INSTALLED
+1373|REQUIRED
+1374|Checked just now: this phone still has version {version}; {required} or newer is needed. If you already installed the update, the download may have given an older version.
+1375|This version ({version}) is no longer supported. Install version {required} or later to keep using the app. Your files stay on this phone.
