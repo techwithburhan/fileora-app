@@ -223,7 +223,8 @@ export default function App() {
               </Stack.Navigator>
               <MenuSheet theme={theme} />
             </NavigationContainer>
-            {!splash && needsSetup && !gate && <Onboarding theme={theme} />}
+            {/* first-launch permissions screen: mounted under the splash, seen as soon as it fades */}
+            {needsSetup && !gate && <Onboarding theme={theme} />}
             <RemoteGate />
             {!splash && <FestivalOverlay />}
             <InAppBanner theme={theme} />
