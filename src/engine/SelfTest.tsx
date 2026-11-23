@@ -21,6 +21,9 @@ import { navigationRef } from '../navigation/types';
 import { toolById } from '../data/tools';
 import { LANGS, setLang, LangCode } from '../i18n/i18n';
 import { store } from '../store/store';
+import { remote } from '../remote/remote';
+import { inbox } from '../remote/inbox';
+import { showBanner } from '../components/InAppBanner';
 
 const PNG =
   'iVBORw0KGgoAAAANSUhEUgAAAEAAAAAwCAIAAAAuKetIAAAAeElEQVR4Xu3ZsQ2AIBQGYTFuwgRW7mYsjTOxBSsZGweA4vIn9/WQ93J0lHq0JdmaPPzHBWgWoFmAZgGaBWjbzAD9vGaO//bnHr7HJ0SzAM0CNAvQLECzAM0CNAvQLECzAM0CtPgCxT8yWPwTcgGaBWgWoFmAFl/gBeCDBYUf80jsAAAAAElFTkSuQmCC';
@@ -70,6 +73,18 @@ export async function runSelfTest(): Promise<Report> {
   return rep;
 }
 
+/** Three sample alerts for the CI screenshots (local only; ids start with "demo-"). */
+function addDemoAlerts() {
+  const t = Math.floor(Date.now() / 1000);
+  const add = () => {
+    inbox.add({ id: 'demo-1', title: 'Fileora 1.2 is here', body: 'Notifications now arrive in about a second, every alert opens with its whole message, and pull-to-refresh always shows the newest settings from the website. Open Settings → Notifications to choose what you get. This sample alert shows that long messages are never cut off: everything you write in App Center appears here in full, with the date, the time and the category.', image: '', open: 'update', tool: '', link: '', topic: 'updates', older: '', at: t - 120 });
+    inbox.add({ id: 'demo-2', title: 'New tool: Compress to 100 KB', body: 'Shrink photos and PDFs to an exact size for forms.', image: '', open: 'tool', tool: 'compress', link: '', topic: 'tools', older: '', at: t - 3600 });
+    inbox.add({ id: 'demo-3', title: 'Weekend offer', body: 'Ad-free for 7 days when you watch one short video.', image: '', open: 'home', tool: '', link: '', topic: 'offers', older: '', at: t - 86400 });
+  };
+  const wait = () => (remote.get().loaded ? add() : setTimeout(wait, 200));
+  wait();
+}
+
 export default function SelfTest() {
   const [rep, setRep] = useState<Report | null>(null);
   const [running, setRunning] = useState(false);
@@ -103,6 +118,28 @@ export default function SelfTest() {
         const open = () => (navigationRef.isReady() ? navigationRef.navigate('Process', { tool: 'compress', demo: n }) : setTimeout(open, 300));
         return open();
       }
+      // app 1.2 (CI screenshots): fileora://setup shows the first-launch screen again, fileora://setup/done
+      // closes it; fileora://demo/alerts adds three sample alerts (only on this phone) and opens Alerts,
+      // fileora://demo/alert opens the first one, fileora://demo/banner shows the in-app banner.
+      const setup = url ? /^fileora:\/\/setup(\/done)?/i.exec(url) : null;
+      if (setup) {
+        const apply = () => (remote.get().loaded ? remote.setPrefs({ onboarded: setup[1] ? Date.now() : 0 }) : setTimeout(apply, 200));
+        return apply();
+      }
+      const demoAlert = url ? /^fileora:\/\/demo\/(alerts|alert|banner)/i.exec(url) : null;
+      if (demoAlert) {
+        const kind = demoAlert[1].toLowerCase();
+        addDemoAlerts();
+        const open = () =>
+          navigationRef.isReady()
+            ? kind === 'alerts'
+              ? navigationRef.navigate('Tabs', { screen: 'Alerts' })
+              : kind === 'alert'
+                ? navigationRef.navigate('Alert', { id: 'demo-1' })
+                : showBanner({ id: 'demo-2', title: 'New tool: Compress to 100 KB', body: 'Shrink photos and PDFs to an exact size for forms.', topic: 'tools', ms: 20000, onPress: () => navigationRef.navigate('Alert', { id: 'demo-2' }) })
+            : setTimeout(open, 300);
+        return open();
+      }
       if (url && /^fileora:\/\/screen\/downloads/i.test(url)) {
         const open = () => (navigationRef.isReady() ? navigationRef.navigate('Activity', { tab: 'downloaded' }) : setTimeout(open, 300));
         open();
@@ -123,6 +160,10 @@ export default function SelfTest() {
       .then(go)
       .catch(() => {});
     if (Platform.OS === 'ios') {
+      const su = Settings.get('FileoraSetup');
+      if (typeof su === 'string' && su) go(su === 'done' ? 'fileora://setup/done' : 'fileora://setup');
+      const da = Settings.get('FileoraDemo');
+      if (typeof da === 'string' && da) go(`fileora://demo/${da}`);
       if (Settings.get('FileoraSelfTest')) go('fileora://selftest');
       const t = Settings.get('FileoraTool');
       if (typeof t === 'string' && t) go(`fileora://tool/${t}`);

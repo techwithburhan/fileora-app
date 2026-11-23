@@ -9,6 +9,12 @@ adb install -r "$APK"
 adb logcat -c
 adb shell am start -W -n in.fileora.app/.MainActivity
 sleep 25
+# app 1.2: the first-launch permissions screen, then Android's own notification question (API 33+)
+adb exec-out screencap -p > "$OUT/v12-setup.png"
+B=$(adb shell uiautomator dump /sdcard/ui.xml > /dev/null 2>&1; adb exec-out cat /sdcard/ui.xml | tr '>' '\n' | grep -E '(text|content-desc)="Allow"' | grep -o 'bounds="[^"]*"' | head -1 | grep -o '[0-9]\+' | tr '\n' ' ')
+if [ -n "$B" ]; then set -- $B; adb shell input tap $((($1 + $3) / 2)) $((($2 + $4) / 2)); sleep 3; adb exec-out screencap -p > "$OUT/v12-setup-system-question.png"; adb shell input keyevent 4; sleep 2; adb exec-out screencap -p > "$OUT/v12-setup-after.png"; fi
+adb shell am start -W -a android.intent.action.VIEW -d fileora://setup/done in.fileora.app
+sleep 4
 adb exec-out screencap -p > "$OUT/home.png"
 adb shell am start -W -a android.intent.action.VIEW -d fileora://selftest in.fileora.app
 sleep 75
@@ -146,6 +152,32 @@ for n in 1 2 6; do
   adb shell input keyevent 4
   sleep 2
 done
+# app 1.2: Alerts with unread dots, an alert's whole message, the in-app banner, pull-to-refresh result
+adb shell am start -W -a android.intent.action.VIEW -d fileora://demo/alerts in.fileora.app
+sleep 4
+adb exec-out screencap -p > "$OUT/v12-alerts.png"
+adb shell am start -W -a android.intent.action.VIEW -d fileora://demo/alert in.fileora.app
+sleep 0.4
+adb exec-out screencap -p > "$OUT/v12-alert-detail-transition.png"
+sleep 3
+adb exec-out screencap -p > "$OUT/v12-alert-detail.png"
+adb shell input keyevent 4
+sleep 2
+adb exec-out screencap -p > "$OUT/v12-alerts-after-read.png"
+adb shell am start -W -a android.intent.action.VIEW -d fileora://demo/banner in.fileora.app
+sleep 0.5
+adb exec-out screencap -p > "$OUT/v12-banner.png"
+sleep 6
+adb exec-out screencap -p > "$OUT/v12-banner-gone.png"
+adb shell input swipe $X $((H * 28 / 100)) $X $((H * 85 / 100)) 900
+sleep 3
+adb exec-out screencap -p > "$OUT/v12-refresh-result.png"
+# app 1.2: the first-launch screen again (to check it after the run), then closed
+adb shell am start -W -a android.intent.action.VIEW -d fileora://setup in.fileora.app
+sleep 2
+adb exec-out screencap -p > "$OUT/v12-setup-again.png"
+adb shell am start -W -a android.intent.action.VIEW -d fileora://setup/done in.fileora.app
+sleep 2
 adb logcat -d | grep -iE "FATAL|AndroidRuntime" | tail -40 > "$OUT/crash.txt" || true
 if adb shell pidof in.fileora.app > /dev/null; then echo RUNNING > "$OUT/status.txt"; else echo "NOT RUNNING" > "$OUT/status.txt"; fi
 cat "$OUT/status.txt"

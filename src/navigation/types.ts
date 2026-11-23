@@ -36,6 +36,8 @@ export type RootStackParamList = {
   Blog: undefined;
   /** App Center → Promotions */
   Promo: undefined;
+  /** app 1.2: one alert with its whole message (from Alerts or a tapped notification) */
+  Alert: { id: string };
 };
 
 declare global {

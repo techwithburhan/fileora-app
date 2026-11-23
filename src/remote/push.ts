@@ -1,17 +1,26 @@
 /**
  * Push notifications through Firebase Cloud Messaging (FCM).
  *
- * The app holds no Firebase server key or service account: it only subscribes this phone to
- * topics. Notifications are sent from WordPress (Fileora → App Center → Notifications), which keeps
- * the service account on the server, or from the Firebase Console.
+ * The app holds no Firebase server key or service account. Notifications are sent from WordPress
+ * (Fileora → App Center → Notifications), which keeps the service account on the server, or from
+ * the Firebase Console.
+ *
+ * App 1.2, direct delivery (plugin 2.22+, config.push_direct): the app registers this phone's FCM
+ * token with its choices (categories, quiet, private, version) at /wp-json/fileora/v1/app-push-token.
+ * The website then sends each notification straight to the phone — Firebase's fast path — instead
+ * of through topics, which Firebase delivers "optimised for throughput, not latency" (often seconds
+ * later). Once the website has accepted the token the app leaves the old topics, so a notification
+ * never arrives twice; it keeps "app-all" and "app-android"/"app-ios" for the Firebase Console.
+ * Without a plugin that supports it (or while the website can't be reached) the topics below stay.
  *
  * Topics: all (important, always on while notifications are on), android, v<version> (so the
  * website can reach only older versions), the categories the person keeps on in Settings
  * (updates, news, tools, offers, blog), and their style: mode-quiet (no sound or pop-up) and
  * mode-private (nothing on the lock screen). App Center sends each notification once per style.
  *
- * Android 13+ needs the POST_NOTIFICATIONS permission. It is asked only after the person taps
- * "Turn on" (Home card or Settings), never at first launch; a "no" is respected.
+ * Android 13+ needs the POST_NOTIFICATIONS permission, iOS asks once. App 1.2 asks on the first-launch
+ * permissions screen (components/Onboarding), after explaining why, or when the person taps
+ * "Turn on" (Home card or Settings); a "no" is respected and never asked again automatically.
  *
  * While the app is open: Android shows nothing by itself, so the app shows the notification
  * (native FileoraNotify, same channel and Fileora sound); iOS shows it with sound because of
@@ -31,6 +40,7 @@ import {
   isDeviceRegisteredForRemoteMessages,
   onMessage,
   onNotificationOpenedApp,
+  onTokenRefresh,
   registerDeviceForRemoteMessages,
   requestPermission,
   subscribeToTopic,
@@ -43,6 +53,7 @@ import { toolById } from '../data/tools';
 import { APP_VERSION } from '../version';
 import { defaultPrefs, effectivePrefs, PLATFORM, remote, TOPIC_LABELS } from './remote';
 import { inbox } from './inbox';
+import { showBanner } from '../components/InAppBanner';
 import { native } from '../lib/native';
 import { telemetry } from './telemetry';
 import { featureMessage, screenState } from '../navigation/nav';
@@ -180,16 +191,67 @@ function wanted(perm: 'granted' | 'denied'): string[] {
   return ['all', platformTopic, versionTopic(), ...cats, ...modes];
 }
 
-/** Brings this phone's FCM topics in line with the person's choices (runs one at a time). */
-export function syncTopics(): Promise<void> {
-  chain = chain.then(doSync).catch(() => {});
+/** Topics of a phone with direct delivery: only for sends from the Firebase Console. */
+const DIRECT_TOPICS = ['app-all', `app-${platformTopic}`];
+const REG_EVERY = 24 * 3600 * 1000; // re-register daily: keeps the website's copy fresh
+
+/**
+ * Registers (or removes) this phone's token with the website for direct delivery.
+ * Returns true when the website delivers directly to this phone (it accepted the token).
+ */
+async function registerDirect(m: NonNullable<ReturnType<typeof messaging>>, on: boolean, cats: string[], force: boolean): Promise<boolean> {
+  const s = remote.get();
+  if (!s.config?.push_direct || !s.install) return false;
+  if (!on && !s.pushReg) return false; // never registered: nothing to remove
+  const p = effectivePrefs();
+  let token = '';
+  if (on) {
+    try {
+      token = await getToken(m);
+    } catch {
+      return false;
+    }
+    if (!token) return false;
+  }
+  const body = { install: s.install, platform: PLATFORM, version: APP_VERSION, on, token, cats, quiet: p.quiet, private: p.private && !IOS };
+  const key = JSON.stringify(body);
+  const reg = s.pushReg;
+  if (!force && reg && reg.key === key && Date.now() - reg.at < REG_EVERY) return reg.direct;
+  try {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 12000);
+    const r = await fetch(`${SITE}/wp-json/fileora/v1/app-push-token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'Cache-Control': 'no-cache' },
+      body: key,
+      signal: ctl.signal,
+    });
+    clearTimeout(timer);
+    const j = (await r.json().catch(() => null)) as { ok?: boolean; direct?: boolean } | null;
+    if (!r.ok || !j?.ok || j.direct !== true) return reg?.direct === true && reg.key === key; // keep the last good state
+    remote.setPushReg({ key, at: Date.now(), direct: on });
+    return on;
+  } catch {
+    // offline: keep what the website last confirmed (topics stay if it never confirmed)
+    return reg?.direct === true && on && reg.key === key;
+  }
+}
+
+/** Brings this phone's notification setup in line with the person's choices (runs one at a time). */
+export function syncTopics(force = false): Promise<void> {
+  chain = chain.then(() => doSync(force)).catch(() => {});
   return chain;
 }
 
-async function doSync() {
+async function doSync(force = false) {
   const m = messaging();
   if (!m) return;
-  const want = wanted(await permission());
+  let want = wanted(await permission());
+  if (want.length && IOS && !isDeviceRegisteredForRemoteMessages(m)) await registerDeviceForRemoteMessages(m).catch(() => {});
+  // app 1.2: direct delivery when the website supports it; then only the Firebase Console topics
+  const cats = want.filter(t => TOPIC_LABELS.some(l => l.id === t));
+  const direct = await registerDirect(m, want.length > 0, cats, force);
+  if (direct && want.length) want = DIRECT_TOPICS;
   const have = remote.get().subscribed;
   if (!want.length && !have.length) return;
   const add = want.filter(t => !have.includes(t));
@@ -218,16 +280,17 @@ async function doSync() {
 
 /* ---------- opening a notification ---------- */
 
-type Data = { open?: string; tool?: string; link?: string; id?: string; topic?: string; title?: string; body?: string };
+type Data = { open?: string; tool?: string; link?: string; id?: string; topic?: string; title?: string; body?: string; image?: string; at?: string; more?: string };
 let pending: Data | null = null;
 
 export { openLink } from '../lib/links';
 
-function go(d: Data) {
-  if (!navigationRef.isReady()) {
-    pending = d;
-    return;
-  }
+/**
+ * Opens what a notification points to (a tool, a screen, a link, the update page). Used by the
+ * "Open" button of the alert's detail screen, and for Firebase Console notifications without an id.
+ */
+export function openTarget(d: Data) {
+  if (!navigationRef.isReady()) return;
   const open = d.open || 'home';
   if (open === 'tool' && d.tool && toolById(d.tool)) navigationRef.navigate('Tool', { id: d.tool });
   else if (open === 'scanner') {
@@ -248,30 +311,53 @@ function go(d: Data) {
   } else navigationRef.navigate('Tabs', { screen: 'Home' });
 }
 
+/** App 1.2: a tapped notification opens its whole message (title, text, image, date, category). */
+function go(d: Data) {
+  if (!navigationRef.isReady()) {
+    pending = d;
+    return;
+  }
+  const id = String(d.id || '').slice(0, 40);
+  if (!id || id === 'test') {
+    if (id === 'test') navigationRef.navigate('Tabs', { screen: 'Alerts' });
+    else openTarget(d);
+    return;
+  }
+  inbox.markRead(id);
+  navigationRef.navigate('Alert', { id });
+  // the website's copy has the whole message (a notification carries at most 300 characters)
+  remote.refresh(true).catch(() => {});
+}
+
 /** Keeps a notification in the Alerts history (those sent from App Center are there anyway). */
-function remember(msg: RemoteMessage) {
+function remember(msg: RemoteMessage): string {
   const d = (msg.data || {}) as Data;
   const title = msg.notification?.title || d.title || '';
-  if (!title) return;
+  const id = String(d.id || msg.messageId || `${Date.now()}`).slice(0, 40);
+  if (!title) return id;
+  const n = msg.notification as { android?: { imageUrl?: string }; ios?: { imageUrl?: string } } | undefined;
+  const image = d.image || n?.android?.imageUrl || n?.ios?.imageUrl || '';
   inbox.add({
-    id: String(d.id || msg.messageId || `${Date.now()}`).slice(0, 40),
-    title: title.slice(0, 120),
-    body: String(msg.notification?.body || d.body || '').slice(0, 400),
-    image: '',
+    id,
+    title: title.slice(0, 200),
+    body: String(msg.notification?.body || d.body || '').slice(0, 5000),
+    image: /^https:\/\//i.test(image) ? image : '',
     open: d.open || 'home',
     tool: d.tool || '',
     link: d.link || '',
     topic: d.topic || 'all',
     older: '',
+    at: Number(d.at) || undefined,
   });
+  return id;
 }
 
 function opened(msg: RemoteMessage | null) {
   if (!msg) return;
   const d = (msg.data || {}) as Data;
-  remember(msg);
+  const id = remember(msg);
   telemetry.track('push', undefined, 0, d.id ? `opened ${String(d.id).slice(0, 40)}` : 'opened');
-  go(d);
+  go({ ...d, id: d.id || id });
 }
 
 /** Android: a notification shown by the app (while it was open) was tapped. */
@@ -279,6 +365,7 @@ function openedLocal(json: string | null) {
   if (!json) return;
   try {
     const d = JSON.parse(json) as Data;
+    if (d.id) inbox.markRead(String(d.id));
     telemetry.track('push', undefined, 0, d.id ? `opened ${String(d.id).slice(0, 40)}` : 'opened');
     go(d);
   } catch {
@@ -286,7 +373,7 @@ function openedLocal(json: string | null) {
   }
 }
 
-/** Opens what a history item points to (Alerts screen). */
+/** Opens an alert's detail screen (Alerts screen). */
 export function openInboxItem(d: Data) {
   go(d);
 }
@@ -308,15 +395,23 @@ export function startPush(): () => void {
   native.takePushOpen().then(openedLocal).catch(() => {});
   const offLocal = native.onPushOpen(() => native.takePushOpen().then(openedLocal).catch(() => {}));
   const offOpen = onNotificationOpenedApp(m, opened);
-  // While the app is open: keep it in Alerts, and on Android show it like any other notification
-  // (Fileora sound, pop-up, lock-screen privacy). iOS shows it itself (firebase.json).
+  // Firebase replaced this phone's token: tell the website (direct delivery) right away
+  const offToken = onTokenRefresh(m, () => {
+    syncTopics(true);
+  });
+  // While the app is open (app 1.2): keep it in Alerts and slide in Fileora's own banner (tap =
+  // the whole message). Android also puts a silent copy in the notification shade; iOS lists it
+  // in Notification Centre (firebase.json: "list" and "sound", no system banner on top of ours).
   const offMsg = onMessage(m, async msg => {
     const n = msg.notification;
     const d = (msg.data || {}) as Data;
     const title = n?.title || d.title;
     const body = n?.body || d.body || '';
     if (!title && !body) return;
-    remember(msg);
+    const id = remember(msg);
+    telemetry.track('push', undefined, 0, `received ${id}`);
+    remote.refresh(true).catch(() => {}); // the whole message and the updated history
+    showBanner({ id, title: title || 'Fileora', body, topic: d.topic || 'all', onPress: () => go({ ...d, id: d.id || id }) });
     if (IOS) return;
     const p = effectivePrefs();
     if (!p.notify || (await permission()) !== 'granted') return;
@@ -325,9 +420,9 @@ export function startPush(): () => void {
         id: String(d.id || msg.messageId || Date.now()),
         title: title || 'Fileora',
         body,
-        quiet: p.quiet,
+        quiet: true, // the in-app banner is the pop-up; the shade keeps a copy
         private: p.private,
-        data: JSON.stringify({ open: d.open || 'home', tool: d.tool || '', link: d.link || '', id: d.id || '' }),
+        data: JSON.stringify({ open: d.open || 'home', tool: d.tool || '', link: d.link || '', id: d.id || id }),
       })
       .catch(() => {});
   });
@@ -335,6 +430,7 @@ export function startPush(): () => void {
     offOpen();
     offMsg();
     offLocal();
+    offToken();
   };
 }
 

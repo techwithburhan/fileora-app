@@ -1,22 +1,20 @@
 /**
  * Alerts (bottom bar): every notification Fileora sent to this install, newest first, also the
- * ones that arrived while the phone was off or notifications were muted. Opening this screen
- * clears the unread badge. Alerts are deleted automatically after 72 hours (App Center can change
- * this), and an admin can delete one or all of them. Tapping an alert opens what it points to.
+ * ones that arrived while the phone was off or notifications were muted (they come from the
+ * website's history). App 1.2: each alert stays unread (dot, bold title, badge count) until it is
+ * opened; tapping one opens its whole message (AlertDetailScreen). "Mark all as read" with Undo.
+ * Alerts are deleted automatically after App Center's time (30 days by default), and an admin can
+ * delete one or all of them. Pull down to fetch new ones from the website.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, Image, Pressable, StyleSheet, View } from 'react-native';
 import Text from '../i18n/Text';
 
-import {
-  useFocusEffect,
-  useIsFocused,
-  useNavigation,
-} from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useHeaderScroll } from '../components/headerScroll';
 import Icon, { IconName } from '../components/Icon';
 import PressableScale from '../components/PressableScale';
-import { inbox, useInbox } from '../remote/inbox';
+import { inbox, useInbox, useReadState } from '../remote/inbox';
 import { effectivePrefs, InboxItem, remote, useRemote } from '../remote/remote';
 import { openInboxItem, permission, pushAvailable } from '../remote/push';
 import { Theme } from '../theme';
@@ -50,27 +48,22 @@ function ago(at: number) {
 export default function AlertsScreen({ theme }: { theme: Theme }) {
   useHeaderScroll();
   const nav = useNavigation();
-  const focused = useIsFocused(); // tabs stay mounted: only the visible screen marks alerts as read
   const items = useInbox();
+  const rs = useReadState();
+  const unreadOf = (i: InboxItem) => !(i.at <= rs.readBefore || rs.read.includes(i.id));
+  const unreadN = items.filter(unreadOf).length;
   const prefs = useRemote(s => s.prefs);
-  const hours = useRemote(s => s.config?.inbox_purge.hours ?? 72);
+  const hours = useRemote(s => s.config?.inbox_purge.hours ?? 720);
   const [perm, setPerm] = useState<'granted' | 'denied' | null>(null);
-  // what was unread when the screen opened keeps its dot during this visit
-  const lastSeen = useRef(inbox.seenAt());
 
   useFocusEffect(
     useCallback(() => {
-      lastSeen.current = inbox.seenAt();
-      remote.refresh().catch(() => {});
-      inbox.markSeen();
+      remote.refresh(true).catch(() => {}); // newest history from the website (304 when nothing changed)
+      inbox.takePending();
       permission().then(setPerm);
-      return () => inbox.markSeen();
     }, []),
   );
-  useEffect(() => {
-    // new alerts arriving while the screen is on top count as read
-    if (focused && items.length) inbox.markSeen();
-  }, [items, focused]);
+
   useEffect(() => {
     const sub = AppState.addEventListener(
       'change',
@@ -100,23 +93,27 @@ export default function AlertsScreen({ theme }: { theme: Theme }) {
     const back = inbox.clearAll();
     offer(n === 1 ? '1 alert deleted' : tr('{n} alerts deleted', { n }), back);
   };
+  const markAll = () => {
+    const back = inbox.markAllRead();
+    offer(unreadN === 1 ? tr('1 alert marked as read') : tr('{n} alerts marked as read', { n: unreadN }), back);
+  };
   const off =
     pushAvailable() && (perm === 'denied' || !effectivePrefs(prefs).notify);
+  const kept = hours % 24 === 0 ? (hours === 24 ? tr('1 day') : tr('{n} days', { n: hours / 24 })) : tr('{n} hours', { n: hours });
 
   const renderItem = ({ item, index }: { item: InboxItem; index: number }) => {
-    const unread = item.at > lastSeen.current;
-    const canOpen = item.open !== 'home' || !!item.link;
+    const unread = unreadOf(item);
     return (
       <Appear delay={Math.min(index, 8) * 40} duration={320}
       >
         <PressableScale
           scaleTo={0.985}
-          onPress={canOpen ? () => openInboxItem(item) : undefined}
-          disabled={!canOpen}
-          accessibilityRole={canOpen ? 'button' : 'text'}
-          accessibilityLabel={`${unread ? 'New. ' : ''}${item.title}. ${
+          onPress={() => openInboxItem({ id: item.id, open: item.open, tool: item.tool, link: item.link })}
+          accessibilityRole="button"
+          accessibilityLabel={`${unread ? tr('Unread.') + ' ' : ''}${item.title}. ${
             item.body
           }. ${ago(item.at)}`}
+          accessibilityHint={tr('Opens the whole message')}
           style={[
             styles.card,
             {
@@ -135,7 +132,7 @@ export default function AlertsScreen({ theme }: { theme: Theme }) {
           <View style={styles.flex}>
             <View style={styles.titleRow}>
               <Text
-                style={[type.heading, styles.flex, { color: theme.ink }]}
+                style={[type.heading, styles.flex, { color: theme.ink }, !unread && styles.readTitle]}
                 numberOfLines={2}
               >
                 {item.title}
@@ -147,7 +144,7 @@ export default function AlertsScreen({ theme }: { theme: Theme }) {
             {item.body ? (
               <Text
                 style={[type.bodySm, { color: theme.ink2 }]}
-                numberOfLines={4}
+                numberOfLines={3}
               >
                 {item.body}
               </Text>
@@ -161,8 +158,7 @@ export default function AlertsScreen({ theme }: { theme: Theme }) {
               />
             ) : null}
             <Text style={[type.caption, { color: theme.muted }]}>
-              {ago(item.at)}
-              {canOpen ? ' · Tap to open' : ''}
+              {ago(item.at)} · {tr('Tap to read')}
             </Text>
           </View>
           <Pressable
@@ -196,6 +192,17 @@ export default function AlertsScreen({ theme }: { theme: Theme }) {
               >
                 Alerts
               </Text>
+              {unreadN > 0 && (
+                <PressableScale
+                  onPress={markAll}
+                  accessibilityRole="button"
+                  accessibilityLabel={tr('Mark all as read')}
+                  style={[styles.clear, { borderColor: theme.line, backgroundColor: theme.surface }]}
+                >
+                  <Icon name="check" size={16} color={theme.ink2} />
+                  <Text style={[type.caption, { color: theme.ink }]}>Read all</Text>
+                </PressableScale>
+              )}
               {items.length > 0 && (
                 <PressableScale
                   onPress={clearAll}
@@ -209,8 +216,8 @@ export default function AlertsScreen({ theme }: { theme: Theme }) {
               )}
             </View>
             <Text style={[type.bodySm, { color: theme.muted }]}>
-              Updates, new tools and news from Fileora. Alerts are deleted after{' '}
-              {hours === 72 ? '3 days' : `${hours} hours`}. Pull down to check for new ones.
+              {tr('Updates, new tools and news from Fileora. Alerts are kept for {time}. Pull down to check for new ones.', { time: kept })}
+              {unreadN > 0 ? ` ${unreadN === 1 ? tr('1 unread') : tr('{n} unread', { n: unreadN })}.` : ''}
             </Text>
             {off && (
               <PressableScale
@@ -310,6 +317,7 @@ const styles = StyleSheet.create({
   },
   titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   dot: { width: 9, height: 9, borderRadius: 5, marginTop: 6 },
+  readTitle: { fontWeight: '500' },
   image: {
     width: '100%',
     height: 140,

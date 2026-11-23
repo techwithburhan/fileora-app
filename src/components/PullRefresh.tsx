@@ -10,17 +10,26 @@
  * Android and iPhone and it never fights normal scrolling. Sideways swipes (carousels) are left alone.
  * Nothing here touches running tasks: a refresh only reads data.
  *
+ * App 1.2: the ring keeps turning until the refresh has really finished, then a small note says
+ * what happened: "Updated" (the website answered; with plugin 2.22 never a cached copy), or
+ * "Couldn't refresh — showing saved info" when it didn't. onRefresh tells it: an error text (or a
+ * list containing one), or a thrown error, means it failed; anything else means it worked.
+ *
  *   <PullRefresh theme={theme} onRefresh={refresh}>
  *     <Animated.FlatList … />          // or Animated.ScrollView; any Animated scrollable
  *   </PullRefresh>
  * If the screen has its own scroll handler, pass its scrollY (a shared value of contentOffset.y).
  */
-import React, { useCallback, useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AccessibilityInfo, StyleSheet, View } from 'react-native';
+import Text from '../i18n/Text';
+import Icon from './Icon';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   cancelAnimation,
   Easing,
+  FadeInDown,
+  FadeOut,
   interpolate,
   runOnJS,
   SharedValue,
@@ -49,6 +58,7 @@ const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 type Props = {
   theme: Theme;
+  /** resolves with null/undefined when it worked, an error text (or an array with one) when not */
   onRefresh: () => Promise<unknown> | unknown;
   scrollY?: SharedValue<number>;
   enabled?: boolean;
@@ -68,18 +78,34 @@ export default function PullRefresh({ theme, onRefresh, scrollY: external, enabl
     own.value = e.contentOffset.y;
   });
 
-  const finish = useCallback(() => {
-    busy.value = false;
-    cancelAnimation(spin);
-    pull.value = withTiming(0, { duration: 280, easing: Easing.out(Easing.cubic) });
-  }, [busy, spin, pull]);
+  const [note, setNote] = useState<{ ok: boolean; key: number } | null>(null);
+  const noteTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (noteTimer.current) clearTimeout(noteTimer.current);
+  }, []);
+  const finish = useCallback(
+    (ok: boolean) => {
+      busy.value = false;
+      cancelAnimation(spin);
+      pull.value = withTiming(0, { duration: 280, easing: Easing.out(Easing.cubic) });
+      setNote({ ok, key: Date.now() });
+      AccessibilityInfo.announceForAccessibility(ok ? tr('Updated') : tr('Couldn’t refresh. Showing saved info.'));
+      if (noteTimer.current) clearTimeout(noteTimer.current);
+      noteTimer.current = setTimeout(() => setNote(null), ok ? 1600 : 3200);
+    },
+    [busy, spin, pull],
+  );
 
   const start = useCallback(() => {
     const t0 = Date.now();
+    setNote(null);
     Promise.resolve()
       .then(() => onRefresh())
-      .catch(() => {})
-      .then(() => new Promise<void>(res => setTimeout(() => res(), Math.max(0, MIN_SPIN - (Date.now() - t0)))))
+      .then(
+        r => !failed(r),
+        () => false,
+      )
+      .then(ok => new Promise<boolean>(res => setTimeout(() => res(ok), Math.max(0, MIN_SPIN - (Date.now() - t0)))))
       .then(finish);
   }, [onRefresh, finish]);
 
@@ -151,6 +177,14 @@ export default function PullRefresh({ theme, onRefresh, scrollY: external, enabl
           <FIcon height={19} />
         </View>
       </Animated.View>
+      {note && (
+        <Animated.View key={note.key} entering={FadeInDown.duration(220)} exiting={FadeOut.duration(200)} pointerEvents="none" style={styles.noteWrap}>
+          <View style={[styles.note, { backgroundColor: note.ok ? theme.surface : theme.warnBg, borderColor: note.ok ? theme.line : theme.warnLine }]}>
+            <Icon name={note.ok ? 'check' : 'info'} size={15} color={note.ok ? theme.accentInk : theme.warnInk} width={2.4} />
+            <Text style={[styles.noteText, { color: note.ok ? theme.ink : theme.warnInk }]}>{note.ok ? 'Updated' : 'Couldn’t refresh. Showing saved info.'}</Text>
+          </View>
+        </Animated.View>
+      )}
       <GestureDetector gesture={pan}>
         <Animated.View style={[styles.flex, content]}>
           <GestureDetector gesture={native}>{child}</GestureDetector>
@@ -160,7 +194,17 @@ export default function PullRefresh({ theme, onRefresh, scrollY: external, enabl
   );
 }
 
+/** An error text, or a list (Promise.all) with one, means the refresh didn't get fresh data. */
+function failed(r: unknown): boolean {
+  if (typeof r === 'string') return r.length > 0;
+  if (Array.isArray(r)) return r.some(failed);
+  return r instanceof Error;
+}
+
 const styles = StyleSheet.create({
+  noteWrap: { position: 'absolute', top: 8, left: 0, right: 0, alignItems: 'center', zIndex: 3 },
+  note: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 12, paddingVertical: 6, elevation: 3, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 8, shadowOffset: { width: 0, height: 2 } },
+  noteText: { fontSize: 12.5, fontWeight: '700' },
   flex: { flex: 1 },
   indicator: { position: 'absolute', top: 0, left: 0, right: 0, alignItems: 'center', zIndex: 2 },
   badge: { width: SIZE, height: SIZE, borderRadius: SIZE / 2, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', elevation: 2 },

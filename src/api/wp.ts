@@ -8,13 +8,15 @@ export type Post = { id: number; link: string; title: string; excerpt: string; d
 
 const TIMEOUT = 15000;
 
-async function get<T>(path: string): Promise<T> {
+/** fresh: skip every cached copy (phone, CDN, page cache) — used by pull-to-refresh. */
+async function get<T>(path: string, fresh = false): Promise<T> {
   let last: unknown;
   for (let attempt = 0; attempt < 2; attempt++) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), TIMEOUT);
     try {
-      const r = await fetch(SITE + path, { headers: { Accept: 'application/json' }, signal: ctrl.signal });
+      const url = SITE + path + (fresh ? `${path.includes('?') ? '&' : '?'}_=${Date.now()}` : '');
+      const r = await fetch(url, { headers: fresh ? { Accept: 'application/json', 'Cache-Control': 'no-cache', Pragma: 'no-cache' } : { Accept: 'application/json' }, signal: ctrl.signal });
       if (r.status >= 500 && attempt === 0) {
         last = new Error('HTTP ' + r.status);
         await new Promise<void>(res => setTimeout(() => res(), 1200));
@@ -53,9 +55,10 @@ type RawPost = {
   _embedded?: { 'wp:featuredmedia'?: { source_url?: string; media_details?: { sizes?: Record<string, { source_url: string }> } }[] };
 };
 
-export async function getPosts(page = 1, perPage = 10): Promise<Post[]> {
+export async function getPosts(page = 1, perPage = 10, fresh = false): Promise<Post[]> {
   const raw = await get<RawPost[]>(
     `/wp-json/wp/v2/posts?per_page=${perPage}&page=${page}&_embed=wp:featuredmedia&_fields=id,link,date,title,excerpt,_links,_embedded`,
+    fresh,
   );
   return raw.map(p => {
     const m = p._embedded?.['wp:featuredmedia']?.[0];

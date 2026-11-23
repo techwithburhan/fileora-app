@@ -20,17 +20,20 @@ export default function BlogScreen({ theme }: { theme: Theme }) {
   const [end, setEnd] = useState(false);
   const [error, setError] = useState(false);
 
-  const load = useCallback(async (p: number, replace: boolean) => {
+  /** Returns an error text when the posts couldn't be fetched (pull-to-refresh shows it). */
+  const load = useCallback(async (p: number, replace: boolean, fresh = false): Promise<string | null> => {
     setError(false);
     try {
-      const next = await getPosts(p, 10);
+      const next = await getPosts(p, 10, fresh);
       setPosts(old => (replace ? next : [...old, ...next.filter(n => !old.some(o => o.id === n.id))]));
       setPage(p);
       setEnd(next.length < 10);
+      return null;
     } catch (e) {
       // WordPress answers 400 past the last page
       if (String(e).includes('400')) setEnd(true);
       else setError(true);
+      return String(e).includes('400') ? null : 'posts: ' + String(e);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -44,7 +47,7 @@ export default function BlogScreen({ theme }: { theme: Theme }) {
   return (
     <View style={[styles.flex, { backgroundColor: theme.bg }]}>
       <StackHeader title="Blog" theme={theme} onBack={() => nav.goBack()} />
-      <PullRefresh theme={theme} onRefresh={() => Promise.all([load(1, true), remote.refresh(true)])}>
+      <PullRefresh theme={theme} onRefresh={() => Promise.all([load(1, true, true), remote.refresh(true)])}>
         <Animated.FlatList
         data={posts}
         keyExtractor={p => String(p.id)}

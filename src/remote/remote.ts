@@ -106,7 +106,8 @@ export type RemoteConfig = {
   site_off: string[];
   app_maintenance: { title: string; text: string } | null;
   announcement: { id: string; style: 'info' | 'offer' | 'warning'; title: string; text: string; button: string; link: string } | null;
-  update: { latest: string; min: string; url: string; notes: string };
+  /** force: the "Please update" screen is on (plugin 2.22+); title/message: App Center's own text ('' = the app's) */
+  update: { latest: string; min: string; url: string; notes: string; force: boolean; title: string; message: string };
   links: { terms: string; privacy: string; contact: string; share: string; share_text: string };
   popular: string[];
   /** null = App Center has no navigation (older plugin): the app uses its built-in one */
@@ -129,6 +130,9 @@ export type RemoteConfig = {
   /* app 1.1+ (plugin 2.20+) */
   festival: Festival | null;
   festival_next: Festival | null;
+  /* app 1.2+ (plugin 2.22+) */
+  /** the site registers this phone's notification ID for fast direct delivery */
+  push_direct: boolean;
 };
 /** Notification categories people can switch off (FCM topics). "all" = important, always on. */
 export const TOPIC_LABELS: { id: string; label: string }[] = [
@@ -149,7 +153,13 @@ export type Prefs = {
   celebrate?: boolean;
   /** settings the person changed themselves (until then App Center's starting value applies) */
   touched?: string[];
+  /** app 1.2: when the first-launch permissions screen was finished (0/undefined = not yet) */
+  onboarded?: number;
+  /** app 1.2 (iPhone): the camera was explained before iOS asked for it the first time */
+  cameraExplained?: boolean;
 };
+/** This phone's notification ID as registered with the website for direct delivery (app 1.2+). */
+export type PushReg = { key: string; at: number; direct: boolean };
 type State = {
   loaded: boolean;
   config: RemoteConfig | null;
@@ -159,6 +169,10 @@ type State = {
   /** popup = "<id>|<YYYY-MM-DD>" of the Daily Update popup last closed */
   dismissed: { ann?: string; update?: string; popup?: string; festival?: string; fanim?: string };
   subscribed: string[]; // FCM topics this install is subscribed to
+  /** app 1.2: ETag of the settings last fetched (a 304 answer = nothing changed) */
+  etag: string;
+  /** app 1.2: direct delivery registration (what was sent, when, and whether the site accepted it) */
+  pushReg: PushReg | null;
 };
 
 const FILE = `${DATA}/remote.json`;
@@ -188,6 +202,8 @@ let state: State = {
   prefs: defaultPrefs(),
   dismissed: {},
   subscribed: [],
+  etag: '',
+  pushReg: null,
 };
 
 function emit() {
@@ -197,8 +213,8 @@ function save() {
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = null;
   if (!state.loaded) return Promise.resolve(); // never overwrite saved choices before they were read
-  const { config, fetchedAt, install, prefs, dismissed, subscribed } = state;
-  return writeJsonSafe(FILE, { config, fetchedAt, install, prefs, dismissed, subscribed });
+  const { config, fetchedAt, install, prefs, dismissed, subscribed, etag, pushReg } = state;
+  return writeJsonSafe(FILE, { config, fetchedAt, install, prefs, dismissed, subscribed, etag, pushReg });
 }
 function persist() {
   if (saveTimer) clearTimeout(saveTimer);
@@ -253,16 +269,16 @@ const text = (v: unknown, max: number) => (typeof v === 'string' ? v.slice(0, ma
 function cleanInbox(v: unknown): InboxItem[] {
   if (!Array.isArray(v)) return [];
   const out: InboxItem[] = [];
-  for (const x of v.slice(0, 50)) {
+  for (const x of v.slice(0, 120)) {
     if (!x || typeof x !== 'object') continue;
     const i = x as Record<string, unknown>;
     const id = text(i.id, 40);
-    const title = text(i.title, 120);
+    const title = text(i.title, 200);
     if (!id || !title) continue;
     out.push({
       id,
       title,
-      body: text(i.body, 400),
+      body: text(i.body, 5000), // app 1.2: the whole message (plugin 2.22 sends up to 1000 characters)
       image: httpsOnly(i.image),
       open: text(i.open, 12) || 'home',
       tool: text(i.tool, 40),
@@ -313,7 +329,7 @@ function cleanUi(v: unknown): UiConfig {
 function cleanPurge(v: unknown): InboxPurge {
   const p = v && typeof v === 'object' ? (v as Record<string, unknown>) : {};
   return {
-    hours: Math.max(1, Math.min(720, Number(p.hours) || 72)),
+    hours: Math.max(1, Math.min(2160, Number(p.hours) || 72)),
     ids: Array.isArray(p.ids) ? p.ids.filter((x): x is string => typeof x === 'string').slice(-300) : [],
     before: Math.max(0, Number(p.before) || 0),
   };
@@ -446,7 +462,16 @@ function clean(j: unknown): RemoteConfig | null {
     announcement: ann
       ? { id: str(ann.id), style: ann.style === 'offer' || ann.style === 'warning' ? ann.style : 'info', title: str(ann.title), text: str(ann.text), button: str(ann.button), link: str(ann.link) }
       : null,
-    update: { latest: str(c.update?.latest), min: str(c.update?.min), url: str(c.update?.url), notes: str(c.update?.notes) },
+    update: {
+      latest: normVersion(str(c.update?.latest)),
+      min: normVersion(str(c.update?.min)),
+      url: str(c.update?.url),
+      notes: str(c.update?.notes),
+      // older plugins have no switch: a minimum means force update is on
+      force: typeof c.update?.force === 'boolean' ? c.update.force : !!normVersion(str(c.update?.min)),
+      title: text(c.update?.title, 80),
+      message: text(c.update?.message, 400),
+    },
     links: { terms: str(c.links?.terms), privacy: str(c.links?.privacy), contact: str(c.links?.contact), share: str(c.links?.share) || SITE, share_text: str(c.links?.share_text) },
     popular: arr(c.popular),
     nav: 'controls' in c ? cleanNav(c.nav) : withAlerts(cleanNav(c.nav)), // "controls" = plugin 2.14+
@@ -465,7 +490,33 @@ function clean(j: unknown): RemoteConfig | null {
     popup: cleanPopup(c.popup),
     festival: cleanFestival(c.festival),
     festival_next: cleanFestival(c.festival_next),
+    push_direct: c.push_direct === true,
   };
+}
+
+let inflight: Promise<string | null> | null = null;
+
+async function fetchConfig(): Promise<string | null> {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 12000);
+  try {
+    const headers: Record<string, string> = { Accept: 'application/json', 'Cache-Control': 'no-cache', Pragma: 'no-cache' };
+    if (state.etag && state.config) headers['If-None-Match'] = state.etag;
+    const r = await fetch(`${CONFIG_URL}&_=${Date.now()}`, { headers, signal: ctl.signal });
+    if (r.status === 304 && state.config) {
+      set({ fetchedAt: Date.now() }); // unchanged: the copy on the phone is the newest
+      return null;
+    }
+    if (!r.ok) return `config: HTTP ${r.status}`;
+    const cfg = clean(await r.json());
+    if (!cfg) return 'config: unexpected answer';
+    set({ config: cfg, fetchedAt: Date.now(), etag: (r.headers.get('etag') || '').slice(0, 60) });
+    return null;
+  } catch (e) {
+    return `config: ${e instanceof Error ? (e.name === 'AbortError' ? 'timeout' : e.message) : 'failed'}`;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export const remote = {
@@ -493,6 +544,8 @@ export const remote = {
           })(),
           dismissed: d.dismissed || {},
           subscribed: Array.isArray(d.subscribed) ? d.subscribed : [],
+          etag: typeof d.etag === 'string' ? d.etag.slice(0, 60) : '',
+          pushReg: d.pushReg && typeof d.pushReg.key === 'string' ? { key: d.pushReg.key, at: Number(d.pushReg.at) || 0, direct: d.pushReg.direct === true } : null,
         };
       }
     } catch {
@@ -504,23 +557,30 @@ export const remote = {
     persist();
   },
 
-  /** Fetches the settings (respecting the cache time unless forced). Returns an error text or null. */
-  async refresh(force = false): Promise<string | null> {
+  /**
+   * Fetches the settings. Returns an error text, or null when the app has the newest settings.
+   *
+   * App 1.2: always asks the website itself (never a copy kept by the phone's HTTP cache, a CDN or
+   * a page cache: a unique address and no-cache headers), and sends the ETag of the copy it has,
+   * so an unchanged answer is a tiny "304 Not Modified". Without force, a copy younger than
+   * cache_seconds is used. Pull-to-refresh, "Try again", opening a notification and coming back
+   * to the app force it. Several calls at the same time share one request.
+   */
+  refresh(force = false): Promise<string | null> {
     const c = state.config;
-    if (!force && c && Date.now() - state.fetchedAt < c.cache_seconds * 1000) return null;
-    try {
-      const ctl = new AbortController();
-      const timer = setTimeout(() => ctl.abort(), 12000);
-      const r = await fetch(CONFIG_URL, { headers: { Accept: 'application/json' }, signal: ctl.signal });
-      clearTimeout(timer);
-      if (!r.ok) return `config: HTTP ${r.status}`;
-      const cfg = clean(await r.json());
-      if (!cfg) return 'config: unexpected answer';
-      set({ config: cfg, fetchedAt: Date.now() });
-      return null;
-    } catch (e) {
-      return `config: ${e instanceof Error ? (e.name === 'AbortError' ? 'timeout' : e.message) : 'failed'}`;
-    }
+    if (!force && c && Date.now() - state.fetchedAt < c.cache_seconds * 1000) return Promise.resolve(null);
+    if (inflight) return inflight;
+    inflight = fetchConfig().finally(() => {
+      inflight = null;
+    });
+    return inflight;
+  },
+
+  /** When the settings were last confirmed with the website (ms), 0 = never. */
+  fetchedAt: () => state.fetchedAt,
+
+  setPushReg(r: PushReg | null) {
+    set({ pushReg: r });
   },
 
   prefs(): Prefs {
@@ -566,15 +626,41 @@ export function soonMessage(): string {
   return state.config?.soon_msg || 'This tool is coming soon.';
 }
 
-/** Compares dotted versions: -1, 0, 1. */
+/** "v1.2" / " 1.2.0 " / "1.2.0-beta" → "1.2" / "1.2.0" / "1.2.0"; anything without a number → "". */
+export function normVersion(v: string): string {
+  const m = /^\s*[vV]?(\d{1,4}(?:\.\d{1,4}){0,3})/.exec(String(v ?? ''));
+  return m ? m[1] : '';
+}
+
+/** Compares dotted versions: -1, 0, 1 ("1.2" = "1.2.0"; "v1.2" is read as 1.2). */
 export function cmpVersion(a: string, b: string): number {
-  const pa = a.split('.').map(n => parseInt(n, 10) || 0);
-  const pb = b.split('.').map(n => parseInt(n, 10) || 0);
+  const pa = normVersion(a).split('.').map(n => parseInt(n, 10) || 0);
+  const pb = normVersion(b).split('.').map(n => parseInt(n, 10) || 0);
   for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
     const d = (pa[i] || 0) - (pb[i] || 0);
     if (d) return d > 0 ? 1 : -1;
   }
   return 0;
+}
+
+/**
+ * The version this install must have, or '' when no update is forced. App 1.2 rules:
+ * - no minimum, or force update switched off in App Center → nothing is forced;
+ * - a minimum above "latest" (a version that doesn't exist yet) is capped at "latest", so phones
+ *   that installed the newest version are never blocked by a typo or an early change in App Center.
+ */
+export function requiredVersion(u: RemoteConfig['update'] | undefined | null): string {
+  if (!u || !u.force) return '';
+  const min = normVersion(u.min);
+  if (!min) return '';
+  const latest = normVersion(u.latest);
+  return latest && cmpVersion(min, latest) > 0 ? latest : min;
+}
+
+/** Whether this version must update (pure: tested in __tests__/version.test.ts). */
+export function mustUpdate(installed: string, u: RemoteConfig['update'] | undefined | null): boolean {
+  const req = requiredVersion(u);
+  return !!req && !!normVersion(installed) && cmpVersion(installed, req) < 0;
 }
 
 /* ---------- Notification & Privacy settings managed from App Center ---------- */

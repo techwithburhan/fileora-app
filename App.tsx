@@ -28,6 +28,9 @@ import FilesScreen from './src/screens/FilesScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import ProcessScreen from './src/screens/ProcessScreen';
 import AlertsScreen from './src/screens/AlertsScreen';
+import AlertDetailScreen from './src/screens/AlertDetailScreen';
+import InAppBanner from './src/components/InAppBanner';
+import Onboarding, { useNeedsOnboarding } from './src/components/Onboarding';
 import PromoScreen from './src/screens/PromoScreen';
 import ScannerScreen from './src/screens/ScannerScreen';
 import ScanEditorScreen from './src/screens/ScanEditorScreen';
@@ -44,7 +47,7 @@ import { store } from './src/store/store';
 import { navigationRef, RootStackParamList, TabParamList } from './src/navigation/types';
 import { setAnalyticsEnabled, trackScreen } from './src/analytics';
 import { Theme, useTheme } from './src/theme';
-import RemoteGate from './src/components/RemoteGate';
+import RemoteGate, { useGate } from './src/components/RemoteGate';
 import EngineHost from './src/engine/EngineHost';
 import SelfTest from './src/engine/SelfTest';
 import ErrorBoundary, { installGlobalErrorHandler } from './src/components/ErrorBoundary';
@@ -98,6 +101,8 @@ export default function App() {
   const done = useCallback(() => setSplash(false), []);
   const [navReady, setNavReady] = useState(false);
   const lastCheckin = useRef(0);
+  const needsSetup = useNeedsOnboarding();
+  const gate = useGate();
   useEffect(() => {
     // files, activity and the dark-mode choice saved on this phone; the Alerts history
     store.load().then(syncRtl);
@@ -129,9 +134,15 @@ export default function App() {
         startTimer();
       });
     const stopPush = startPush();
+    let lastResume = 0;
     const sub = AppState.addEventListener('change', st => {
       if (st === 'active') {
-        refreshConfig().then(() => {
+        // app 1.2: coming back always checks the website (a 304 when nothing changed), so changes
+        // made in App Center — force update, alerts, events — show without restarting the app
+        const force = Date.now() - lastResume > 15000;
+        lastResume = Date.now();
+        inbox.takePending();
+        refreshConfig(force).then(() => {
           if (Date.now() - lastCheckin.current >= every()) checkin();
           syncTopics();
         });
@@ -190,7 +201,8 @@ export default function App() {
                 const r = navigationRef.getCurrentRoute();
                 if (r) trackScreen(r.name);
               }}>
-              <Stack.Navigator screenOptions={{ headerShown: false, animation: rtl ? 'slide_from_left' : 'slide_from_right', contentStyle: { backgroundColor: theme.bg } }}>
+              {/* app 1.2: the iPhone's push animation on both platforms (parallax, smooth easing) */}
+              <Stack.Navigator screenOptions={{ headerShown: false, animation: rtl ? 'ios_from_left' : 'ios_from_right', gestureEnabled: true, contentStyle: { backgroundColor: theme.bg } }}>
                 <Stack.Screen name="Tabs">{() => <TabsScreen theme={theme} />}</Stack.Screen>
                 <Stack.Screen name="Tool">{() => <ToolScreen theme={theme} />}</Stack.Screen>
                 <Stack.Screen name="Process">{() => <ProcessScreen theme={theme} />}</Stack.Screen>
@@ -204,14 +216,17 @@ export default function App() {
                 <Stack.Screen name="Cloud">{() => <CloudScreen theme={theme} />}</Stack.Screen>
                 <Stack.Screen name="Blog">{() => <BlogScreen theme={theme} />}</Stack.Screen>
                 <Stack.Screen name="Promo">{() => <PromoScreen theme={theme} />}</Stack.Screen>
+                <Stack.Screen name="Alert">{() => <AlertDetailScreen theme={theme} />}</Stack.Screen>
                 <Stack.Screen name="Web" options={{ animation: 'slide_from_bottom' }}>
                   {() => <WebScreen theme={theme} />}
                 </Stack.Screen>
               </Stack.Navigator>
               <MenuSheet theme={theme} />
             </NavigationContainer>
+            {!splash && needsSetup && !gate && <Onboarding theme={theme} />}
             <RemoteGate />
             {!splash && <FestivalOverlay />}
+            <InAppBanner theme={theme} />
             <LanguageSheet theme={theme} />
             {/* the offline tool engine: an invisible page from the app's own files */}
             <EngineHost />

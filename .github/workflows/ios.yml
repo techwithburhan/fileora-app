@@ -147,6 +147,11 @@ jobs:
           sleep 12
           xcrun simctl io "$DEV" screenshot out/simulator/start.png
           sleep 20
+          # app 1.2: the first launch shows the permissions screen; then it is closed for the rest
+          xcrun simctl io "$DEV" screenshot out/simulator/v12-setup.png
+          xcrun simctl terminate "$DEV" in.fileora.app || true
+          xcrun simctl launch "$DEV" in.fileora.app -FileoraSetup done
+          sleep 12
           xcrun simctl io "$DEV" screenshot out/simulator/home.png
           # the offline tool engine in WKWebView: its self-test (fileora://selftest)
           # (started with a launch argument: a link would first ask "Open in Fileora?")
@@ -175,6 +180,16 @@ jobs:
           xcrun simctl launch "$DEV" in.fileora.app
           sleep 15
           xcrun simctl io "$DEV" screenshot out/simulator/v11-home-ar-restart.png
+          xcrun simctl terminate "$DEV" in.fileora.app || true
+          xcrun simctl launch "$DEV" in.fileora.app -FileoraLang en
+          sleep 10
+          # app 1.2: Alerts with unread dots, an alert's whole message, the in-app banner
+          for d in alerts alert banner; do
+            xcrun simctl terminate "$DEV" in.fileora.app || true
+            xcrun simctl launch "$DEV" in.fileora.app -FileoraDemo "$d"
+            sleep 12
+            xcrun simctl io "$DEV" screenshot "out/simulator/v12-$d.png"
+          done
           xcrun simctl spawn "$DEV" log show --last 2m --style compact --predicate 'process == "FileoraApp"' 2>/dev/null | grep -iE "error|exception|fatal|crash" | grep -v "nw_\|CFNetwork" | tail -40 > out/simulator/log.txt || true
           if xcrun simctl spawn "$DEV" launchctl list | grep -q "in.fileora.app"; then echo "RUNNING" > out/simulator/status.txt; echo "Fileora is running in the simulator"; else echo "NOT RUNNING" > out/simulator/status.txt; echo "::error::Fileora is not running in the simulator (crash at start?)"; fi
           ls -la ~/Library/Logs/DiagnosticReports 2>/dev/null | grep -i fileora || true
