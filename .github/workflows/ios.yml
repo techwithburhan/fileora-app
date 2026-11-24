@@ -212,10 +212,14 @@ jobs:
           for fest in diwali holi onam lunar-new-year; do
             xcrun simctl terminate "$DEV" in.fileora.app || true
             xcrun simctl launch "$DEV" in.fileora.app -FileoraDemo "festival/$fest"
-            sleep 9
+            # the animation plays for 8 s from when the festival appears (a few seconds after launch)
+            sleep 3.5
             xcrun simctl io "$DEV" screenshot "out/simulator/v123-festival-$fest.png"
-            sleep 2
+            sleep 2.5
             xcrun simctl io "$DEV" screenshot "out/simulator/v123-festival-$fest-2.png"
+            sleep 2.5
+            xcrun simctl io "$DEV" screenshot "out/simulator/v123-festival-$fest-3.png"
+            sleep 4
           done
           xcrun simctl spawn "$DEV" log show --last 2m --style compact --predicate 'process == "FileoraApp"' 2>/dev/null | grep -iE "error|exception|fatal|crash" | grep -v "nw_\|CFNetwork" | tail -40 > out/simulator/log.txt || true
           if xcrun simctl spawn "$DEV" launchctl list | grep -q "in.fileora.app"; then echo "RUNNING" > out/simulator/status.txt; echo "Fileora is running in the simulator"; else echo "NOT RUNNING" > out/simulator/status.txt; echo "::error::Fileora is not running in the simulator (crash at start?)"; fi
