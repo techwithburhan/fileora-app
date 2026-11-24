@@ -25,7 +25,16 @@ type Native = {
   takePushOpen(): Promise<string | null>;
 };
 /** A notification shown by the app itself (one that arrived while Fileora is open). */
-export type ShowNotification = { id: string; title: string; body: string; quiet: boolean; private: boolean; data: string };
+export type ShowNotification = {
+  id: string;
+  title: string;
+  body: string;
+  quiet: boolean;
+  private: boolean;
+  data: string;
+  /** app 1.2: Fileora is open — the Fileora sound without a pop-up (channel "fileora_inapp") */
+  inApp?: boolean;
+};
 /** What can stop notifications on this Android phone (Settings → Check notifications). */
 export type NotifStatus = {
   enabled: boolean;

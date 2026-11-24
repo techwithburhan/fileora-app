@@ -233,7 +233,7 @@ class FileoraNativeModule(private val ctx: ReactApplicationContext) : ReactConte
     try {
       val str = { k: String -> if (n.hasKey(k) && !n.isNull(k)) n.getString(k) ?: "" else "" }
       val flag = { k: String -> n.hasKey(k) && !n.isNull(k) && n.getBoolean(k) }
-      promise.resolve(FileoraNotify.show(ctx, str("id"), str("title"), str("body"), flag("quiet"), flag("private"), str("data")))
+      promise.resolve(FileoraNotify.show(ctx, str("id"), str("title"), str("body"), flag("quiet"), flag("private"), str("data"), flag("inApp")))
     } catch (e: Exception) {
       promise.reject("notify", e.message, e)
     }

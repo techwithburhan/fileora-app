@@ -26,10 +26,12 @@ import androidx.core.app.NotificationManagerCompat
 object FileoraNotify {
   const val CHANNEL = "fileora_alerts"
   const val CHANNEL_QUIET = "fileora_quiet"
+  /** app 1.2: while Fileora is open — sound, no pop-up (the app shows its own banner) */
+  const val CHANNEL_INAPP = "fileora_inapp"
   const val EXTRA = "fileora_push"
   const val ACTION_OPEN = "in.fileora.app.OPEN_NOTIFICATION"
 
-  fun show(ctx: Context, id: String, title: String, body: String, quiet: Boolean, private: Boolean, data: String): Boolean {
+  fun show(ctx: Context, id: String, title: String, body: String, quiet: Boolean, private: Boolean, data: String, inApp: Boolean = false): Boolean {
     val nm = NotificationManagerCompat.from(ctx)
     if (!nm.areNotificationsEnabled()) return false
     val open = Intent(ctx, MainActivity::class.java).apply {
@@ -39,7 +41,7 @@ object FileoraNotify {
     }
     val code = (id.ifEmpty { title }).hashCode()
     val pi = PendingIntent.getActivity(ctx, code, open, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-    val b = NotificationCompat.Builder(ctx, if (quiet) CHANNEL_QUIET else CHANNEL)
+    val b = NotificationCompat.Builder(ctx, if (quiet) CHANNEL_QUIET else if (inApp) CHANNEL_INAPP else CHANNEL)
       .setSmallIcon(R.drawable.ic_notification)
       .setColor(0xFF17AF64.toInt())
       .setContentTitle(title)
@@ -47,7 +49,7 @@ object FileoraNotify {
       .setStyle(NotificationCompat.BigTextStyle().bigText(body))
       .setAutoCancel(true)
       .setContentIntent(pi)
-      .setPriority(if (quiet) NotificationCompat.PRIORITY_LOW else NotificationCompat.PRIORITY_HIGH)
+      .setPriority(if (quiet) NotificationCompat.PRIORITY_LOW else if (inApp) NotificationCompat.PRIORITY_DEFAULT else NotificationCompat.PRIORITY_HIGH)
       .setVisibility(if (private) NotificationCompat.VISIBILITY_SECRET else NotificationCompat.VISIBILITY_PRIVATE)
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
       // Android 7 and older have no channels: the sound is set on the notification

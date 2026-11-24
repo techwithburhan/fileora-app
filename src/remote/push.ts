@@ -400,8 +400,9 @@ export function startPush(): () => void {
     syncTopics(true);
   });
   // While the app is open (app 1.2): keep it in Alerts and slide in Fileora's own banner (tap =
-  // the whole message). Android also puts a silent copy in the notification shade; iOS lists it
-  // in Notification Centre (firebase.json: "list" and "sound", no system banner on top of ours).
+  // the whole message). Android also puts a copy in the notification shade on the "fileora_inapp"
+  // channel: the Fileora sound, no system pop-up on top of ours (silent when the person chose
+  // quiet notifications). iOS plays the sound and lists it in Notification Centre (firebase.json).
   const offMsg = onMessage(m, async msg => {
     const n = msg.notification;
     const d = (msg.data || {}) as Data;
@@ -420,7 +421,8 @@ export function startPush(): () => void {
         id: String(d.id || msg.messageId || Date.now()),
         title: title || 'Fileora',
         body,
-        quiet: true, // the in-app banner is the pop-up; the shade keeps a copy
+        quiet: p.quiet,
+        inApp: true, // the in-app banner is the pop-up; the shade keeps a copy, with the sound
         private: p.private,
         data: JSON.stringify({ open: d.open || 'home', tool: d.tool || '', link: d.link || '', id: d.id || id }),
       })

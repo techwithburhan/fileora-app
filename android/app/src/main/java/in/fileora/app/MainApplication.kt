@@ -35,6 +35,8 @@ class MainApplication : Application(), ReactApplication {
    * Android 8+: the channels App Center sends to.
    * - "fileora_alerts": with the Fileora sound (res/raw/fileora_notify.ogg) and a pop-up.
    * - "fileora_quiet": for people who chose quiet notifications (no sound, no pop-up).
+   * - "fileora_inapp" (app 1.2): a notification that arrives while Fileora is open — the Fileora
+   *   sound, but no pop-up on top of the app's own banner.
    * The old "fileora" channel (app 0.5) is removed: a channel's sound can't change after it exists.
    */
   private fun createNotificationChannel() {
@@ -55,8 +57,14 @@ class MainApplication : Application(), ReactApplication {
       setSound(null, null)
       enableVibration(false)
     }
+    val inApp = NotificationChannel("fileora_inapp", "While Fileora is open", NotificationManager.IMPORTANCE_DEFAULT).apply {
+      description = "Notifications that arrive while you use Fileora: the Fileora sound, shown in the app instead of a pop-up"
+      setSound(sound, audio)
+      enableVibration(true)
+    }
     nm.createNotificationChannel(alerts)
     nm.createNotificationChannel(quiet)
+    nm.createNotificationChannel(inApp)
     nm.deleteNotificationChannel("fileora")
   }
 }
