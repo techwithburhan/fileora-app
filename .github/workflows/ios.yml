@@ -127,6 +127,24 @@ jobs:
             build > "$RUNNER_TEMP/build.log" 2>&1 || { grep -n "error:" "$RUNNER_TEMP/build.log" | head -60; tail -120 "$RUNNER_TEMP/build.log"; exit 1; }
           tail -5 "$RUNNER_TEMP/build.log"
           cd ios/build/Build/Products/Release-iphonesimulator && zip -qry "$RUNNER_TEMP/Fileora-simulator.zip" FileoraApp.app
+      # app 1.2.2: an unsigned iPhone build (.ipa) for sideloading. Apple only installs apps signed
+      # with a certificate: re-sign it with your own Apple ID (Sideloadly, AltStore) or add the
+      # Apple secrets for a signed TestFlight build. Published to the "builds-ios" branch (device/).
+      - name: Build unsigned IPA (for re-signing / sideloading)
+        if: steps.mode.outputs.mode == 'simulator'
+        run: |
+          set -o pipefail
+          xcodebuild -workspace ios/FileoraApp.xcworkspace -scheme FileoraApp -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath ios/build-device \
+            MARKETING_VERSION="$MARKETING_VERSION" CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build > "$RUNNER_TEMP/build-device.log" 2>&1 || { grep -n "error:" "$RUNNER_TEMP/build-device.log" | head -60; tail -120 "$RUNNER_TEMP/build-device.log"; exit 1; }
+          tail -3 "$RUNNER_TEMP/build-device.log"
+          mkdir -p "$RUNNER_TEMP/ipa/Payload" out/device
+          cp -R ios/build-device/Build/Products/Release-iphoneos/FileoraApp.app "$RUNNER_TEMP/ipa/Payload/"
+          (cd "$RUNNER_TEMP/ipa" && zip -qry "$GITHUB_WORKSPACE/out/device/Fileora-$MARKETING_VERSION-unsigned.ipa" Payload)
+          ls -la out/device
+          shasum -a 256 out/device/*.ipa > out/device/SHA256SUMS.txt
       # Start the app in an iPhone simulator: it must open and keep running (no crash at start).
       # Screenshots go to the "builds-ios" branch (simulator/home.png).
       - name: Run in the iPhone simulator
