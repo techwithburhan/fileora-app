@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fileora brand -->
+    <color name="brand_navy">#04336B</color>
+    <color name="brand_green">#17AF64</color>
+    <color name="brand_blue">#006DFC</color>
+    <color name="ic_launcher_background">#FFFFFF</color>
+</resources>

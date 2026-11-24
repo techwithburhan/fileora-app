@@ -1,0 +1,194 @@
+1|% do lado menor
+2|% da largura
+6|1 item vai para a Lixeira. Você pode restaurá-lo em Arquivos → Lixeira.
+7|1 de 12
+12|2 arquivos PDF
+13|2 × 2 pol. (51 × 51 mm)
+22|Foto 4 × 6 pol.
+27|90° para a esquerda
+28|90° para a direita
+29|Um arquivo não chegou à ferramenta. Adicione-o novamente.
+30|Uma foto ou digitalização em papel branco funciona. O fundo branco é removido.
+31|Um som curto e baixinho de confete quando um arquivo fica pronto
+32|De A a Z
+33|A4 (as páginas encolhem para A5)
+34|Papel A4
+35|ADICIONAR PÁGINA
+36|Resumidor com IA
+37|Status da API
+38|O AVIF costuma ter metade do tamanho de um JPG com a mesma aparência. A primeira imagem demora um pouco enquanto o codificador carrega.
+39|AVIF para JPG
+40|Impressão do cartão Aadhaar
+42|Sobre
+43|Quem somos
+44|Aceitar
+45|Acessibilidade
+46|Conta
+47|Ao meio, na horizontal
+48|Na horizontal, depois para baixo
+49|Atividade
+50|Anúncio
+51|Sem anúncios até {time}
+52|Adicionar números Bates
+53|Adicionar borda à imagem
+54|Adicionar conexão
+55|Adicionar imagem ou carimbo
+56|Adicione um PDF ou foto com os dois lados, ou duas fotos (frente e verso). Mova as caixas sobre cada lado do cartão.
+57|Adicionar uma caixa
+58|Adicione uma senha para que só as pessoas certas possam abrir o arquivo.
+59|Adicionar páginas em branco
+60|Adicionar borda
+61|Adicionar cabeçalho e rodapé
+62|Adicionar imagem
+63|Adicionar mais {things}
+64|Adicionar página
+65|Adicionar números de página
+66|Adicionar páginas
+67|Adicione algum HTML primeiro.
+68|Adicione texto, imagens, formas e anotações à mão livre em qualquer página.
+69|Adicione texto, números de página, a data ou o nome do arquivo no topo ou no rodapé de cada página.
+70|Adicione o cartão primeiro.
+71|Adicione primeiro o original e depois a versão alterada.
+72|Adicionar a data de hoje embaixo
+73|Adicionar marca d’água
+74|Adicione o PDF do e-Aadhaar (ou fotos da frente e do verso). Mova as duas caixas sobre a frente e o verso do cartão e crie a página para impressão.
+75|Adicione seu nome ou marca às fotos, uma vez ou repetido por toda a imagem.
+76|Adicionando texto
+77|Adicionando a borda
+78|Anúncios e privacidade
+79|Os anúncios mantêm todas as ferramentas do Fileora gratuitas, sem cadastro. Seus arquivos nunca são usados para anúncios.
+80|Publicidade
+81|A cada N páginas
+82|Depois de cada página
+83|Alerta excluído
+84|Alertas
+85|Tudo
+86|Todos os arquivos
+87|Todos os campos
+88|Tudo em uma
+89|Todos os posts
+90|Todas as ferramentas
+91|Permitir
+92|Permita as notificações do Fileora primeiro.
+93|Permita as notificações do Fileora nas configurações do celular e volte.
+94|Permita as notificações do Fileora neste celular. Toque para permitir.
+95|Quase vazia
+96|Já estava otimizado, então mantivemos o original
+97|É preciso atualizar. Concluindo sua tarefa primeiro…
+99|Configurações de notificação do Android para o Fileora: som, vibração, tela de bloqueio
+100|Ângulo
+101|Qualquer cor, como código hexadecimal
+102|Manifesto do app
+103|Aparência
+104|Árabe
+105|Tem certeza de que deseja descartar estas {n} imagens?
+106|Tem certeza de que deseja descartar esta imagem?
+107|Área
+108|Organizar páginas
+109|Organizando páginas
+110|Montando o livreto
+111|Quantas couberem
+112|Pelo menos 6 caracteres
+113|No fim
+114|No início
+115|Autor
+116|Auto
+117|Início automático
+118|Voltar
+119|De volta às escolhas originais, com um novo ID de notificação anônimo
+120|Fundo
+121|Cores e imagens de fundo
+122|Equilibrado
+123|Só Base64
+124|Numeração Bates
+125|Bateria
+126|Bengali
+127|Preto
+128|Preto e branco (assinatura, carimbo, traço)
+129|Preto e branco
+130|Tarja preta
+131|Tinta preta
+132|Páginas em branco de cada vez
+133|Bloquear impressão e cópia
+134|Bloqueadas nas configurações do celular. Toque para abri-las.
+135|Blog
+136|Posts do blog
+137|Tinta azul
+138|Desfocar
+139|Desfocar parte da imagem
+140|Desfocar as áreas
+141|Desfocando
+142|Criador de livretos
+143|Borda
+144|Cor da borda
+145|Detecção de bordas
+146|Embaixo no centro
+147|Embaixo à esquerda
+148|Embaixo à direita
+149|Ver ferramentas
+150|Navegue pelo celular e abra um arquivo
+151|Montando sua digitalização
+152|Marcadores
+153|Mídia CSS
+154|Câmera
+155|Cancelar
+156|Cancelado.
+157|Não é possível abrir este arquivo
+158|Capturando a página
+159|Categorias
+160|Categorias, modo silencioso e privacidade voltam às configurações originais, e o Fileora recebe um novo ID de notificação anônimo.
+161|Som de comemoração
+162|Centro
+163|Centralizado
+164|Alterar opções
+165|Altere ou remova o título, o autor, o assunto e as palavras-chave guardados em um PDF.
+166|Converta fotos entre JPG, PNG, WebP e AVIF.
+167|Trocar imagem
+168|Altere o tamanho das fotos em pixels ou porcentagem, uma ou várias de uma vez.
+169|Volte mais tarde para ver ofertas e novidades.
+170|Procurar atualizações
+171|Verificar notificações
+172|Verifique sua conexão com a internet e tente novamente.
+173|Caixas de seleção
+174|Verificando…
+175|Chinês (simplificado)
+176|Escolha JPG, PNG, WebP ou AVIF.
+177|Escolha uma imagem PNG, JPG ou WebP.
+178|Escolher uma imagem
+179|Escolha uma imagem da sua assinatura
+180|Escolha um arquivo .html ou .htm.
+181|Escolher outro arquivo
+182|Escolher outra imagem
+183|Escolha como o Google usa dados para anúncios
+184|Escolha o arquivo na página
+185|Escolha {things}
+186|Imagem escolhida
+187|Limpando
+188|Limpar
+189|Limpar tudo
+190|Limpar todos os {what}?
+191|Limpar pesquisa
+192|Limpar a lista Abertos
+193|Limpar a lista Abertos?
+194|Limpe o editor primeiro para não substituir seu próprio código.
+195|Fechar
+196|Fechar menu
+197|Nuvem
+198|Armazenamento em nuvem
+199|Cor
+200|Paleta de cores da imagem
+201|Cores
+202|Combinar imagens
+203|Combinar imagens
+204|Junte vários PDFs em um só arquivo, exatamente na ordem que quiser.
+205|Combinando
+206|Em breve
+207|Comparar PDF
+208|Comparar arquivos
+209|Comparando
+210|Totalmente vazia
+211|Comprimir imagem
+212|Comprimir imagem para KB
+213|Comprimir PDF
+214|Comprimir imagens
+215|Comprimir para o tamanho

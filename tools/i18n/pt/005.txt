@@ -1,0 +1,210 @@
+861|A Lixeira está vazia
+863|Tarjar PDF
+864|Tarjando
+865|Atualizando
+866|Remover
+867|Remover páginas em branco
+868|Remover localização da foto
+869|Remover tudo
+870|Remover todos os detalhes
+871|Remover páginas em branco
+872|Remover dados ocultos
+873|Remover o fundo (transparente)
+874|Remova a senha de um PDF que você tem permissão para abrir.
+875|Remover esta caixa
+876|Remove título, autor, assunto, palavras-chave, nomes de software, datas e metadados XMP. As páginas não mudam.
+877|Renomear
+878|Renderizando páginas
+879|Reordene, gire e exclua páginas numa visualização de páginas.
+880|Reparar PDF
+881|Reparando
+882|Repita a senha
+883|Redefinir
+884|Redefinir configurações de notificação
+885|Redefinir configurações de notificação?
+886|Redefinir páginas
+887|Redimensionar
+888|Redimensionar imagem
+889|Redimensionar páginas do PDF
+890|Ajuste uma foto ou assinatura ao tamanho exato em pixels e ao limite de KB que o formulário do concurso pede.
+891|Redimensionar por
+892|Ajustar para o formulário
+893|Redimensionar imagens
+894|Redimensionar páginas
+895|Redimensionando
+896|Redimensionando páginas
+897|Inverter e inserir páginas
+898|Inverter ordem
+899|Inverta a ordem das páginas, duplique páginas ou insira páginas em branco.
+900|Direita
+901|Página da direita primeiro (livros em árabe, urdu, japonês)
+902|Livreto da direita para a esquerda
+903|Girar
+904|Girar e espelhar imagem
+905|Girar PDF
+906|Girar imagens
+907|Girando
+908|Cantos arredondados
+909|Executar JavaScript
+910|Executar OCR
+911|Executando…
+912|Roda no servidor do Fileora
+913|Roda neste telefone, também offline. Seus arquivos não são enviados.
+914|Roda no seu telefone, também offline
+915|Russo
+916|Arquivo SVG
+917|Arquivos SVG
+918|SVG para PNG
+919|Igual a cada página
+920|Mesmo tipo
+921|Salvar
+922|Salve arquivos do Fileora na sua nuvem. O Fileora usa o app de cada serviço neste telefone, então sua senha da nuvem e seus outros arquivos ficam com esse app.
+923|Salvar PDF
+924|Salvar como
+925|Salvar como PDF
+926|Salve cada página como uma imagem JPG ou PNG nítida.
+927|Salve cada imagem de um PDF como um arquivo de imagem separado.
+928|Salvo
+929|Salvo de novo sem dados ocultos
+930|Salvo em Arquivos e em {where} neste telefone.
+931|Salvo em Arquivos e em {where}.
+932|Salvo em Scanner → PDFs convertidos e em {where}.
+933|Salvo em Scanner → Imagens digitalizadas e em {where}.
+934|Salvo em Scanner → Imagens digitalizadas.
+935|Salvo neste telefone
+936|Salvo com este documento e em {where}.
+937|Salva uma página da web pública como PDF. Tem código HTML ou um arquivo .html? Use Código HTML para PDF.
+938|Salvando
+939|Salvando página {n} de {total}…
+940|Salvando…
+941|Escala
+942|Digitalizar
+943|Digitalização concluída
+944|Digitalizar para PDF
+947|Imagens digitalizadas
+948|PDF digitalizado
+949|Imagem digitalizada
+950|Scanner
+951|Digitalizações
+952|Digitalizações e conversões são feitas e guardadas neste telefone.
+953|Tela
+954|Buscar ferramentas
+955|PDF pesquisável
+956|Segurança
+957|Ver tudo
+958|Veja exatamente o que mudou entre duas versões de um documento.
+959|Selecione o idioma do aplicativo
+960|Selecione pelo menos {n} arquivos.
+961|Enviar uma notificação de teste
+962|Enviado por HTTPS ao servidor de processamento do Fileora e apagado após o download (ou em até 1 hora).
+963|Definido pelo Fileora.
+964|Configurações
+965|Forma
+966|Compartilhar
+967|Compartilhar PDF
+968|Compartilhar uso anônimo
+969|Compartilhar o aplicativo
+970|Compartilhar ou copiar o texto
+971|Compartilhe o amor com quem importa.
+972|Compartilhado
+973|Compartilhado com o Fileora
+974|Nítido
+975|Folha
+976|Curto
+977|Mostrar
+978|Mostrar senha
+979|Mostra os dados guardados dentro do PDF. Altere-os ou remova todos antes de compartilhar.
+980|Reduza fotos JPG, PNG e WebP para a web, e-mail e uploads.
+981|Reduza arquivos, conserte os danificados e torne as digitalizações pesquisáveis.
+982|Intercalando as páginas
+983|Lado a lado
+984|Assinar PDF
+985|Assine acima da linha
+986|Assinatura
+987|Área de assinatura. Desenhe sua assinatura com o dedo.
+988|Assinando
+989|Nome do site (para o manifesto do app)
+990|Tamanho
+991|Ignorar imagens menores que
+992|Ignorar a primeira página
+993|Ignorar a primeira página (capa)
+994|Pequeno
+995|Pequeno (800 px)
+996|Menor
+997|Menor tamanho de arquivo
+998|Algo deu errado
+999|Em breve
+1000|Ordenar
+1001|Som e banners
+1002|Som e mais
+1003|Som e pop-up
+1004|Espaçamento
+1005|Espanhol
+1006|Dividir PDF
+1007|Dividir páginas ao meio
+1008|Dividir por
+1009|Dividir páginas
+1010|Dividindo
+1011|Quadrado (1:1)
+1012|Carimbe números no estilo jurídico, como ABC-000001, em um ou vários PDFs.
+1013|Carimbe texto nas suas páginas. Escolha tamanho, ângulo, cor e opacidade.
+1014|Carimbando
+1015|Começar em
+1016|Story (9:16)
+1017|Endireite, recorte e limpe a página e depois salve como PDF
+1018|Intensidade
+1019|Remova a localização GPS, os dados da câmera e outros dados ocultos das fotos antes de compartilhá-las.
+1020|Forte
+1021|Estilo
+1022|Assunto
+1023|Sufixo
+1024|Resumir
+1025|Resuma e traduza documentos com IA.
+1026|Trocar
+1027|Amostras com seus códigos
+1028|Desativado para este app. Definido pelo Fileora.
+1029|FERRAMENTAS USADAS, POR CATEGORIA
+1030|Abas
+1031|Tirar uma foto
+1032|Tirar outra foto
+1033|Tâmil
+1034|Toque no botão + para adicionar um PDF ou imagens e transformá-los num PDF limpo.
+1035|Toque no botão + para digitalizar com a câmera ou escolher fotos da galeria.
+1036|Alvo
+1037|Tamanho desejado
+1039|Télugo
+1040|Temporariamente indisponível
+1041|Termos e Condições
+1042|Notificação de teste
+1043|Arquivo de texto
+1044|Só texto
+1045|Tamanho do texto
+1046|Texto para PDF
+1047|Obrigado, mãe, por tudo.
+1048|Obrigado, pai, por tudo.
+1049|Não foi possível ler esse arquivo.
+1050|Esse tamanho é grande demais. Escolha uma escala menor.
+1051|A lista de Abertos é esvaziada. Nenhum arquivo é apagado: eles continuam em Baixados e Processados.
+1052|Não foi possível criar o PDF
+1054|Os versos estão em ordem inversa
+1055|A área de recorte está fora da imagem.
+1056|O download começa no navegador: abra-o quando terminar e toque em Atualizar.
+1057|Não foi possível salvar o arquivo.
+1058|Não foi possível salvar o arquivo. Tente de novo.
+1059|Não foi possível adicionar o arquivo automaticamente. Toque em “Escolher arquivos” na página.
+1060|Não foi possível ler o arquivo.
+1061|O arquivo não está mais neste telefone.
+1062|O próprio app processa o arquivo neste telefone e ele nunca é enviado.
+1063|A página é aberta no servidor de processamento e salva exatamente como aparece lá.
+1064|A senha que abre o arquivo
+1065|Não foi possível abrir a foto.
+1066|A imagem vira uma camada num arquivo do Photoshop, mantendo a transparência. Abre no Photoshop, GIMP e Photopea.
+1067|A pré-visualização ainda não está pronta. Aguarde um momento.
+1068|O servidor de processamento respondeu com HTTP {code}.
+1069|Não foi possível alcançar o servidor de processamento.
+1070|Não foi possível alcançar o servidor de processamento. Verifique sua conexão com a internet.
+1071|O servidor de processamento não está respondendo (HTTP {code}).
+1072|O resultado não está mais disponível. Execute a ferramenta de novo.
+1073|O resultado já foi baixado. Execute a tarefa de novo.
+1074|Não foi possível salvar a digitalização
+1075|O servidor respondeu com HTTP {code}.

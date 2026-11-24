@@ -1,0 +1,78 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Android 13+: show notifications (asked only after the person taps "Turn on"). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Only Android 7–9: saving results in Downloads/Fileora. Android 10+ needs no storage permission. -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" tools:node="replace" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="28" tools:node="replace" />
+    <!-- Advertising ID: added by the Google Mobile Ads SDK for the ads managed in App Center → Ads
+         (app 0.7+). Firebase Analytics still doesn't collect it (firebase.json). -->
+    <!-- Photos are taken by the phone's own camera app (no camera permission needed), so make sure
+         no library adds these. -->
+    <uses-permission android:name="android.permission.CAMERA" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" tools:node="remove" />
+
+    <!-- Android 11+: see whether these cloud apps are installed (Files → Cloud Storage). -->
+    <queries>
+        <package android:name="com.google.android.apps.docs" />
+        <package android:name="jio.cloud.drive" />
+        <package android:name="com.microsoft.skydrive" />
+    </queries>
+
+    <application
+      android:name=".MainApplication"
+      android:label="@string/app_name"
+      android:icon="@mipmap/ic_launcher"
+      android:roundIcon="@mipmap/ic_launcher_round"
+      android:allowBackup="false"
+      android:theme="@style/AppTheme"
+      android:usesCleartextTraffic="${usesCleartextTraffic}"
+      android:supportsRtl="true">
+      <!-- Push notifications (Firebase Cloud Messaging): status bar icon and brand color. The default
+           channel ("fileora_alerts") comes from firebase.json; the channels are created in MainApplication.
+           The color replaces the Firebase library's default here (a library can't see app colors). -->
+      <meta-data
+        android:name="com.google.firebase.messaging.default_notification_icon"
+        android:resource="@drawable/ic_notification" />
+      <meta-data
+        android:name="com.google.firebase.messaging.default_notification_color"
+        android:resource="@color/brand_green"
+        tools:replace="android:resource" />
+      <activity
+        android:name=".MainActivity"
+        android:label="@string/app_name"
+        android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+        android:launchMode="singleTask"
+        android:windowSoftInputMode="adjustResize"
+        android:exported="true">
+        <intent-filter>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
+        <!-- Gallery → Share → Fileora (one or more photos: JPG, PNG, WebP, HEIC…) -->
+        <!-- fileora://selftest runs the offline tool engine's self-test (adb / CI); not openable from web pages -->
+        <intent-filter>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <data android:scheme="fileora" android:host="selftest" />
+            <data android:scheme="fileora" android:host="tool" />
+            <data android:scheme="fileora" android:host="lang" />
+            <data android:scheme="fileora" android:host="screen" />
+            <data android:scheme="fileora" android:host="demo" />
+        </intent-filter>
+        <intent-filter android:label="@string/share_label">
+            <action android:name="android.intent.action.SEND" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <data android:mimeType="image/*" />
+        </intent-filter>
+        <intent-filter android:label="@string/share_label">
+            <action android:name="android.intent.action.SEND_MULTIPLE" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <data android:mimeType="image/*" />
+        </intent-filter>
+      </activity>
+    </application>
+</manifest>

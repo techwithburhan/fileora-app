@@ -1,0 +1,208 @@
+216|Compressez, redimensionnez, recadrez et convertissez des photos sans les envoyer.
+217|Compression
+218|Compression
+219|Niveau de conformité
+220|Félicitations !
+221|Connectez votre compte Google Drive
+222|Connectez votre compte JioCloud
+223|Connectez votre compte OneDrive
+224|Connecté
+225|Connecté via l’application {name}
+226|Contact
+227|Nous contacter
+229|Convertissez des fichiers DOC et DOCX en PDF identiques partout.
+230|Convertir une image
+231|Convertir des PDF
+232|Convertissez les photos HEIC de l’iPhone en JPG ou PNG lisibles partout.
+233|Convertir les images
+234|Convertir les pages
+235|Convertir les photos
+236|Convertissez des feuilles de calcul en PDF aux pages nettes et lisibles.
+237|Convertir en
+238|Convertir en AVIF
+239|Convertir en Excel
+240|Convertir en JPG
+241|Convertir en Markdown
+242|Convertir en PDF
+243|Convertir en PDF/A
+244|Convertissez en PDF/A, la norme ISO pour l’archivage à long terme.
+245|Convertir en PNG
+246|Convertir en PSD
+247|Convertir en PowerPoint
+248|Convertir en SVG
+249|Convertir en WebP
+250|Convertir en Word
+251|Convertir en images
+252|PDF converti
+253|Conversion
+254|Conversion des pages
+255|Copié dans le presse-papiers
+256|Copies
+257|Les copies dans Downloads/Fileora ne sont pas touchées.
+258|Copies de chaque page
+259|Copies sur la feuille
+260|Copiez tout le texte d’un PDF dans un simple fichier .txt.
+261|La copie n’est pas autorisée ici. Téléchargez plutôt le fichier.
+262|Impossible d’ajouter la page
+263|Impossible de rechercher des mises à jour
+264|Impossible d’ouvrir le fichier
+265|Impossible d’ouvrir l’image partagée
+266|Impossible d’ouvrir le lien de mise à jour. Téléchargez la dernière version sur fileora.in.
+267|Impossible de joindre fileora.in. Vérifiez votre connexion internet et réessayez.
+268|Restauration impossible
+269|Partage impossible
+270|Considérer une page comme vide quand elle est
+271|Créer le PDF
+272|Créez favicon.ico et des icônes d’application dans toutes les tailles utiles à un site.
+273|Créer un formulaire à remplir
+274|Créer les icônes
+275|Créer la page à imprimer
+276|Créé avec
+277|Création des icônes
+278|Recadrer une image
+279|Recadrer un PDF
+280|Recadrez une photo au format passeport et imprimez plusieurs exemplaires sur une feuille 10×15 ou A4.
+281|Recadrer l’image
+282|Taille du recadrage
+283|Recadrer pour remplir chaque case
+284|Recadrer en carré
+285|Recadrage
+286|Mot de passe actuel
+287|Gratuit pour le moment. Aucune connexion requise.
+288|Personnalisé
+289|Couper
+290|Recadrez des photos en carré, 16:9 ou toute autre forme, avec aperçu en direct.
+291|Coupez les scans de livres en double page en deux pages séparées.
+292|Découpe des pages
+294|Actus et nouveautés du jour
+295|Sombre
+296|PDF en mode sombre
+297|Bleu foncé
+298|Mode sombre
+299|Niveau d’obscurité
+300|Lignes de découpe pointillées
+301|URI de données
+302|Supprimer
+303|Supprimer l’alerte : {title}
+304|Tout supprimer
+305|Supprimer toutes les alertes
+306|Supprimer tous les fichiers téléchargés
+307|Supprimer tous les fichiers téléchargés ?
+308|Supprimer tous les fichiers traités
+309|Supprimer tous les fichiers traités ?
+310|Supprimer la page {n}
+311|Supprimer définitivement ?
+312|Supprimer ce PDF ?
+313|Supprimer ce document ?
+314|Supprimer ce fichier ?
+315|Supprimer cette page ?
+316|Les fichiers et scans supprimés restent ici jusqu’à ce que vous les restauriez ou les supprimiez définitivement.
+317|Détail
+318|Détaillé
+319|Détecter
+320|Détecter le bord
+321|Détectez automatiquement les champs et transformez des PDF plats en formulaires à remplir.
+322|Détection des champs
+323|Développé par
+324|Chiffres
+325|Supprimer
+326|Supprimer l’image ?
+327|Supprimer les images ?
+328|Supprimer cette page
+329|Avertissement
+330|Déconnecter
+331|Déformation
+332|Document
+333|Langue du document
+334|Nom du document
+335|Documents
+336|Terminé
+337|Au milieu, verticalement
+338|Vers le bas, puis en largeur
+339|Télécharger
+340|Échec du téléchargement
+341|Échec du téléchargement (HTTP {code}).
+342|Téléchargés
+343|Téléchargement du résultat…
+344|Téléchargements
+345|Faites glisser un cadre pour le déplacer, ou son coin pour le redimensionner. Ajoutez-en autant que nécessaire.
+346|Faites glisser les images pour changer leur ordre. Chaque image devient une page.
+347|Faites glisser sur l’image pour marquer chaque zone à masquer : visages, plaques, adresses. Ajoutez-en autant que nécessaire.
+348|Faites glisser les pages pour les réordonner. Utilisez les boutons sous chaque page pour la faire pivoter ou la supprimer.
+349|Faites glisser les cadres pour les déplacer, et leurs coins pour les redimensionner.
+350|Faites glisser les fichiers pour changer leur ordre. Le fichier marqué 1 passe en premier.
+351|Faites glisser les images pour changer leur ordre.
+352|Dessiner
+353|Dessinez ou tapez votre signature et placez-la sur la page.
+354|Dessin
+356|Déposez un fichier .txt ici.
+357|Déposez un fichier .html ici.
+358|Dupliquer
+359|Modifier un PDF
+360|Modifier les métadonnées PDF
+361|Modifier les informations
+362|Effet
+363|Eid Moubarak !
+364|Aïd al-Adha Moubarak !
+365|Élément
+366|Éléments
+367|Adresses e-mail
+368|Vide
+369|Vider la Corbeille ?
+370|Vider la corbeille
+371|Encoder l’image
+372|Encodage
+373|Chiffrement
+374|Autotest du moteur
+375|Anglais
+376|Profitez de Fileora sans publicité
+377|Saisissez une taille cible en Ko.
+378|Saisissez l’adresse d’une page web et enregistrez-la en PDF.
+379|Saisissez au moins une plage de pages, par exemple 1-3, 5.
+380|Paires
+381|Toutes
+382|Chaque examen publie ses propres tailles de photo et de signature. Vérifiez l’avis et saisissez-les si elles diffèrent de celles-ci.
+383|Tous les fichiers de Téléchargés vont dans la Corbeille, où vous pouvez les restaurer. Les fichiers traités ne sont pas touchés. Les fichiers supprimés quittent aussi la liste Ouverts.
+384|Tous les fichiers de Traités vont dans la Corbeille, où vous pouvez les restaurer. Les fichiers téléchargés ne sont pas touchés. Les fichiers supprimés quittent aussi la liste Ouverts.
+385|Chaque page
+386|Chaque page est ajoutée
+387|Toutes les pages semblent vides, rien n’a donc été supprimé. Essayez « Complètement vide ».
+388|Tout
+389|Largeur exacte
+390|Redimensionneur photo et signature pour examens
+391|Excel en PDF
+392|Extraire des images
+393|Extraire les images
+394|Extraire le texte
+395|Extraction des tableaux
+396|GRATUIT · SANS INSCRIPTION · PRIVÉ
+397|Générateur de favicon
+398|Convertisseur de fichiers
+399|Édition de fichiers
+400|Optimiseur de fichiers
+401|Sécurité des fichiers
+402|Nom du fichier
+403|Le transfert du fichier a été interrompu.
+406|Fileora IA
+407|Application Fileora
+408|Accueil Fileora
+409|Fileora est restreinte en arrière-plan, les notifications ne peuvent donc pas arriver quand l’app est fermée. Réglez la batterie sur « Non restreinte ».
+410|Fileora est en maintenance
+411|Fileora n’a pas le droit d’utiliser l’appareil photo. Vous pouvez le modifier dans Réglages Android → Applications → Fileora.
+412|Fileora n’est pas limitée par l’économiseur de batterie.
+413|Serveur Fileora
+414|Fileora ne proposera plus « Envoyer vers {name} ». Rien n’est supprimé de votre {name}.
+415|Fileora {v} est la version la plus récente.
+416|Fileora : outils gratuits pour PDF, images et fichiers.
+419|Fichiers
+420|Les fichiers sont supprimés du serveur après le téléchargement.
+421|Les fichiers que vous téléchargez depuis un outil apparaissent ici.
+422|Les fichiers que vous fusionnez, compressez ou convertissez dans l’app apparaissent ici.
+423|Les fichiers que vous ouvrez depuis Fileora apparaissent ici.
+424|Remplir (rogne les bords)
+425|Trouvez et supprimez automatiquement les pages vides, avec la sensibilité de votre choix.
+426|Trouver les couleurs
+427|Trouver le niveau d’obscurité automatiquement
+428|Recherche des images
+429|Recherche de la meilleure qualité
+430|Recherche des couleurs

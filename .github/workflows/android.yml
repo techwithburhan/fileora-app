@@ -1,0 +1,155 @@
+# Builds the Fileora Android app on GitHub: every push to main, or by hand (Actions → Build Android APK → Run workflow).
+# Result (about 15 minutes): Actions → the run → Artifacts → "fileora-apk", and builds/fileora-app.apk in the "builds" branch.
+name: Build Android APK
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['ios/**', '.github/workflows/ios.yml', 'scripts/ios-signing.py']
+  workflow_dispatch:
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write # only to publish the APK to the "builds" branch
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Install JavaScript packages
+        run: npm ci
+      # AdMob: Fileora's own App ID from the repository variable ADMOB_ANDROID_APP_ID (Settings →
+      # Secrets and variables → Actions → Variables). Without it the APK keeps Google's sample App ID,
+      # which can only show test ads (App Center → Ads → "Test ads").
+      - name: AdMob App ID
+        env:
+          ADMOB_ID: ${{ vars.ADMOB_ANDROID_APP_ID }}
+        run: |
+          if [ -n "$ADMOB_ID" ]; then
+            if ! echo "$ADMOB_ID" | grep -Eq '^ca-app-pub-[0-9]{10,20}~[0-9]{6,12}$'; then
+              echo "::error::ADMOB_ANDROID_APP_ID must be an AdMob App ID like ca-app-pub-1234567890123456~1234567890"
+              exit 1
+            fi
+            node -e "const fs=require('fs');const j=JSON.parse(fs.readFileSync('app.json','utf8'));j['react-native-google-mobile-ads'].android_app_id=process.env.ADMOB_ID;fs.writeFileSync('app.json',JSON.stringify(j,null,2)+'\n')"
+            sed -i 's/ADMOB_APP_ID_LIVE = false/ADMOB_APP_ID_LIVE = true/' src/ads/build.ts
+            echo "AdMob: Fileora's App ID"
+          else
+            echo "::notice::No ADMOB_ANDROID_APP_ID variable: Google's sample AdMob App ID, test ads only"
+          fi
+      - name: Check the code (TypeScript + ESLint, scanner page up to date)
+        run: |
+          node scripts/build-editor.js && git diff --exit-code src/scanner/editorHtml.ts
+          npx tsc --noEmit && npx eslint App.tsx src
+          npx jest --ci
+      - name: Check the offline tool engine is in the app
+        run: |
+          for f in index.html engine.js fonts.css vendor/pdf-lib.min.js vendor/pdf.min.js vendor/pdf.worker.min.js modules/pdf.js modules/image.js; do
+            test -s "assets-shared/engine/$f" || { echo "::error::assets-shared/engine/$f is missing: run scripts/build-engine.sh"; exit 1; }
+          done
+          node --check assets-shared/engine/engine.js
+      # Signing: with the repository's private key when its secrets exist (Settings → Secrets and
+      # variables → Actions: FILEORA_KEYSTORE_BASE64, FILEORA_KEYSTORE_PASSWORD, FILEORA_KEY_ALIAS,
+      # FILEORA_KEY_PASSWORD). Without them the APK uses React Native's public test key (testing only).
+      - name: Signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.FILEORA_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/fileora-release.keystore"
+            echo "FILEORA_KEYSTORE_FILE=$RUNNER_TEMP/fileora-release.keystore" >> "$GITHUB_ENV"
+            echo "Signing with the private release key"
+          else
+            echo "::warning::No signing secrets: this APK is signed with the public test key (for testing only)"
+          fi
+      - name: Build APK (release)
+        working-directory: android
+        env:
+          FILEORA_KEYSTORE_PASSWORD: ${{ secrets.FILEORA_KEYSTORE_PASSWORD }}
+          FILEORA_KEY_ALIAS: ${{ secrets.FILEORA_KEY_ALIAS }}
+          FILEORA_KEY_PASSWORD: ${{ secrets.FILEORA_KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a,x86_64
+      # App 1.0: also the Android App Bundle for Google Play (same signing key)
+      - name: Build AAB (release, for Google Play)
+        working-directory: android
+        env:
+          FILEORA_KEYSTORE_PASSWORD: ${{ secrets.FILEORA_KEYSTORE_PASSWORD }}
+          FILEORA_KEY_ALIAS: ${{ secrets.FILEORA_KEY_ALIAS }}
+          FILEORA_KEY_PASSWORD: ${{ secrets.FILEORA_KEY_PASSWORD }}
+        run: ./gradlew bundleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a,x86_64
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fileora-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fileora-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 30
+      # Also keep the latest APK in the "builds" branch: builds/fileora-app.apk (one commit, replaced each time).
+      - name: Publish APK to the builds branch
+        if: github.ref == 'refs/heads/main'
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p out && cp android/app/build/outputs/apk/release/app-release.apk out/fileora-app.apk
+          cp android/app/build/outputs/bundle/release/app-release.aab out/fileora-app.aab
+          cd out
+          echo "Fileora app APK and AAB (Google Play) from commit ${GITHUB_SHA::7} ($(date -u +%Y-%m-%d))" > README.md
+          git init -q -b builds
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add fileora-app.apk fileora-app.aab README.md
+          git commit -q -m "APK from ${GITHUB_SHA::7}"
+          git push -q -f "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" builds
+
+  # Runs the APK in an Android emulator: start-up, then the offline tool engine's self-test
+  # (fileora://selftest). Screenshots and the result go to the "builds-android-test" branch.
+  emulator:
+    needs: apk
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: fileora-apk
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Run in the emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash scripts/ci-emulator.sh app-release.apk
+      - name: Publish the emulator run
+        if: always() && github.ref == 'refs/heads/main'
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          [ -d out ] || exit 0
+          cd out
+          echo "Fileora Android emulator run from commit ${GITHUB_SHA::7} ($(date -u '+%Y-%m-%d %H:%M'))" > README.md
+          git init -q -b builds-android-test
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A && git commit -q -m "Android emulator run ${GITHUB_SHA::7}"
+          git push -q -f "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" builds-android-test

@@ -1,0 +1,194 @@
+1|% del lado más corto
+2|% del ancho
+6|1 elemento pasa a la Papelera. Puedes restaurarlo desde Archivos → Papelera.
+7|1 de 12
+12|2 archivos PDF
+13|2 × 2 pulg. (51 × 51 mm)
+22|Foto de 4 × 6 pulg.
+27|90° a la izquierda
+28|90° a la derecha
+29|Un archivo no llegó a la herramienta. Vuelve a añadirlo.
+30|Sirve una foto o un escaneo sobre papel blanco. El fondo blanco se elimina.
+31|Un sonido breve y suave de confeti cuando un archivo está listo
+32|De la A a la Z
+33|A4 (las páginas se reducen a A5)
+34|Papel A4
+35|AÑADIR PÁGINA
+36|Resumidor con IA
+37|Estado de la API
+38|AVIF suele ocupar la mitad que un JPG con el mismo aspecto. La primera imagen tarda un momento mientras se carga el codificador.
+39|AVIF a JPG
+40|Impresión de tarjeta Aadhaar
+42|Acerca de
+43|Sobre nosotros
+44|Aceptar
+45|Accesibilidad
+46|Cuenta
+47|Por la mitad horizontal
+48|En horizontal y luego hacia abajo
+49|Actividad
+50|Anuncio
+51|Sin anuncios hasta {time}
+52|Añadir números Bates
+53|Añadir borde a la imagen
+54|Añadir conexión
+55|Añadir imagen o sello
+56|Añade un PDF o una foto con ambas caras, o dos fotos (anverso y reverso). Mueve los recuadros sobre cada cara de la tarjeta.
+57|Añadir un recuadro
+58|Añade una contraseña para que solo las personas indicadas puedan abrir el archivo.
+59|Añadir páginas en blanco
+60|Añadir borde
+61|Añadir encabezado y pie de página
+62|Añadir imagen
+63|Añadir más {things}
+64|Añadir página
+65|Añadir números de página
+66|Añadir páginas
+67|Primero añade algo de HTML.
+68|Añade texto, imágenes, formas y notas a mano alzada a cualquier página.
+69|Añade texto, números de página, la fecha o el nombre del archivo en la parte superior o inferior de cada página.
+70|Primero añade la tarjeta.
+71|Añade primero el original y después la versión modificada.
+72|Añadir la fecha de hoy debajo
+73|Añadir marca de agua
+74|Añade tu PDF de e-Aadhaar (o fotos del anverso y el reverso). Mueve los dos recuadros sobre el anverso y el reverso de la tarjeta y crea la página de impresión.
+75|Añade tu nombre o marca a las fotos, una vez o en mosaico por toda la imagen.
+76|Añadiendo texto
+77|Añadiendo el borde
+78|Anuncios y privacidad
+79|Los anuncios mantienen gratis todas las herramientas de Fileora, sin registro. Tus archivos nunca se usan para anuncios.
+80|Publicidad
+81|Cada N páginas
+82|Después de cada página
+83|Alerta eliminada
+84|Alertas
+85|Todo
+86|Todos los archivos
+87|Todos los campos
+88|Todo en una
+89|Todas las entradas
+90|Todas las herramientas
+91|Permitir
+92|Primero permite las notificaciones de Fileora.
+93|Permite las notificaciones de Fileora en los ajustes del teléfono y vuelve.
+94|Permite las notificaciones de Fileora en este teléfono. Toca para permitir.
+95|Casi vacía
+96|Ya estaba optimizado, así que conservamos el original
+97|Hace falta una actualización. Terminando primero tu tarea…
+99|Ajustes de notificaciones de Android para Fileora: sonido, vibración, pantalla de bloqueo
+100|Ángulo
+101|Cualquier color, como código hexadecimal
+102|Manifiesto de la app
+103|Apariencia
+104|Árabe
+105|¿Seguro que quieres descartar estas {n} imágenes?
+106|¿Seguro que quieres descartar esta imagen?
+107|Zona
+108|Ordenar páginas
+109|Ordenando páginas
+110|Montando el folleto
+111|Todas las que quepan
+112|Al menos 6 caracteres
+113|Al final
+114|Al principio
+115|Autor
+116|Auto
+117|Inicio automático
+118|Atrás
+119|Vuelve a las opciones originales, con un nuevo ID de notificación anónimo
+120|Fondo
+121|Colores e imágenes de fondo
+122|Equilibrado
+123|Solo Base64
+124|Numeración Bates
+125|Batería
+126|Bengalí
+127|Negro
+128|Blanco y negro (firma, sello, dibujo lineal)
+129|Blanco y negro
+130|Recuadro negro
+131|Tinta negra
+132|Páginas en blanco cada vez
+133|Bloquear impresión y copia
+134|Bloqueadas en los ajustes del teléfono. Toca para abrirlos.
+135|Blog
+136|Entradas del blog
+137|Tinta azul
+138|Desenfocar
+139|Desenfocar parte de una imagen
+140|Desenfocar las zonas
+141|Desenfocando
+142|Creador de folletos
+143|Borde
+144|Color del borde
+145|Detección de bordes
+146|Abajo en el centro
+147|Abajo a la izquierda
+148|Abajo a la derecha
+149|Ver herramientas
+150|Explora tu teléfono y abre un archivo
+151|Creando tu escaneo
+152|Viñetas
+153|Medio CSS
+154|Cámara
+155|Cancelar
+156|Cancelado.
+157|No se puede abrir este archivo
+158|Capturando la página
+159|Categorías
+160|Las categorías, el modo silencioso y la privacidad vuelven a sus ajustes originales, y Fileora obtiene un nuevo ID de notificación anónimo.
+161|Sonido de celebración
+162|Centro
+163|Centrado
+164|Cambiar opciones
+165|Cambia o elimina el título, el autor, el asunto y las palabras clave guardados en un PDF.
+166|Convierte fotos entre JPG, PNG, WebP y AVIF.
+167|Cambiar imagen
+168|Cambia el tamaño de las fotos en píxeles o por porcentaje, una o varias a la vez.
+169|Vuelve más tarde para ver ofertas y novedades.
+170|Buscar actualizaciones
+171|Comprobar notificaciones
+172|Comprueba tu conexión a internet y vuelve a intentarlo.
+173|Casillas
+174|Comprobando…
+175|Chino (simplificado)
+176|Elige JPG, PNG, WebP o AVIF.
+177|Elige una imagen PNG, JPG o WebP.
+178|Elige una imagen
+179|Elige una imagen de tu firma
+180|Elige un archivo .html o .htm.
+181|Elegir otro archivo
+182|Elegir otra imagen
+183|Elige cómo usa Google los datos para anuncios
+184|Elige el archivo en la página
+185|Elige {things}
+186|Imagen elegida
+187|Limpiando
+188|Borrar
+189|Borrar todo
+190|¿Borrar todos los {what}?
+191|Borrar búsqueda
+192|Vaciar la lista Abiertos
+193|¿Vaciar la lista Abiertos?
+194|Primero vacía el editor para no reemplazar tu propio código.
+195|Cerrar
+196|Cerrar menú
+197|Nube
+198|Almacenamiento en la nube
+199|Color
+200|Paleta de colores de una imagen
+201|Colores
+202|Combinar imágenes
+203|Combinar imágenes
+204|Combina varios PDF en un solo archivo, en el orden exacto que quieras.
+205|Combinando
+206|Próximamente
+207|Comparar PDF
+208|Comparar archivos
+209|Comparando
+210|Completamente vacía
+211|Comprimir imagen
+212|Comprimir imagen a KB
+213|Comprimir PDF
+214|Comprimir imágenes
+215|Comprimir al tamaño

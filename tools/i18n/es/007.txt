@@ -1,0 +1,22 @@
+1286|1 archivo
+1287|1 página
+1288|1 herramienta
+1289|1 uso
+1290|Añade al menos {n} {things} para empezar.
+1291|Añade {n} {things} más.
+1292|Añade {thing} para empezar.
+1293|Color {c}
+1294|Fileora {v} ya está disponible
+1297|Mover {name} hacia abajo
+1298|Mover {name} hacia arriba
+1300|Página {n}. Abrir
+1301|Buscar entre {n} herramientas…
+1302|Supera los {n} MB.
+1304|imagen
+1306|hoja de cálculo
+1307|herramientas
+1308|{n} archivos
+1309|{n} elementos van a la Papelera. Puedes restaurarlos desde Archivos → Papelera.
+1310|{n} páginas
+1311|{n} herramientas
+1312|{n} usos

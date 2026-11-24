@@ -1,0 +1,50 @@
+# Resolve react_native_pods.rb with node to allow for hoisting
+require Pod::Executable.execute_command('node', ['-p',
+  'require.resolve(
+    "react-native/scripts/react_native_pods.rb",
+    {paths: [process.argv[1]]},
+  )', __dir__]).strip
+
+platform :ios, min_ios_version_supported
+prepare_react_native_project!
+
+# React Native Firebase (notifications, analytics) gets the Firebase iOS SDK through Swift Package
+# Manager, which needs dynamic frameworks (see rnfirebase.io/ios-spm).
+use_frameworks! :linkage => :dynamic
+# Firebase Analytics without the advertising identifier (IDFA): analytics doesn't need it. The ads
+# (react-native-google-mobile-ads, App Center → Ads) don't ask for tracking permission either.
+$RNFirebaseAnalyticsWithoutAdIdSupport = true
+# Google's ads SDK ships as a static binary: build its React Native module as a static framework
+# so it links inside the dynamic-frameworks setup above.
+$RNGoogleMobileAdsAsStaticFramework = true
+
+target 'FileoraApp' do
+  config = use_native_modules!
+
+  use_react_native!(
+    :path => config[:reactNativePath],
+    # An absolute path to your application root.
+    :app_path => "#{Pod::Config.instance.installation_root}/.."
+  )
+
+  post_install do |installer|
+    react_native_post_install(
+      installer,
+      config[:reactNativePath],
+      :mac_catalyst_enabled => false,
+      # :ccache_enabled => true
+    )
+    installer.pods_project.targets.each do |t|
+      t.build_configurations.each do |c|
+        # Every pod builds for the app's minimum iOS version (no "deployment target too low" warnings).
+        if c.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f < 15.1
+          c.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.1'
+        end
+        # As a dynamic framework, the image picker must link the system frameworks it uses itself.
+        if t.name == 'react-native-image-picker'
+          c.build_settings['OTHER_LDFLAGS'] = ['$(inherited)', '-framework', 'MobileCoreServices', '-framework', 'UniformTypeIdentifiers', '-framework', 'Photos', '-framework', 'PhotosUI', '-framework', 'AVFoundation']
+        end
+      end
+    end
+  end
+end

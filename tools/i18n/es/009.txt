@@ -1,0 +1,56 @@
+1320|Te damos la bienvenida a Fileora
+1321|Esto es lo que Fileora puede usar y por qué. Puedes cambiarlo todo más tarde en Ajustes.
+1322|Actualizaciones de la app, herramientas nuevas, noticias diarias y ofertas. Eliges las categorías en Ajustes y cada notificación también se guarda en Alertas.
+1323|Permitido
+1324|Bloqueado en los ajustes del teléfono
+1325|No permitido
+1326|Aún no se ha preguntado
+1327|Volver a preguntar
+1328|Archivos y fotos
+1329|Eliges los archivos con el selector del propio teléfono: Fileora solo ve lo que eliges. Android pide acceso al almacenamiento una vez, la primera vez que guardas un archivo en Descargas.
+1330|Eliges archivos y fotos con el selector del propio teléfono: Fileora solo ve lo que eliges, así que no hace falta ningún permiso.
+1331|Eliges fotos y archivos con el selector del propio iPhone: Fileora solo ve lo que eliges. Guardar una imagen en Fotos lo pide una vez.
+1332|Se pregunta la primera vez que guardas
+1333|No hace falta ningún permiso
+1334|Cámara (escáner)
+1335|El escáner usa el escáner de documentos de Google o tu app de cámara, así que Fileora no necesita permiso de cámara.
+1336|El escáner usa la cámara. Tu iPhone lo pregunta la primera vez que lo abres; las fotos se quedan en tu iPhone salvo que elijas una herramienta en línea.
+1337|Se pregunta la primera vez que escaneas
+1338|Continuar
+1339|Sin notificaciones, las noticias y actualizaciones siguen apareciendo en Alertas.
+1340|Fileora necesita la cámara para escanear
+1341|El escáner fotografía tus páginas y las endereza. Ahora tu iPhone te pedirá permiso. Las fotos se quedan en tu iPhone salvo que elijas una herramienta en línea.
+1342|El acceso a la cámara está desactivado
+1343|Activa la Cámara para Fileora en Ajustes para escanear.
+1344|Permite la cámara para Fileora en Ajustes de Android → Aplicaciones → Fileora para escanear.
+1345|Notificación nueva: {title}. Toca para leerla.
+1346|Importante
+1347|Abrir {tool}
+1348|Abrir enlace
+1349|Abrir Escáner
+1350|Abrir Archivos
+1351|Ver ofertas
+1352|Alerta
+1353|Cargando
+1354|Esta alerta ya no está disponible
+1355|Puede que se haya eliminado o que sea más antigua que el tiempo que se guardan las alertas.
+1356|Cargando el mensaje completo…
+1357|1 alerta marcada como leída
+1358|{n} alertas marcadas como leídas
+1359|1 día
+1360|{n} días
+1361|{n} horas
+1362|No leída.
+1363|Abre el mensaje completo
+1364|Toca para leer
+1365|Marcar todo como leído
+1366|Leer todo
+1367|Novedades, herramientas nuevas y noticias de Fileora. Las alertas se guardan durante {time}. Desliza hacia abajo para buscar nuevas.
+1368|1 sin leer
+1369|{n} sin leer
+1370|Actualizado
+1371|No se pudo actualizar. Se muestra la información guardada.
+1372|INSTALADA
+1373|NECESARIA
+1374|Comprobado ahora: este teléfono sigue teniendo la versión {version}; se necesita la {required} o una más reciente. Si ya instalaste la actualización, puede que la descarga tuviera una versión anterior.
+1375|Esta versión ({version}) ya no es compatible. Instala la versión {required} o posterior para seguir usando la app. Tus archivos se quedan en este teléfono.

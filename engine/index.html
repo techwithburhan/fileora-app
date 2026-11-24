@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- No network: everything this page needs is in the app. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' file: 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob:; worker-src 'self' file: blob:; img-src 'self' file: data: blob:; font-src 'self' file: data:; style-src 'self' file: 'unsafe-inline'; connect-src 'self' file: data: blob:">
+<title>Fileora engine</title>
+<link rel="stylesheet" href="fonts.css">
+<script>
+  /* This page is never shown, and a hidden view may not get animation frames: run them as timers. */
+  window.requestAnimationFrame = function (cb) { return setTimeout(function () { cb(performance.now()); }, 0); };
+  window.cancelAnimationFrame = function (id) { clearTimeout(id); };
+  /* The engine's settings: libraries from this folder, no website, no tracking. */
+  window.FileoraConfig = { vendor: 'vendor/', rest: '', backend: false, tools: {}, catalog: [] };
+</script>
+</head>
+<body>
+<span style="font:600 20px Caveat;position:absolute;opacity:0">.</span><span style="font:700 20px Geist;position:absolute;opacity:0">.</span>
+<script src="engine.js"></script>
+<script src="modules/pdf.js"></script>
+<script src="modules/image.js"></script>
+<script src="modules/optimizer.js"></script>
+<script src="modules/converter.js"></script>
+<script src="modules/security.js"></script>
+<script src="modules/editor.js"></script>
+<script src="modules/ai.js"></script>
+</body>
+</html>

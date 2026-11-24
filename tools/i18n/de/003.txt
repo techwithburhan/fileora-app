@@ -1,0 +1,191 @@
+431|Erste
+432|Erste Nummer
+433|Einpassen
+434|Einpassen (weiße Ränder)
+435|Alle Spalten auf eine Seite bringen
+436|An Inhalt anpassen
+437|Bild einpassen
+438|Innen einpassen
+439|Feste Größe
+440|Reduzieren
+441|PDF reduzieren
+442|Wird reduziert
+443|Auf den Kopf stellen
+444|Ordner
+445|Folgt der Einstellung deines Telefons
+446|Fußzeile
+447|Position der Fußzeile
+448|Für doppelseitiges Papier, in zwei Durchgängen gescannt: erst die Vorderseiten, dann die Rückseiten.
+449|Zum Beispiel: 1-3, 5, 8-
+450|Zum Beispiel: ENTWURF
+451|Zum Beispiel: RAHU1990
+452|Zum Beispiel: SMITH-
+453|Zum Beispiel: © Fileora
+454|Formularfelder
+455|Format
+456|Automatisch formatieren
+457|Kostenlose PDF-Tools, in Sekunden erledigt.
+458|Gratis-Tarif
+459|Französisch
+460|Aus dem Blog
+461|Von deinem Telefon, Google Drive oder Downloads.
+462|Voller Rahmen
+463|Galerie
+464|Deutsch
+465|Erhalte eine Base64-Daten-URI eines Bildes für HTML, CSS oder JSON.
+466|Erhalte sauberes Markdown mit Überschriften und Listen, bereit für Notizen, Dokumente und KI-Tools.
+467|Über neue Versionen und Tools informiert werden
+468|App holen
+469|Erfasse die Kernpunkte eines langen Dokuments in Sekunden.
+470|Wird vorbereitet
+471|Dateien werden vorbereitet
+472|Gib eine Breite, eine Höhe oder einen Prozentwert an.
+473|Gib Fotos einen farbigen Rahmen und abgerundete Ecken.
+474|Geh jetzt auf den Startbildschirm (oder sperre das Telefon). Die Testbenachrichtigung kommt in etwa {n} Sekunden.
+475|So erscheint es auf der Seite
+477|Graustufen
+478|Raster
+479|Gujarati
+480|HEIC-Foto
+481|HEIC-Fotos
+482|HEIC in JPG
+483|HTML-Code in PDF
+484|HTML-Code
+485|HTML-Datei
+486|HTML-Dateien
+487|HTML in PDF
+488|Frohes Diwali!
+489|Alles Gute zum Vatertag!
+490|Frohes Holi!
+491|Alles Gute zum Muttertag!
+492|Frohes neues Jahr!
+493|Alles Liebe zum Valentinstag!
+494|Kopfzeile
+495|Kopf- und Fußzeile
+496|Position der Kopfzeile
+497|Höhe
+498|Hallo
+499|Hilfe & Informationen
+500|Ausblenden
+501|Werbung und Pop-ups ausblenden
+502|Verberge Gesichter, Kennzeichen oder private Details, indem du einen Bereich weichzeichnest oder verpixelst.
+503|Passwort verbergen
+504|Pop-ups und Ton ausblenden: Benachrichtigungen landen lautlos in der Liste
+505|Festbanner ausblenden
+506|Hoch
+507|Hindi
+508|Start
+509|Diese Datei gehört mir oder ich darf sie entsperren
+510|Ausweis drucken
+511|Wenn Benachrichtigungen bei geschlossener App nicht ankommen, stelle den Akku von Fileora auf „Uneingeschränkt“ / „Keine Einschränkungen“.
+512|Bild-Tools
+513|Bild in Base64
+514|Bild-Tools
+515|Bild, Logo oder Stempel
+516|Bilder
+517|Sprechernotizen einbeziehen
+518|Indonesisch
+519|Tintenfarbe
+520|PDF verschachteln
+521|Seiten verschachteln
+522|Interner Speicher
+523|Kehre die Farben um oder wechsle zu Graustufen, um nachts angenehm zu lesen.
+524|Italienisch
+525|JPG (kleiner)
+526|JPG öffnet sich überall: alte Telefone, Windows-Fotoanzeige, E-Mail und Behördenformulare. Transparente Bereiche werden weiß.
+527|JPG oder PNG
+528|JPG in AVIF
+529|JPG in PDF
+530|JPG in PNG
+531|JPG in WebP
+532|Japanisch
+534|Zeilen zu Absätzen verbinden
+535|Füge Fotos nebeneinander, übereinander oder im Raster zusammen, mit dem Abstand deiner Wahl.
+536|Gerade eben
+537|Nur ein Foto
+538|MIT DIESER DATEI WEITERMACHEN
+539|Kannada
+540|Lass Fileora geöffnet, bis es fertig ist.
+541|Behalte mindestens eine Seite.
+542|Mit dieser Datei weitermachen
+543|Meine Zeilenumbrüche behalten
+544|Erste Seite ganz lassen (Titelseite)
+545|Letzte Seite ganz lassen (Rückseite)
+546|Größe beibehalten
+547|Diesen Teil behalten
+548|Behält die Transparenz und ist viel kleiner als PNG. Schalte Verlustfrei für exakte Pixel ein (Logos, Screenshots).
+549|Schlüsselwörter
+550|Koreanisch
+551|Querformat
+552|Querformat (4:3)
+553|Sprache
+554|Groß
+555|Groß (2000 px)
+556|Größte Dateigröße
+557|Längste Seite
+558|Letzte
+559|Später
+560|Layout
+561|Mehr erfahren
+562|Leer lassen für keine
+563|Links
+564|Legal
+565|Länge
+566|Letter
+567|Hell
+568|Hell oder dunkel, wie der Rest deines Telefons
+569|Seiten werden geladen…
+570|Sperre ausgefüllte Formularfelder und Anmerkungen, damit niemand sie ändern kann.
+571|Sperren, entsperren und vertrauliche Inhalte dauerhaft schwärzen.
+572|Logo / Symbol (Farbe)
+573|Aussehen
+574|Leere Seiten werden gesucht
+575|Verlustfrei (exakte Pixel, größere Datei)
+576|Niedrig (am weichsten)
+599|Erstellt von
+600|Die Wartung beginnt. Deine Aufgabe wird zuerst fertiggestellt…
+601|Mach PDFs kleiner für E-Mail und Uploads, ohne dass sie unleserlich werden.
+602|Bring ein Foto auf genau 20 KB, 50 KB, 100 KB oder die Größe, die Online-Formulare verlangen.
+603|Broschüre erstellen
+604|Bring jede Seite auf A4, Letter, A3 oder A5, mit passend skaliertem Inhalt.
+605|Passfotos erstellen
+606|Bild bei Bedarf verkleinern
+607|PDF wird erstellt…
+608|Bogen wird erstellt
+609|Dein PDF wird erstellt
+610|Malayalam
+611|Marathi
+612|Rand
+613|Ränder
+614|Seitenumbrüche markieren
+615|Markiere zuerst die Karte auf dem Bild.
+616|Markiere zuerst den Fotobereich.
+617|Markieren, wo jede Seite beginnt
+618|Möge das Lichterfest dein Leben erhellen.
+619|Möge dieses Eid Frieden und Glück in dein Zuhause bringen.
+620|Mittel
+621|Mittel (1200 px)
+622|PDF zusammenführen
+623|Führe getrennt gescannte Vorder- und Rückseiten in der richtigen Reihenfolge zu einem PDF zusammen.
+624|PDFs und Bilder zusammenführen, komprimieren, umwandeln, signieren und bearbeiten. {total} kostenlose Tools, und {device} davon laufen direkt auf deinem Telefon, sodass deine Dateien es nie verlassen.
+625|PDFs zusammenführen, teilen, ordnen, signieren, nummerieren und drucken, direkt im Browser.
+626|Wird zusammengeführt
+627|Frohe Weihnachten!
+628|Mitte links
+629|Mitte rechts
+630|Links-rechts spiegeln
+631|Schwarzweiß
+632|Mehr
+633|Weitere Aktionen für Seite {n}
+634|Weitere Aktionen für {name}
+635|Mehr {category}
+636|Fast leer
+637|Verschiebe den Rahmen und ändere seine Größe, sodass der Kopf mittig mit etwas Platz darüber sitzt. Nimm ein Foto vor einem schlichten, hellen Hintergrund.
+638|Nach vorne
+639|Nach hinten
+640|Nach links
+641|Seite {n} nach vorne
+642|Seite {n} nach hinten
+643|Nach rechts
+644|Kommt in den Papierkorb
+645|Mein Speicher
