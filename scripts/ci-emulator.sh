@@ -212,14 +212,26 @@ adb exec-out screencap -p > "$OUT/v122-updates.png"
 adb shell uiautomator dump /sdcard/ui.xml > /dev/null 2>&1 && adb exec-out cat /sdcard/ui.xml > "$OUT/v122-updates-ui.xml" || true
 adb shell input keyevent 4
 sleep 1
-# app 1.2.3: festival banners with each festival's own animation (plugin 2.24 data, only on this phone)
+# app 1.2.3: festival banners with each festival's own animation (plugin 2.24 data, only on this phone).
+# The emulator runs with system animations off ("remove animations"); the app honours that and plays
+# no festival animation (first shot below). Then animations are switched on and the app restarted.
+adb shell am start -W -a android.intent.action.VIEW -d "fileora://demo/festival/diwali" in.fileora.app
+sleep 2
+adb exec-out screencap -p > "$OUT/v123-festival-reduced-motion.png"
+adb shell settings put global window_animation_scale 1
+adb shell settings put global transition_animation_scale 1
+adb shell settings put global animator_duration_scale 1
+adb shell am force-stop in.fileora.app
+first=1
 for fest in diwali holi onam lunar-new-year; do
   adb shell am start -W -a android.intent.action.VIEW -d "fileora://demo/festival/$fest" in.fileora.app
-  sleep 1.5
+  if [ "$first" = 1 ]; then sleep 4; first=0; else sleep 1.2; fi
   adb exec-out screencap -p > "$OUT/v123-festival-$fest.png"
   sleep 1.5
   adb exec-out screencap -p > "$OUT/v123-festival-$fest-2.png"
-  sleep 7
+  sleep 1.5
+  adb exec-out screencap -p > "$OUT/v123-festival-$fest-3.png"
+  sleep 6
 done
 adb exec-out screencap -p > "$OUT/v123-festival-after.png"
 adb logcat -d | grep -iE "FATAL|AndroidRuntime" | tail -40 > "$OUT/crash.txt" || true
