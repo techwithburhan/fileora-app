@@ -208,6 +208,15 @@ jobs:
             sleep 12
             xcrun simctl io "$DEV" screenshot "out/simulator/v12-$d.png"
           done
+          # app 1.2.3: festival banners with each festival's own animation (plugin 2.24 data)
+          for fest in diwali holi onam lunar-new-year; do
+            xcrun simctl terminate "$DEV" in.fileora.app || true
+            xcrun simctl launch "$DEV" in.fileora.app -FileoraDemo "festival/$fest"
+            sleep 9
+            xcrun simctl io "$DEV" screenshot "out/simulator/v123-festival-$fest.png"
+            sleep 2
+            xcrun simctl io "$DEV" screenshot "out/simulator/v123-festival-$fest-2.png"
+          done
           xcrun simctl spawn "$DEV" log show --last 2m --style compact --predicate 'process == "FileoraApp"' 2>/dev/null | grep -iE "error|exception|fatal|crash" | grep -v "nw_\|CFNetwork" | tail -40 > out/simulator/log.txt || true
           if xcrun simctl spawn "$DEV" launchctl list | grep -q "in.fileora.app"; then echo "RUNNING" > out/simulator/status.txt; echo "Fileora is running in the simulator"; else echo "NOT RUNNING" > out/simulator/status.txt; echo "::error::Fileora is not running in the simulator (crash at start?)"; fi
           ls -la ~/Library/Logs/DiagnosticReports 2>/dev/null | grep -i fileora || true

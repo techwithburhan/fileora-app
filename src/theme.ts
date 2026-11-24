@@ -83,7 +83,10 @@ export function useTheme(): Theme {
   const system = useColorScheme();
   const pref = useStore(s => s.theme);
   const isDark = pref === 'system' ? system === 'dark' : pref === 'dark';
-  const accent = useRemote(st => st.config?.festival?.accent ?? '');
+  const accentLight = useRemote(st => st.config?.festival?.accent ?? '');
+  // plugin 2.24 sends the festival's own dark-theme accent; older plugins: worked out below
+  const accentDark = useRemote(st => (st.config?.festival?.accent ? st.config.festival.accent_dark || st.config.festival.accent : ''));
+  const accent = isDark ? accentDark : accentLight;
   const lang = useStore(s => s.lang); // a new theme object per language: every screen redraws in it
   const base = isDark ? dark : light;
   return useMemo(() => ({ ...(accent ? festivalTheme(base, accent) : base), lang }), [base, accent, lang]);

@@ -15,6 +15,8 @@ import { API_TOOLS_LIVE, MAINTENANCE_MESSAGE, SITE } from '../config';
 import { DATA, ensureDirs } from '../store/files';
 import { onFlush, readJsonSafe, writeJsonSafe } from '../lib/safeFile';
 import { APP_VERSION } from '../version';
+import { cleanFx } from '../festival/fxData';
+import type { FestivalFx } from '../festival/fxData';
 
 export type ToolFlag = 'soon' | 'off';
 /** One bottom-bar or side-menu item from App Center → Navigation. */
@@ -94,7 +96,12 @@ export type Festival = {
   link: string;
   /** festival_next only: first day (YYYY-MM-DD) */
   from?: string;
+  /** plugin 2.24: the accent for the dark theme ('' = worked out from accent) */
+  accent_dark: string;
+  /** plugin 2.24: the festival's own animation (particle layers and their shapes), null = none / older plugin */
+  fx: FestivalFx | null;
 };
+export type { FestivalFx, FxLayer, FxShape } from '../festival/fxData';
 export type RemoteConfig = {
   v: number;
   api_live: boolean;
@@ -402,6 +409,7 @@ function cleanPopup(v: unknown): Popup | null {
 }
 
 const ANIMS: FestivalAnim[] = ['none', 'snow', 'hearts', 'petals', 'stars', 'sparkles', 'fireworks', 'lanterns', 'colours', 'confetti'];
+
 const hex = (v: unknown) => (typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v) ? v.toUpperCase() : '');
 function cleanFestival(v: unknown): Festival | null {
   if (!v || typeof v !== 'object') return null;
@@ -426,6 +434,8 @@ function cleanFestival(v: unknown): Festival | null {
     anim_freq: f.anim_freq === 'open' || f.anim_freq === 'once' ? f.anim_freq : 'daily',
     link: httpsOnly(f.link),
     from: /^\d{4}-\d{2}-\d{2}$/.test(String(f.from ?? '')) ? String(f.from) : undefined,
+    accent_dark: hex(f.accent_dark),
+    fx: cleanFx(f.fx),
   };
 }
 
@@ -628,6 +638,13 @@ export const remote = {
   setTopic(id: string, on: boolean) {
     const touched = [...new Set([...(state.prefs.touched ?? []), id])];
     set({ prefs: { ...state.prefs, topics: { ...state.prefs.topics, [id]: on }, touched } });
+  },
+  /** CI screenshots (fileora://demo/festival/…): shows a sample festival on this phone until the next settings check; nothing is saved. */
+  demoFestival(f: Festival) {
+    if (state.config) {
+      state = { ...state, config: { ...state.config, festival: f } };
+      emit();
+    }
   },
   dismiss(kind: 'ann' | 'update' | 'popup' | 'festival' | 'fanim', id: string) {
     set({ dismissed: { ...state.dismissed, [kind]: id } });

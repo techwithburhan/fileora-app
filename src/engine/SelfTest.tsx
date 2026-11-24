@@ -24,6 +24,31 @@ import { store } from '../store/store';
 import { remote } from '../remote/remote';
 import { inbox } from '../remote/inbox';
 import { showBanner } from '../components/InAppBanner';
+import DEMO_FESTIVALS from '../festival/demoFestivals.json';
+import { cleanFx } from '../festival/fxData';
+import type { Festival } from '../remote/remote';
+
+/** A sample festival for CI screenshots (plugin 2.24 data); a new version each time so the animation plays. */
+function demoFestival(d: Record<string, unknown>): Festival {
+  return {
+    id: String(d.id),
+    v: `demo${Date.now()}`,
+    name: String(d.name),
+    greeting: String(d.greeting),
+    sub: String(d.sub ?? ''),
+    builtin: false,
+    design: String(d.design ?? ''),
+    image: '',
+    accent: String(d.accent),
+    accent_dark: String(d.accent_dark ?? ''),
+    ink: String(d.ink ?? '#FFFFFF'),
+    animation: 'none',
+    anim_secs: 8,
+    anim_freq: 'open',
+    link: '',
+    fx: cleanFx(d.fx),
+  };
+}
 
 const PNG =
   'iVBORw0KGgoAAAANSUhEUgAAAEAAAAAwCAIAAAAuKetIAAAAeElEQVR4Xu3ZsQ2AIBQGYTFuwgRW7mYsjTOxBSsZGweA4vIn9/WQ93J0lHq0JdmaPPzHBWgWoFmAZgGaBWjbzAD9vGaO//bnHr7HJ0SzAM0CNAvQLECzAM0CNAvQLECzAM0CtPgCxT8yWPwTcgGaBWgWoFmAFl/gBeCDBYUf80jsAAAAAElFTkSuQmCC';
@@ -139,6 +164,22 @@ export default function SelfTest() {
                 : showBanner({ id: 'demo-2', title: 'New tool: Compress to 100 KB', body: 'Shrink photos and PDFs to an exact size for forms.', topic: 'tools', ms: 20000, onPress: () => navigationRef.navigate('Alert', { id: 'demo-2' }) })
             : setTimeout(open, 300);
         return open();
+      }
+      // app 1.2.3 (CI screenshots): fileora://demo/festival/<diwali|holi|onam|lunar-new-year> shows that
+      // festival's banner and its own animation on Home (plugin 2.24 data; only on this phone, until
+      // the next settings check)
+      const fest = url ? /^fileora:\/\/demo\/festival\/([a-z-]{3,30})/i.exec(url) : null;
+      if (fest) {
+        const d = (DEMO_FESTIVALS as Record<string, Record<string, unknown>>)[fest[1].toLowerCase()];
+        const show = () => {
+          if (!navigationRef.isReady() || !remote.get().loaded) {
+            setTimeout(show, 300);
+            return;
+          }
+          navigationRef.navigate('Tabs', { screen: 'Home' });
+          if (d) remote.demoFestival(demoFestival(d));
+        };
+        return show();
       }
       // app 1.2.2 (CI screenshots): fileora://screen/updates opens Settings → App updates,
       // fileora://screen/settings the Settings tab
