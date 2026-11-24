@@ -1,0 +1,26 @@
+1376|Actualizaciones de la app
+1377|Compilación {n}
+1378|Comprobar de nuevo
+1379|Buscando actualizaciones…
+1380|Conéctate a internet y vuelve a comprobarlo.
+1381|Fileora se actualizó a {v}
+1382|Fileora se actualizó de {from} a {to}.
+1383|Fileora se actualizó a {to}.
+1384|Fileora {v} está disponible. Tienes la versión {have}.
+1385|Versión instalada
+1386|Instalada {have}
+1387|Instalada {have} · Última {v}
+1388|Última comprobación
+1389|Última versión
+1390|Mínima compatible
+1391|No hay ninguna versión más nueva
+1392|Aún no comprobado
+1393|Toca para ver los datos de tu versión.
+1394|Actualización disponible
+1395|Actualización disponible: {v} (tienes {have})
+1396|Actualización obligatoria
+1397|Actualizar a {v}
+1398|Tenías la versión {v}. Toca para ver qué ha cambiado.
+1399|ahora mismo
+1400|nunca
+1401|hace {n} h

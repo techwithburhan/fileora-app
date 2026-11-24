@@ -38,6 +38,8 @@ export type RootStackParamList = {
   Promo: undefined;
   /** app 1.2: one alert with its whole message (from Alerts or a tapped notification) */
   Alert: { id: string };
+  /** app 1.2.2: Settings → App updates (installed vs latest version) */
+  Update: undefined;
 };
 
 declare global {

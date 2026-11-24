@@ -14,6 +14,7 @@ import { Platform } from 'react-native';
 import { API_TOOLS_LIVE, MAINTENANCE_MESSAGE, SITE } from '../config';
 import { DATA, ensureDirs } from '../store/files';
 import { onFlush, readJsonSafe, writeJsonSafe } from '../lib/safeFile';
+import { APP_VERSION } from '../version';
 
 export type ToolFlag = 'soon' | 'off';
 /** One bottom-bar or side-menu item from App Center → Navigation. */
@@ -173,6 +174,10 @@ type State = {
   etag: string;
   /** app 1.2: direct delivery registration (what was sent, when, and whether the site accepted it) */
   pushReg: PushReg | null;
+  /** app 1.2.2: the version that last ran on this phone (to notice an update) */
+  lastVersion: string;
+  /** app 1.2.2: set when this phone was updated: from → to, and whether the "Updated" note was seen */
+  updated: { from: string; to: string; at: number; seen: boolean } | null;
 };
 
 const FILE = `${DATA}/remote.json`;
@@ -204,6 +209,8 @@ let state: State = {
   subscribed: [],
   etag: '',
   pushReg: null,
+  lastVersion: '',
+  updated: null,
 };
 
 function emit() {
@@ -213,8 +220,8 @@ function save() {
   if (saveTimer) clearTimeout(saveTimer);
   saveTimer = null;
   if (!state.loaded) return Promise.resolve(); // never overwrite saved choices before they were read
-  const { config, fetchedAt, install, prefs, dismissed, subscribed, etag, pushReg } = state;
-  return writeJsonSafe(FILE, { config, fetchedAt, install, prefs, dismissed, subscribed, etag, pushReg });
+  const { config, fetchedAt, install, prefs, dismissed, subscribed, etag, pushReg, lastVersion, updated } = state;
+  return writeJsonSafe(FILE, { config, fetchedAt, install, prefs, dismissed, subscribed, etag, pushReg, lastVersion, updated });
 }
 function persist() {
   if (saveTimer) clearTimeout(saveTimer);
@@ -546,13 +553,28 @@ export const remote = {
           subscribed: Array.isArray(d.subscribed) ? d.subscribed : [],
           etag: typeof d.etag === 'string' ? d.etag.slice(0, 60) : '',
           pushReg: d.pushReg && typeof d.pushReg.key === 'string' ? { key: d.pushReg.key, at: Number(d.pushReg.at) || 0, direct: d.pushReg.direct === true } : null,
+          lastVersion: typeof d.lastVersion === 'string' ? normVersion(d.lastVersion) : '',
+          updated:
+            d.updated && typeof d.updated.from === 'string' && typeof d.updated.to === 'string'
+              ? { from: d.updated.from, to: d.updated.to, at: Number(d.updated.at) || 0, seen: d.updated.seen === true }
+              : null,
         };
       }
     } catch {
       // damaged file: defaults
     }
     if (!state.install) state.install = randomId();
-    state = { ...state, loaded: true };
+    // app 1.2.2: a new version is running → the saved settings are checked again at once (no 304,
+    // no "fresh enough" copy), the closed "update available" banner is forgotten, and Settings →
+    // App updates says "Updated from … to …".
+    const now = normVersion(APP_VERSION);
+    const had = state.lastVersion || (state.config ? '?' : ''); // installs older than 1.2.2 kept no version
+    if (had && had !== now) {
+      const dismissed = { ...state.dismissed };
+      delete dismissed.update;
+      state = { ...state, fetchedAt: 0, etag: '', dismissed, updated: { from: had === '?' ? '' : had, to: now, at: Date.now(), seen: false } };
+    }
+    state = { ...state, lastVersion: now, loaded: true };
     emit();
     persist();
   },
@@ -578,6 +600,11 @@ export const remote = {
 
   /** When the settings were last confirmed with the website (ms), 0 = never. */
   fetchedAt: () => state.fetchedAt,
+
+  /** app 1.2.2: the "Updated to …" note was shown. */
+  seenUpdated() {
+    if (state.updated && !state.updated.seen) set({ updated: { ...state.updated, seen: true } });
+  },
 
   setPushReg(r: PushReg | null) {
     set({ pushReg: r });
@@ -661,6 +688,25 @@ export function requiredVersion(u: RemoteConfig['update'] | undefined | null): s
 export function mustUpdate(installed: string, u: RemoteConfig['update'] | undefined | null): boolean {
   const req = requiredVersion(u);
   return !!req && !!normVersion(installed) && cmpVersion(installed, req) < 0;
+}
+
+/**
+ * app 1.2.2: where this install stands (pure: tested in __tests__/version.test.ts).
+ * required = force update is on and this version is below the minimum; available = a newer
+ * version is published; latest = installed ≥ latest; unknown = no settings yet.
+ */
+export type UpdateState = 'latest' | 'available' | 'required' | 'unknown';
+export function updateState(installed: string, u: RemoteConfig['update'] | undefined | null): UpdateState {
+  if (!u) return 'unknown';
+  if (mustUpdate(installed, u)) return 'required';
+  if (u.latest && cmpVersion(installed, u.latest) < 0) return 'available';
+  return 'latest';
+}
+
+/** Build number as Gradle and Xcode make it from the version: 1.2.2 → 10202. */
+export function buildNumber(v: string): number {
+  const [a, b, c] = normVersion(v).split('.').map(n => parseInt(n, 10) || 0);
+  return (a || 0) * 10000 + (b || 0) * 100 + (c || 0);
 }
 
 /* ---------- Notification & Privacy settings managed from App Center ---------- */

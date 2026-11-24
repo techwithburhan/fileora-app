@@ -1372,3 +1372,29 @@
 1373|REQUIRED
 1374|Checked just now: this phone still has version {version}; {required} or newer is needed. If you already installed the update, the download may have given an older version.
 1375|This version ({version}) is no longer supported. Install version {required} or later to keep using the app. Your files stay on this phone.
+1376|App updates
+1377|Build {n}
+1378|Check again
+1379|Checking for updates…
+1380|Connect to the internet and check again.
+1381|Fileora updated to {v}
+1382|Fileora was updated from {from} to {to}.
+1383|Fileora was updated to {to}.
+1384|Fileora {v} is available. You have version {have}.
+1385|Installed version
+1386|Installed {have}
+1387|Installed {have} · Latest {v}
+1388|Last checked
+1389|Latest version
+1390|Minimum supported
+1391|No newer version is published
+1392|Not checked yet
+1393|Tap to see your version details.
+1394|Update available
+1395|Update available: {v} (you have {have})
+1396|Update required
+1397|Update to {v}
+1398|You had version {v}. Tap to see what changed.
+1399|just now
+1400|never
+1401|{n} h ago

@@ -16,7 +16,7 @@ import Icon, { IconName } from '../components/Icon';
 import PressableScale from '../components/PressableScale';
 import { ABOUT_SLUGS, CONTACT_SLUGS, DEVELOPER, PRIVACY_SLUGS, SHARE_URL, TERMS_SLUGS } from '../config';
 import { store, useStore } from '../store/store';
-import { cmpVersion, effectivePrefs, remote, settingCtl, SettingKey, TOPIC_LABELS, useRemote } from '../remote/remote';
+import { effectivePrefs, remote, settingCtl, SettingKey, TOPIC_LABELS, updateState, useRemote } from '../remote/remote';
 import NotificationCheck from '../components/NotificationCheck';
 import RewardSheet, { untilText } from '../ads/RewardSheet';
 import { rewardHours, showPrivacyOptions, unitFor, useAdFreeUntil, usePrivacyOptions } from '../ads/ads';
@@ -49,7 +49,6 @@ export default function SettingsScreen({ theme }: { theme: Theme }) {
   const config = useRemote(s => s.config);
   const prefs = useRemote(s => s.prefs);
   const [perm, setPerm] = useState<'granted' | 'denied' | null>(null);
-  const [checking, setChecking] = useState(false);
   const [checkOpen, setCheckOpen] = useState(false);
   const [rewardOpen, setRewardOpen] = useState(false);
   const adFreeUntil = useAdFreeUntil();
@@ -112,19 +111,9 @@ export default function SettingsScreen({ theme }: { theme: Theme }) {
     ]);
   const offered = TOPIC_LABELS.filter(t => !config?.topics?.length || config.topics.includes(t.id));
 
-  const checkUpdates = async () => {
-    setChecking(true);
-    const err = await remote.refresh(true);
-    setChecking(false);
-    const latest = remote.get().config?.update.latest;
-    if (err) Alert.alert('Couldn’t check for updates', 'Check your internet connection and try again.');
-    else if (latest && cmpVersion(APP_VERSION, latest) < 0)
-      Alert.alert(`Fileora ${latest} is available`, remote.get().config?.update.notes || tr('You have version {v}.', { v: APP_VERSION }), [
-        { text: 'Later', style: 'cancel' },
-        { text: 'Update', onPress: () => Linking.openURL(remote.get().config?.update.url || SHARE_URL).catch(() => {}) },
-      ]);
-    else Alert.alert('You’re up to date', tr('Fileora {v} is the newest version.', { v: APP_VERSION }));
-  };
+  // app 1.2.2: installed vs latest version on its own screen (Settings → App updates)
+  const upd = useRemote(st => st.config?.update);
+  const updState = updateState(APP_VERSION, upd);
   const sw = (value: boolean, onChange: (v: boolean) => void, label: string, locked = false) => (
     <View style={styles.swWrap}>
       {locked && <Icon name="lock" size={15} color={theme.muted} />}
@@ -365,7 +354,18 @@ export default function SettingsScreen({ theme }: { theme: Theme }) {
         { key: 'about', icon: 'info', label: 'About', onPress: page('About', ABOUT_SLUGS) },
         { key: 'contact', icon: 'mail', label: 'Contact', onPress: page('Contact', CONTACT_SLUGS, links?.contact) },
         { key: 'share', icon: 'share', label: 'Share application', sub: 'WhatsApp, messages, email…', onPress: share },
-        { key: 'update', icon: 'refresh', label: checking ? 'Checking…' : 'Check for updates', sub: `Version ${APP_VERSION}`, onPress: checking ? undefined : checkUpdates },
+        {
+          key: 'update',
+          icon: updState === 'available' || updState === 'required' ? 'download' : 'refresh',
+          label: 'App updates',
+          sub:
+            updState === 'available' || updState === 'required'
+              ? tr('Update available: {v} (you have {have})', { v: upd?.latest || upd?.min || '', have: APP_VERSION })
+              : upd?.latest
+                ? tr('Installed {have} · Latest {v}', { have: APP_VERSION, v: upd.latest })
+                : tr('Installed {have}', { have: APP_VERSION }),
+          onPress: () => nav.navigate('Update'),
+        },
       ],
     },
   ];

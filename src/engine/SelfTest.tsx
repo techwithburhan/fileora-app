@@ -140,6 +140,19 @@ export default function SelfTest() {
             : setTimeout(open, 300);
         return open();
       }
+      // app 1.2.2 (CI screenshots): fileora://screen/updates opens Settings → App updates,
+      // fileora://screen/settings the Settings tab
+      const scr = url ? /^fileora:\/\/screen\/(updates|settings)/i.exec(url) : null;
+      if (scr) {
+        const open = () =>
+          navigationRef.isReady()
+            ? scr[1].toLowerCase() === 'updates'
+              ? navigationRef.navigate('Update')
+              : navigationRef.navigate('Tabs', { screen: 'Settings' })
+            : setTimeout(open, 300);
+        open();
+        return;
+      }
       if (url && /^fileora:\/\/screen\/downloads/i.test(url)) {
         const open = () => (navigationRef.isReady() ? navigationRef.navigate('Activity', { tab: 'downloaded' }) : setTimeout(open, 300));
         open();

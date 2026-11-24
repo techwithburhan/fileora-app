@@ -29,7 +29,8 @@ import HomeScreen from './src/screens/HomeScreen';
 import ProcessScreen from './src/screens/ProcessScreen';
 import AlertsScreen from './src/screens/AlertsScreen';
 import AlertDetailScreen from './src/screens/AlertDetailScreen';
-import InAppBanner from './src/components/InAppBanner';
+import UpdateScreen from './src/screens/UpdateScreen';
+import InAppBanner, { showBanner } from './src/components/InAppBanner';
 import Onboarding, { useNeedsOnboarding } from './src/components/Onboarding';
 import PromoScreen from './src/screens/PromoScreen';
 import ScannerScreen from './src/screens/ScannerScreen';
@@ -52,12 +53,13 @@ import EngineHost from './src/engine/EngineHost';
 import SelfTest from './src/engine/SelfTest';
 import ErrorBoundary, { installGlobalErrorHandler } from './src/components/ErrorBoundary';
 import { flushAll } from './src/lib/safeFile';
-import { effectivePrefs, remote } from './src/remote/remote';
+import { effectivePrefs, remote, useRemote } from './src/remote/remote';
+import { APP_VERSION } from './src/version';
 import { telemetry } from './src/remote/telemetry';
 import { onNavigationReady, startPush, syncTopics } from './src/remote/push';
 import { inbox } from './src/remote/inbox';
 import { loadAds } from './src/ads/ads';
-import { syncRtl, useLang } from './src/i18n/i18n';
+import { syncRtl, tr, useLang } from './src/i18n/i18n';
 import LanguageSheet from './src/i18n/LanguageSheet';
 import { FestivalOverlay, useFestivalPrefetch } from './src/festival/Festival';
 
@@ -167,6 +169,20 @@ export default function App() {
   useEffect(() => {
     if (navReady && !splash) onNavigationReady();
   }, [navReady, splash]);
+  // app 1.2.2: first launch after an update: a short note (tap → Settings → App updates)
+  const updated = useRemote(s => s.updated);
+  useEffect(() => {
+    if (!navReady || splash || needsSetup || !updated || updated.seen || updated.to !== APP_VERSION) return;
+    remote.seenUpdated();
+    showBanner({
+      id: `updated-${updated.to}`,
+      title: tr('Fileora updated to {v}', { v: updated.to }),
+      body: updated.from ? tr('You had version {v}. Tap to see what changed.', { v: updated.from }) : tr('Tap to see your version details.'),
+      topic: 'updates',
+      ms: 6000,
+      onPress: () => navigationRef.isReady() && navigationRef.navigate('Update'),
+    });
+  }, [navReady, splash, needsSetup, updated]);
   // Gallery → Share → Fileora: open the shared images, ready for an image tool
   useEffect(() => {
     if (!navReady || splash) return;
@@ -217,6 +233,7 @@ export default function App() {
                 <Stack.Screen name="Blog">{() => <BlogScreen theme={theme} />}</Stack.Screen>
                 <Stack.Screen name="Promo">{() => <PromoScreen theme={theme} />}</Stack.Screen>
                 <Stack.Screen name="Alert">{() => <AlertDetailScreen theme={theme} />}</Stack.Screen>
+                <Stack.Screen name="Update">{() => <UpdateScreen theme={theme} />}</Stack.Screen>
                 <Stack.Screen name="Web" options={{ animation: 'slide_from_bottom' }}>
                   {() => <WebScreen theme={theme} />}
                 </Stack.Screen>

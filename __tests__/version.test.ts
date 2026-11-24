@@ -7,7 +7,7 @@ jest.mock('react-native-blob-util', () => ({ __esModule: true, default: { fs: { 
 jest.mock('../src/store/files', () => ({ DATA: '/d/fileora', ensureDirs: async () => {} }));
 jest.mock('../src/lib/safeFile', () => ({ onFlush: () => {}, readJsonSafe: async () => null, writeJsonSafe: async () => {} }));
 
-import { cmpVersion, mustUpdate, normVersion, requiredVersion } from '../src/remote/remote';
+import { cmpVersion, mustUpdate, normVersion, requiredVersion, updateState, buildNumber } from '../src/remote/remote';
 
 const u = (min: string, latest = '', force = true) => ({ min, latest, url: '', notes: '', force, title: '', message: '' });
 
@@ -46,5 +46,25 @@ describe('force update', () => {
   });
   it('ignores a minimum that is not a version', () => {
     expect(mustUpdate('1.0.0', u('soon', ''))).toBe(false);
+  });
+});
+
+describe('updateState (Settings → App updates, app 1.2.2)', () => {
+  it('shows the same version as up to date (1.2.2 installed, 1.2.2 latest)', () => {
+    expect(updateState('1.2.2', u('', '1.2.2'))).toBe('latest');
+    expect(updateState('1.2.2', u('', ''))).toBe('latest');
+  });
+  it('offers a newer version and requires it when force update is on', () => {
+    expect(updateState('1.2.0', u('', '1.2.2'))).toBe('available');
+    expect(updateState('1.2.0', u('1.2.2', '1.2.2'))).toBe('required');
+    expect(updateState('1.2.0', u('1.2.2', '1.2.2', false))).toBe('available');
+  });
+  it('is unknown before the first settings check', () => {
+    expect(updateState('1.2.2', null)).toBe('unknown');
+  });
+  it('makes the same build number as Gradle and Xcode', () => {
+    expect(buildNumber('1.2.2')).toBe(10202);
+    expect(buildNumber('0.3.0')).toBe(300);
+    expect(buildNumber('v2.10')).toBe(21000);
   });
 });

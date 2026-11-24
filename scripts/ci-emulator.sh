@@ -179,6 +179,19 @@ sleep 2
 adb exec-out screencap -p > "$OUT/v12-setup-again.png"
 adb shell am start -W -a android.intent.action.VIEW -d fileora://setup/done in.fileora.app
 sleep 2
+# app 1.2.2: Settings row with installed vs latest version, then Settings -> App updates (live App Center)
+adb shell am start -W -a android.intent.action.VIEW -d fileora://screen/settings in.fileora.app
+sleep 3
+adb exec-out screencap -p > "$OUT/v122-settings.png"
+adb shell input swipe 540 1800 540 300 400
+sleep 2
+adb exec-out screencap -p > "$OUT/v122-settings-bottom.png"
+adb shell am start -W -a android.intent.action.VIEW -d fileora://screen/updates in.fileora.app
+sleep 6
+adb exec-out screencap -p > "$OUT/v122-updates.png"
+adb shell uiautomator dump /sdcard/ui.xml > /dev/null 2>&1 && adb exec-out cat /sdcard/ui.xml > "$OUT/v122-updates-ui.xml" || true
+adb shell input keyevent 4
+sleep 1
 adb logcat -d | grep -iE "FATAL|AndroidRuntime" | tail -40 > "$OUT/crash.txt" || true
 if adb shell pidof in.fileora.app > /dev/null; then echo RUNNING > "$OUT/status.txt"; else echo "NOT RUNNING" > "$OUT/status.txt"; fi
 cat "$OUT/status.txt"

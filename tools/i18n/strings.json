@@ -371,6 +371,9 @@
 "App manifest": [
 "engine-msg:image.js"
 ],
+"App updates": [
+"app 1.2.2"
+],
 "App updates, new tools, daily news and offers. You choose the categories in Settings, and every notification is also kept in Alerts.": [
 "app 1.2"
 ],
@@ -544,6 +547,9 @@
 "Browse your phone and open a file": [
 "src/screens/FilesScreen.tsx"
 ],
+"Build {n}": [
+"app 1.2.2"
+],
 "Building your scan": [
 "engine:scan"
 ],
@@ -614,6 +620,9 @@
 "Change the size of photos in pixels or by percentage, one or many at once.": [
 "src/data/tools.ts"
 ],
+"Check again": [
+"app 1.2.2"
+],
 "Check back later for offers and news.": [
 "src/screens/PromoScreen.tsx"
 ],
@@ -633,6 +642,9 @@
 ],
 "Checked just now: this phone still has version {version}; {required} or newer is needed. If you already installed the update, the download may have given an older version.": [
 "app 1.2"
+],
+"Checking for updates…": [
+"app 1.2.2"
 ],
 "Checking…": [
 "src/screens/SettingsScreen.tsx"
@@ -798,6 +810,9 @@
 ],
 "Congratulations!": [
 "src/components/ResultSheet.tsx"
+],
+"Connect to the internet and check again.": [
+"app 1.2.2"
 ],
 "Connect your Google Drive account": [
 "src/data/clouds.ts"
@@ -1447,11 +1462,23 @@
 "Fileora server": [
 "src/components/ToolCard.tsx"
 ],
+"Fileora updated to {v}": [
+"app 1.2.2"
+],
+"Fileora was updated from {from} to {to}.": [
+"app 1.2.2"
+],
+"Fileora was updated to {to}.": [
+"app 1.2.2"
+],
 "Fileora will stop offering “Upload to {name}”. Nothing is removed from your {name}.": [
 "src/screens/CloudScreen.tsx"
 ],
 "Fileora {v} is available": [
 "src/components/HomeBanners.tsx"
+],
+"Fileora {v} is available. You have version {have}.": [
+"app 1.2.2"
 ],
 "Fileora {v} is the newest version.": [
 "src/screens/SettingsScreen.tsx"
@@ -1820,6 +1847,15 @@
 "Ink colour": [
 "engine:img2svg"
 ],
+"Installed version": [
+"app 1.2.2"
+],
+"Installed {have}": [
+"app 1.2.2"
+],
+"Installed {have} · Latest {v}": [
+"app 1.2.2"
+],
 "Interleave PDF": [
 "src/data/tools.ts"
 ],
@@ -1961,8 +1997,14 @@
 "engine:sign",
 "engine:stamp"
 ],
+"Last checked": [
+"app 1.2.2"
+],
 "Later": [
 "src/screens/SettingsScreen.tsx"
+],
+"Latest version": [
+"app 1.2.2"
 ],
 "Layout": [
 "engine:aadhaar",
@@ -2202,6 +2244,9 @@
 "Middle right": [
 "src/components/tool/OptionField.tsx"
 ],
+"Minimum supported": [
+"app 1.2.2"
+],
 "Mirror left to right": [
 "engine:imgrotate"
 ],
@@ -2351,6 +2396,9 @@
 "No images found in this PDF (or they are all smaller than the size you chose). Scanned pages are often one image: use PDF to JPG for those.": [
 "engine-msg:pdf.js"
 ],
+"No newer version is published": [
+"app 1.2.2"
+],
 "No permission needed": [
 "app 1.2"
 ],
@@ -2398,6 +2446,9 @@
 ],
 "Not available right now.": [
 "src/screens/SettingsScreen.tsx"
+],
+"Not checked yet": [
+"app 1.2.2"
 ],
 "Not now": [
 "src/ads/RewardSheet.tsx",
@@ -3681,6 +3732,9 @@
 "Tap to read": [
 "app 1.2"
 ],
+"Tap to see your version details.": [
+"app 1.2.2"
+],
 "Target": [
 "engine:imgkb"
 ],
@@ -4130,8 +4184,20 @@
 "Update PDF": [
 "src/screens/ScanDocScreen.tsx"
 ],
+"Update available": [
+"app 1.2.2"
+],
+"Update available: {v} (you have {have})": [
+"app 1.2.2"
+],
 "Update now": [
 "src/components/RemoteGate.tsx"
+],
+"Update required": [
+"app 1.2.2"
+],
+"Update to {v}": [
+"app 1.2.2"
 ],
 "Updated": [
 "app 1.2"
@@ -4337,6 +4403,9 @@
 ],
 "You can use {page}, {pages}, {date} and {file} in the text.": [
 "engine:headerfooter"
+],
+"You had version {v}. Tap to see what changed.": [
+"app 1.2.2"
 ],
 "You have version {v}.": [
 "src/screens/SettingsScreen.tsx"
@@ -4569,6 +4638,12 @@
 "in Fileora and {where}": [
 "src/components/tool/ResultView.tsx"
 ],
+"just now": [
+"app 1.2.2"
+],
+"never": [
+"app 1.2.2"
+],
 "page": [
 "src/lib/openFile.ts"
 ],
@@ -4644,6 +4719,9 @@
 ],
 "{n} files saved in Fileora. In {where} as a ZIP file.": [
 "src/components/tool/ResultView.tsx"
+],
+"{n} h ago": [
+"app 1.2.2"
 ],
 "{n} hours": [
 "app 1.2"
