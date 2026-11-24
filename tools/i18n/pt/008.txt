@@ -1,7 +1,0 @@
-1313|Todos os arquivos em um ZIP
-1314|E mais {n}.
-1315|Criando o arquivo ZIP
-1316|ZIP parte {i} de {n}
-1317|no Fileora e em {where}
-1318|{done} prontos, {failed} não puderam ser processados
-1319|{n} arquivos salvos no Fileora. Em {where} como arquivo ZIP.

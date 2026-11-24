@@ -1,7 +1,0 @@
-1313|Alle Dateien in einer ZIP-Datei
-1314|Und {n} weitere.
-1315|ZIP-Datei wird erstellt
-1316|ZIP-Teil {i} von {n}
-1317|in Fileora und unter {where}
-1318|{done} fertig, {failed} konnten nicht verarbeitet werden
-1319|{n} Dateien in Fileora gespeichert. Unter {where} als ZIP-Datei.
