@@ -156,6 +156,7 @@ let pruneHooked = false;
 
 export const inbox = {
   async load() {
+    if (state.loaded) return; // app 1.2.2: once per app run (see remote.load)
     const d = await readJsonSafe<Saved>(FILE).catch(() => null);
     state = {
       loaded: true,

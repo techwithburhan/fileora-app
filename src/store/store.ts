@@ -113,6 +113,7 @@ export const store = {
   },
 
   async load() {
+    if (state.loaded) return; // app 1.2.2: once per app run (see remote.load)
     await ensureDirs();
     try {
       const d = await readJsonSafe<Partial<State> & { v?: number }>(FILE);

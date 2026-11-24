@@ -534,6 +534,10 @@ export const remote = {
   },
 
   async load() {
+    // app 1.2.2: read once per app run. When Android re-creates the screen (Back on the first screen,
+    // then opening Fileora or a link again) the app mounts again in the same run: reading the file
+    // again would undo choices made in the last moment before they were written (e.g. "Continue").
+    if (state.loaded) return;
     await ensureDirs();
     try {
       const d = await readJsonSafe<Record<string, any>>(FILE);

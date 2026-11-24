@@ -13,7 +13,25 @@ sleep 25
 adb exec-out screencap -p > "$OUT/v12-setup.png"
 adb shell uiautomator dump /sdcard/ui.xml > /dev/null 2>&1 && adb exec-out cat /sdcard/ui.xml > "$OUT/v12-setup-ui.xml" || true
 B=$(adb shell uiautomator dump /sdcard/ui.xml > /dev/null 2>&1; adb exec-out cat /sdcard/ui.xml | tr '>' '\n' | grep -E '(text|content-desc)="Allow"' | grep -o 'bounds="[^"]*"' | head -1 | grep -o '[0-9]\+' | tr '\n' ' ')
-if [ -n "$B" ]; then set -- $B; adb shell input tap $((($1 + $3) / 2)) $((($2 + $4) / 2)); sleep 3; adb exec-out screencap -p > "$OUT/v12-setup-system-question.png"; adb shell input keyevent 4; sleep 2; adb exec-out screencap -p > "$OUT/v12-setup-after.png"; fi
+# tap a button found by its text or description (uiautomator), returns 1 when not found
+tapText() {
+  local b
+  b=$(adb shell uiautomator dump /sdcard/ui.xml > /dev/null 2>&1; adb exec-out cat /sdcard/ui.xml | tr '>' '\n' | grep -E "(text|content-desc)=\"$1\"" | grep -o 'bounds="[^"]*"' | head -1 | grep -o '[0-9]\+' | tr '\n' ' ')
+  [ -n "$b" ] || return 1
+  set -- $b
+  adb shell input tap $((($1 + $3) / 2)) $((($2 + $4) / 2))
+}
+if [ -n "$B" ]; then
+  set -- $B; adb shell input tap $((($1 + $3) / 2)) $((($2 + $4) / 2)); sleep 3
+  adb exec-out screencap -p > "$OUT/v12-setup-system-question.png"
+  # answer Android's question with its own button (Back here would close the app)
+  tapText "Don.t allow" || tapText "Don’t allow" || adb shell input keyevent 4
+  sleep 2; adb exec-out screencap -p > "$OUT/v12-setup-after.png"
+fi
+# app 1.2.2: close the first-launch screen the way people do: scroll down and tap Continue
+read SW SH < <(adb shell wm size | tail -1 | sed 's/.*: //; s/x/ /' | tr -d '\r')
+adb shell input swipe $((SW / 2)) $((SH * 80 / 100)) $((SW / 2)) $((SH * 20 / 100)) 300; sleep 1
+if tapText "Continue"; then sleep 3; adb exec-out screencap -p > "$OUT/v122-setup-continue.png"; else echo "Continue not found" > "$OUT/v122-setup-continue.txt"; fi
 adb shell am start -W -a android.intent.action.VIEW -d fileora://setup/done in.fileora.app
 sleep 4
 adb exec-out screencap -p > "$OUT/home.png"
@@ -183,7 +201,9 @@ sleep 2
 adb shell am start -W -a android.intent.action.VIEW -d fileora://screen/settings in.fileora.app
 sleep 3
 adb exec-out screencap -p > "$OUT/v122-settings.png"
-adb shell input swipe 540 1800 540 300 400
+adb shell input swipe $X $((H * 85 / 100)) $X $((H * 15 / 100)) 400
+sleep 1
+adb shell input swipe $X $((H * 85 / 100)) $X $((H * 15 / 100)) 400
 sleep 2
 adb exec-out screencap -p > "$OUT/v122-settings-bottom.png"
 adb shell am start -W -a android.intent.action.VIEW -d fileora://screen/updates in.fileora.app
