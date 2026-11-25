@@ -72,6 +72,8 @@ clean
 shot 01-home
 up 40; shot 02-home-more
 up 40; shot 03-home-more-2
+# the File Converter category (Word, Excel, PowerPoint to PDF ...)
+tapText 'File Converter' && { sleep 4; shot 06-converters; up 35; shot 07-converters-more; back; }
 tapB "$(bounds 'Tools, tab[^\"]*' head)" || tapLast 'Tools'
 sleep 3
 shot 04-tools
@@ -123,7 +125,7 @@ runCta() { # scrolls to the button at the bottom and taps it ($1 = its text), wa
   local t=0
   sleep 5
   while [ $t -lt "$2" ]; do
-    [ -n "$(bounds '(Open file|Done|Open files)' head)" ] && { sleep 2; return 0; }
+    [ -n "$(bounds '(Open file|Done|Open files|New files|Change options)' head)" ] && { sleep 2; return 0; }
     sleep 5; t=$((t + 5))
   done
   note "no result after $2 s: $1"
@@ -140,7 +142,7 @@ fi
 # ---- 3 photos: Compress Image -> result
 if share Mountains.jpg Sunset.jpg Lake.jpg 20-shared-images; then
   tapText 'Compress Image' && sleep 10 && shot 21-imgcompress-ready
-  runCta 'Compress images' 150 && { shot 22-imgcompress-result; up 40; shot 23-imgcompress-result-more; }
+  runCta 'Compress images' 60 && { shot 22-imgcompress-result; up 40; shot 23-imgcompress-result-more; }
   saveUi 22-imgcompress-result
   back; back
 fi
@@ -211,7 +213,7 @@ done
 link fileora://screen/home 3
 clean
 tapB "$(bounds 'Language: [^"]*' head)" && { sleep 2; shot 60-languages; back; }
-link fileora://lang/hi 4; clean; toTop; shot 61-home-hi
+link fileora://lang/hi 12; clean; toTop; sleep 6; shot 61-home-hi
 tapB "$(bounds '(टूल|Tools), tab[^\"]*' head)" && sleep 3 && { toTop; shot 62-tools-hi; }
 link fileora://lang/en 3
 
