@@ -159,13 +159,15 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
           <View style={styles.quick} onLayout={quickGrid.onLayout}>
             {quick.map((t, i) => {
               const c = catColor(t.cat, theme);
+              // very narrow phones: the icon sits above the name, so the name gets the whole width
+              const narrow = typeof quickGrid.width === 'number' && quickGrid.width < 150;
               return (
                 <Appear key={t.id} delay={420 + i * 55} duration={380} style={{ width: quickGrid.width }}>
                   <PressableScale
                     onPress={() => openTool(t.id)}
                     accessibilityRole="button"
                     accessibilityLabel={tr(t.name)}
-                    style={[styles.quickTile, { backgroundColor: theme.bg, borderColor: theme.line }]}>
+                    style={[styles.quickTile, narrow && styles.quickTileNarrow, { backgroundColor: theme.bg, borderColor: theme.line }]}>
                     <View style={[styles.quickIcon, { backgroundColor: c + '1F' }]}>
                       <Icon name={QUICK_ICON[t.id] ?? (t.cat as IconName)} size={19} color={c} />
                     </View>
@@ -404,6 +406,7 @@ const styles = StyleSheet.create({
   searchText: { fontSize: 15, flexShrink: 1 },
   quick: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   quickTile: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 56, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 14, borderWidth: 1 },
+  quickTileNarrow: { flexDirection: 'column', alignItems: 'flex-start', gap: 6, paddingVertical: 10 },
   quickIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   quickText: { fontSize: 13.5, lineHeight: 18, fontWeight: '700', flexShrink: 1 },
   trust: { flexDirection: 'row', alignItems: 'center', gap: 6 },

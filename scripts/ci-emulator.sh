@@ -266,33 +266,63 @@ for t in application/pdf application/msword application/vnd.openxmlformats-offic
 done
 cat "$OUT/v124-share-targets.txt"
 
-# Real shares: files in Download, found through the media store, sent like File Manager does
+# Real shares, the way people do it: Files app → Downloads → long-press a file → Share → Fileora
 python3 scripts/ci-share-files.py share-files > /dev/null
 adb shell mkdir -p /sdcard/Download
 for f in share-files/*; do adb push "$f" /sdcard/Download/ > /dev/null; done
 adb shell content call --uri content://media --method scan_volume --arg external_primary > /dev/null 2>&1 || true
 sleep 3
-share() { # $1 file name, $2 type, $3 screenshot name
-  local id
-  id=$(adb shell content query --uri content://media/external/file --projection _id --where "_display_name=\'$1\'" 2>/dev/null | grep -o '_id=[0-9]*' | head -1 | cut -d= -f2)
-  echo "$1 -> media id ${id:-none}" >> "$OUT/v124-share-log.txt"
-  [ -n "$id" ] || return 1
-  adb shell am start -W -a android.intent.action.SEND -t "$2" --eu android.intent.extra.STREAM "content://media/external/file/$id" --grant-read-uri-permission -n in.fileora.app/.MainActivity >> "$OUT/v124-share-log.txt" 2>&1
-  sleep 6
-  adb exec-out screencap -p > "$OUT/$3.png"
-}
 : > "$OUT/v124-share-log.txt"
-share fileora-share-test.pdf application/pdf v124-share-pdf
-tapText "Compress PDF" && { sleep 6; adb exec-out screencap -p > "$OUT/v124-share-pdf-compress.png"; adb shell input keyevent 4; sleep 2; }
+boundsOf() { # bounds of the first view whose text or description matches $1
+  adb shell uiautomator dump /sdcard/ui.xml > /dev/null 2>&1
+  adb exec-out cat /sdcard/ui.xml | tr '>' '\n' | grep -E "(text|content-desc)=\"$1\"" | grep -o 'bounds="[^"]*"' | head -1 | grep -o '[0-9]\+' | tr '\n' ' '
+}
+longPress() {
+  local b; b=$(boundsOf "$1"); [ -n "$b" ] || return 1
+  set -- $b; local x=$((($1 + $3) / 2)) y=$((($2 + $4) / 2))
+  adb shell input swipe $x $y $x $y 900
+}
+openDownloads() {
+  adb shell am start -W -a android.intent.action.VIEW -t vnd.android.document/root -d content://com.android.providers.downloads.documents/root/downloads > /dev/null 2>&1
+  sleep 5
+}
+shareFromFiles() { # $1.. file names, last: screenshot name
+  local shot="${@: -1}" n=$(($# - 1)) i=0
+  openDownloads
+  adb exec-out screencap -p > "$OUT/$shot-1-files-app.png"
+  for f in "${@:1:$n}"; do
+    i=$((i + 1))
+    if [ $i -eq 1 ]; then longPress "$f" || { echo "$shot: $f not in Files" >> "$OUT/v124-share-log.txt"; return 1; }
+    else tapText "$f" || echo "$shot: $f not tapped" >> "$OUT/v124-share-log.txt"; fi
+    sleep 1
+  done
+  tapText "Share" || { echo "$shot: Share button not found" >> "$OUT/v124-share-log.txt"; adb exec-out screencap -p > "$OUT/$shot-2-no-share.png"; adb shell input keyevent 4; return 1; }
+  sleep 3
+  adb exec-out screencap -p > "$OUT/$shot-2-share-sheet.png"
+  if tapText "Fileora"; then
+    echo "$shot: Fileora in the share list, tapped" >> "$OUT/v124-share-log.txt"
+  else
+    # the list may need a scroll
+    adb shell input swipe $((W / 2)) $((H * 85 / 100)) $((W / 2)) $((H * 35 / 100)) 300; sleep 2
+    tapText "Fileora" && echo "$shot: Fileora in the share list (after scrolling), tapped" >> "$OUT/v124-share-log.txt" || { echo "$shot: Fileora NOT in the share list" >> "$OUT/v124-share-log.txt"; adb exec-out screencap -p > "$OUT/$shot-3-no-fileora.png"; adb shell input keyevent 4; return 1; }
+  fi
+  sleep 7
+  adb exec-out screencap -p > "$OUT/$shot.png"
+}
+shareFromFiles fileora-share-test.pdf v124-share-pdf
+tapText "Compress PDF" && { sleep 7; adb exec-out screencap -p > "$OUT/v124-share-pdf-compress.png"; adb shell input keyevent 4; sleep 2; }
 adb shell input keyevent 4; sleep 2
-share fileora-share-test.docx application/vnd.openxmlformats-officedocument.wordprocessingml.document v124-share-docx
+shareFromFiles fileora-share-test.docx v124-share-docx
 adb shell input keyevent 4; sleep 2
-share fileora-share-test.xlsx application/vnd.openxmlformats-officedocument.spreadsheetml.sheet v124-share-xlsx
+shareFromFiles fileora-share-test.xlsx v124-share-xlsx
 adb shell input keyevent 4; sleep 2
-share fileora-share-test.pptx application/vnd.openxmlformats-officedocument.presentationml.presentation v124-share-pptx
+shareFromFiles fileora-share-test.pptx v124-share-pptx
 adb shell input keyevent 4; sleep 2
-share fileora-share-test.png image/png v124-share-png
+shareFromFiles fileora-share-test.png v124-share-png
 adb shell input keyevent 4; sleep 2
+shareFromFiles fileora-share-test.pdf fileora-share-test.docx v124-share-multi
+adb shell input keyevent 4; sleep 2
+cat "$OUT/v124-share-log.txt"
 adb logcat -d | grep -iE "ReactNativeJS.*(share|Shared)|FileoraNative" | tail -30 >> "$OUT/v124-share-log.txt" || true
 
 adb logcat -d | grep -iE "FATAL|AndroidRuntime" | tail -40 > "$OUT/crash.txt" || true

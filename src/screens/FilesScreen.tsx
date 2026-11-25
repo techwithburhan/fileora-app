@@ -158,18 +158,18 @@ export default function FilesScreen({ theme }: { theme: Theme }) {
             <View key={r} style={styles.statRow}>
               {row.map((t, i) => (
                 <Appear key={t.key} delay={120 + (r * 2 + i) * 60} duration={320} style={[styles.stat, { backgroundColor: theme.surface2 }]}>
-                  <View style={[styles.statIcon, { backgroundColor: t.color + '1F' }]}>
-                    <Icon name={t.icon} size={18} color={t.color} />
+                  <View style={styles.statTop}>
+                    <View style={[styles.statIcon, { backgroundColor: t.color + '1F' }]}>
+                      <Icon name={t.icon} size={18} color={t.color} />
+                    </View>
+                    <CountUp value={t.n} style={[type.section, styles.flex, { color: theme.ink }]} />
                   </View>
-                  <View style={styles.flex}>
-                    <CountUp value={t.n} style={[type.section, { color: theme.ink }]} />
-                    <Text style={[type.caption, { color: theme.ink2 }]} numberOfLines={1}>
-                      {t.label}
-                    </Text>
-                    <Text style={[type.caption, { color: theme.muted }]} numberOfLines={1}>
-                      {t.sub}
-                    </Text>
-                  </View>
+                  <Text style={[type.caption, { color: theme.ink2 }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
+                    {t.label}
+                  </Text>
+                  <Text style={[type.caption, { color: theme.muted }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
+                    {t.sub}
+                  </Text>
                 </Appear>
               ))}
             </View>
@@ -312,7 +312,8 @@ const styles = StyleSheet.create({
   fill: { position: 'absolute', top: 0, bottom: 0, left: 0, borderRadius: 5 },
   statGrid: { gap: 8 },
   statRow: { flexDirection: 'row', gap: 8 },
-  stat: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 14, paddingVertical: 10, paddingHorizontal: 10, minHeight: 68 },
+  stat: { flex: 1, gap: 4, borderRadius: 14, paddingVertical: 10, paddingHorizontal: 12, minHeight: 68 },
+  statTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   statIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   listBar: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   clear: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, minHeight: 36 },
