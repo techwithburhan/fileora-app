@@ -59,7 +59,8 @@ clean
 shot 01-home
 up 40; shot 02-home-more
 up 40; shot 03-home-more-2
-tapLast 'Tools' && sleep 3
+tapB "$(bounds 'Tools, tab[^\"]*' head)" || tapLast 'Tools'
+sleep 3
 shot 04-tools
 up 30; shot 05-tools-more
 
@@ -74,12 +75,25 @@ openDownloads() { # a fresh Files app each time (nothing left selected)
   adb shell am start -W -a android.intent.action.VIEW -t vnd.android.document/root -d content://com.android.providers.downloads.documents/root/downloads > /dev/null 2>&1
   sleep 5
 }
+findFile() { # bounds of a file in the Files app, scrolling down if needed
+  local k b
+  for k in 1 2 3 4 5; do
+    b=$(bounds "$1" head); [ -n "$b" ] && { echo "$b"; return 0; }
+    adb shell input swipe $((W / 2)) $((H * 75 / 100)) $((W / 2)) $((H * 40 / 100)) 400; sleep 1.2
+  done
+  return 1
+}
+toTop() { local k; for k in 1 2 3 4; do adb shell input swipe $((W / 2)) $((H * 30 / 100)) $((W / 2)) $((H * 85 / 100)) 250; sleep 0.6; done; sleep 1; }
 share() { # $1.. file names, last = name of the shot after Fileora opens
-  local shot="${@: -1}" n=$(($# - 1)) i=0 f
+  local shot="${@: -1}" n=$(($# - 1)) i=0 f b
   openDownloads
+  tapB "$(bounds 'List view' head)" && sleep 2
   for f in "${@:1:$n}"; do
     i=$((i + 1))
-    if [ $i -eq 1 ]; then longPress "$f" || { saveUi "$shot-files"; return 1; }; else tapText "$f"; fi
+    [ $i -eq 1 ] && toTop
+    b=$(findFile "$f") || { note "not found: $f"; saveUi "$shot-files"; return 1; }
+    set -- $b; local x=$((($1 + $3) / 2)) y=$((($2 + $4) / 2))
+    if [ $i -eq 1 ]; then adb shell input swipe $x $y $x $y 900; else adb shell input tap $x $y; fi
     sleep 1
   done
   tapText 'Share' || { saveUi "$shot-noshare"; back; return 1; }
@@ -89,16 +103,22 @@ share() { # $1.. file names, last = name of the shot after Fileora opens
   sleep 8
   shot "$shot"
 }
-runCta() { # scrolls to the button at the bottom and taps it ($1 = its text), waits $2 s
+runCta() { # scrolls to the button at the bottom and taps it ($1 = its text), waits up to $2 s for the result
   up 15; up 15
   tapLast "$1" || { saveUi "cta"; return 1; }
-  sleep "$2"
+  local t=0
+  sleep 5
+  while [ $t -lt "$2" ]; do
+    [ -n "$(bounds '(Open file|Done|Open files)' head)" ] && { sleep 2; return 0; }
+    sleep 5; t=$((t + 5))
+  done
+  note "no result after $2 s: $1"
 }
 
 # ---- 2 PDFs: Shared to Fileora (Merge first) -> Merge PDF -> result
 if share Project-Plan.pdf Meeting-Notes.pdf 10-shared-pdfs; then
   tapText 'Merge PDF' && sleep 8 && shot 11-merge-ready
-  runCta 'Merge PDF' 25 && { shot 12-merge-result; up 40; shot 13-merge-result-more; }
+  runCta 'Merge PDF' 60 && { shot 12-merge-result; up 40; shot 13-merge-result-more; }
   saveUi 12-merge-result
   back; back
 fi
@@ -106,7 +126,7 @@ fi
 # ---- 3 photos: Compress Image -> result
 if share Mountains.jpg Sunset.jpg Lake.jpg 20-shared-images; then
   tapText 'Compress Image' && sleep 10 && shot 21-imgcompress-ready
-  runCta 'Compress images' 60 && { shot 22-imgcompress-result; up 40; shot 23-imgcompress-result-more; }
+  runCta 'Compress images' 150 && { shot 22-imgcompress-result; up 40; shot 23-imgcompress-result-more; }
   saveUi 22-imgcompress-result
   back; back
 fi
@@ -115,7 +135,7 @@ fi
 if share Mountains.jpg Sunset.jpg Lake.jpg 24-shared-images-2; then
   tapText 'JPG to PDF' || { up 40; tapText 'JPG to PDF'; }
   sleep 10; shot 25-jpg2pdf-ready
-  runCta 'Convert to PDF' 45 && shot 26-jpg2pdf-result
+  runCta 'Convert to PDF' 150 && shot 26-jpg2pdf-result
   back; back
 fi
 
@@ -125,7 +145,31 @@ share Proposal.docx 30-word2pdf && back
 # ---- one PDF: Sign PDF with the file attached (not run)
 if share Study-Guide.pdf 31-shared-pdf; then
   tapText 'Sign PDF' || { up 40; tapText 'Sign PDF'; }
-  sleep 10; shot 32-sign-ready
+  sleep 10
+  # draw a signature on the pad (above "Sign above the line")
+  b=$(bounds 'Sign above the line' head)
+  if [ -n "$b" ]; then
+    set -- $b; cx=$((($1 + $3) / 2)); ly=$2
+    python3 - "$cx" "$ly" > /tmp/sig.txt <<'PY'
+import math, sys
+cx, ly = int(sys.argv[1]), int(sys.argv[2])
+pts = []
+for i in range(0, 121):
+    t = i / 120
+    x = cx - 300 + 600 * t
+    y = ly - 70 - 55 * math.sin(t * math.pi * 5.2) * (1 - 0.5 * t) - 25 * math.sin(t * math.pi * 1.3)
+    pts.append((int(x), int(y)))
+print(' '.join(f'{x},{y}' for x, y in pts))
+PY
+    first=1
+    for p in $(cat /tmp/sig.txt); do
+      x=${p%,*}; y=${p#*,}
+      if [ $first = 1 ]; then adb shell input motionevent DOWN $x $y; first=0; else adb shell input motionevent MOVE $x $y; fi
+    done
+    adb shell input motionevent UP $x $y
+    sleep 1
+  fi
+  shot 32-sign-ready
   up 40; shot 33-sign-ready-more
   back; back
 fi
@@ -147,14 +191,14 @@ done
 link fileora://screen/home 3
 clean
 tapB "$(bounds 'Language: [^"]*' head)" && { sleep 2; shot 60-languages; back; }
-link fileora://lang/hi 4; clean; shot 61-home-hi
-tapLast '(टूल|Tools)' && sleep 3 && shot 62-tools-hi
+link fileora://lang/hi 4; clean; toTop; shot 61-home-hi
+tapB "$(bounds '(टूल|Tools), tab[^\"]*' head)" && sleep 3 && { toTop; shot 62-tools-hi; }
 link fileora://lang/en 3
 
 # ---- dark mode (the app follows the phone)
 adb shell cmd uimode night yes; sleep 3
-link fileora://screen/home 4; clean; shot 70-home-dark
-tapLast 'Tools' && sleep 3 && shot 71-tools-dark
+link fileora://screen/home 4; clean; toTop; shot 70-home-dark
+tapB "$(bounds 'Tools, tab[^\"]*' head)" && sleep 3 && { toTop; shot 71-tools-dark; }
 link fileora://screen/files 5; shot 72-files-dark
 adb shell cmd uimode night no; sleep 2
 
