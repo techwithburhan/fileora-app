@@ -41,6 +41,9 @@ clean() { # festival banner, App Center popup, "Not now" cards
   done
 }
 
+# OFFLINE=1: airplane mode before the first start, so the app shows its normal look (no festival
+# colours from the website's settings that day)
+if [ "${OFFLINE:-0}" = 1 ]; then adb shell cmd connectivity airplane-mode enable; note "airplane mode on"; fi
 read W H < <(adb shell wm size | tail -1 | sed 's/.*: //; s/x/ /' | tr -d '\r')
 note "screen $W x $H, density $(adb shell wm density | tail -1 | tr -d '\r')"
 
@@ -164,16 +167,22 @@ if share Study-Guide.pdf 31-shared-pdf; then
     python3 - "$cx" "$ly" > /tmp/sig.txt <<'PY'
 import math, sys
 cx, ly = int(sys.argv[1]), int(sys.argv[2])
-pts = []
-for i in range(0, 121):
-    t = i / 120
-    x = cx - 300 + 600 * t
-    y = ly - 70 - 55 * math.sin(t * math.pi * 5.2) * (1 - 0.5 * t) - 25 * math.sin(t * math.pi * 1.3)
-    pts.append((int(x), int(y)))
-print(' '.join(f'{x},{y}' for x, y in pts))
+# cursive-like loops (a prolate cycloid), then an underline flourish: two strokes
+a = []
+for i in range(0, 141):
+    t = i / 140
+    x = cx - 290 + 500 * t - 34 * math.sin(2 * math.pi * 4.5 * t)
+    y = ly - 95 - 55 * math.cos(2 * math.pi * 4.5 * t) * (0.55 + 0.45 * math.sin(math.pi * t)) + 18 * t
+    a.append((int(x), int(y)))
+b = []
+for i in range(0, 41):
+    t = i / 40
+    b.append((int(cx + 230 - 520 * t), int(ly - 30 + 22 * math.sin(math.pi * t) - 10 * t)))
+print(' '.join(f'{x},{y}' for x, y in a) + ' | ' + ' '.join(f'{x},{y}' for x, y in b))
 PY
     first=1
     for p in $(cat /tmp/sig.txt); do
+      if [ "$p" = "|" ]; then adb shell input motionevent UP $x $y; first=1; continue; fi
       x=${p%,*}; y=${p#*,}
       if [ $first = 1 ]; then adb shell input motionevent DOWN $x $y; first=0; else adb shell input motionevent MOVE $x $y; fi
     done
