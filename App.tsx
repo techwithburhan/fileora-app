@@ -37,6 +37,8 @@ import ScannerScreen from './src/screens/ScannerScreen';
 import ScanEditorScreen from './src/screens/ScanEditorScreen';
 import ScanDocScreen from './src/screens/ScanDocScreen';
 import SharedScreen from './src/screens/SharedScreen';
+import { shareTarget } from './src/lib/sharedKinds';
+import { isAvailable, toolById } from './src/data/tools';
 import RecycleBinScreen from './src/screens/RecycleBinScreen';
 import CloudScreen from './src/screens/CloudScreen';
 import { native } from './src/lib/native';
@@ -190,10 +192,17 @@ export default function App() {
       native
         .takeSharedFiles()
         .then(list => {
-          if (list.length && navigationRef.isReady())
-            navigationRef.navigate('Shared', { files: list.map(f => ({ key: f.path, name: f.name, size: f.size, path: f.path, mime: f.mime })) });
+          if (!list.length || !navigationRef.isReady()) return;
+          const files = list.map(f => ({ key: f.path, name: f.name, size: f.size, path: f.path, mime: f.mime }));
+          // 1.2.4: Word, Excel or PowerPoint files open straight in their converter; photos and PDFs
+          // open "Shared to Fileora" to choose a tool
+          const direct = shareTarget(files);
+          const tool = direct ? toolById(direct.tool) : undefined;
+          if (direct && tool && isAvailable(tool))
+            navigationRef.navigate('Process', { tool: direct.tool, files: files.map(f => ({ path: f.path, name: f.name, mime: f.mime, size: f.size })) });
+          else navigationRef.navigate('Shared', { files });
         })
-        .catch(e => Alert.alert('Couldn’t open the shared image', e instanceof Error ? e.message : String(e)));
+        .catch(e => Alert.alert('Couldn’t open the shared file', e instanceof Error ? e.message : String(e)));
     take();
     return native.onShare(take);
   }, [navReady, splash]);

@@ -1,0 +1,10 @@
+1402|Impossible de supprimer les fichiers
+1403|Impossible d’ouvrir le fichier partagé
+1404|Supprimer tous les fichiers affichés ici
+1405|Supprimer tous les fichiers affichés ici ?
+1406|Étape franchie : {n} tâches réalisées dans Fileora. Merci !
+1407|Outils PDF
+1408|Certains fichiers partagés ne sont pas d’un type pris en charge par Fileora et ont été écartés.
+1409|Cet outil n’est pas disponible pour le moment. Réessayez plus tard.
+1410|{n} fichiers vont dans la Corbeille, d’où vous pouvez les restaurer. Les autres fichiers de votre téléphone ne sont pas touchés.
+1411|{n} fichiers · {size} · prêts. Choisissez quoi faire :

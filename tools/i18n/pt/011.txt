@@ -1,0 +1,10 @@
+1402|Não foi possível apagar os arquivos
+1403|Não foi possível abrir o arquivo compartilhado
+1404|Apagar todos os arquivos mostrados aqui
+1405|Apagar todos os arquivos mostrados aqui?
+1406|Marco: {n} tarefas feitas no Fileora. Obrigado!
+1407|Ferramentas de PDF
+1408|Alguns arquivos compartilhados são de um tipo com que o Fileora não trabalha e foram deixados de fora.
+1409|Esta ferramenta não está disponível agora. Tente novamente mais tarde.
+1410|{n} arquivos vão para a Lixeira, de onde você pode restaurá-los. Outros arquivos do seu telefone não são alterados.
+1411|{n} arquivos · {size} · prontos. Escolha o que fazer:

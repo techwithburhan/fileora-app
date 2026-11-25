@@ -1,0 +1,10 @@
+1402|No se pudieron eliminar los archivos
+1403|No se pudo abrir el archivo compartido
+1404|Eliminar todos los archivos mostrados aquí
+1405|¿Eliminar todos los archivos mostrados aquí?
+1406|Hito: {n} tareas hechas en Fileora. ¡Gracias!
+1407|Herramientas PDF
+1408|Algunos archivos compartidos no son de un tipo con el que Fileora trabaje y se dejaron fuera.
+1409|Esta herramienta no está disponible ahora. Inténtalo de nuevo más tarde.
+1410|{n} archivos pasan a la Papelera, donde puedes restaurarlos. No se toca ningún otro archivo de tu teléfono.
+1411|{n} archivos · {size} · listos. Elige qué hacer:

@@ -1398,3 +1398,13 @@
 1399|just now
 1400|never
 1401|{n} h ago
+1402|Couldn’t delete the files
+1403|Couldn’t open the shared file
+1404|Delete all files shown here
+1405|Delete all files shown here?
+1406|Milestone: {n} tasks done in Fileora. Thank you!
+1407|PDF tools
+1408|Some shared files aren’t a type Fileora works with and were left out.
+1409|This tool isn’t available right now. Please try again later.
+1410|{n} files move to the Recycle Bin, where you can restore them. Other files on your phone are not touched.
+1411|{n} files · {size} · ready. Choose what to do:

@@ -234,6 +234,67 @@ for fest in diwali holi onam lunar-new-year; do
   sleep 6
 done
 adb exec-out screencap -p > "$OUT/v123-festival-after.png"
+# ---------------------------------------------------------------- app 1.2.4
+# Home quick tools grid, Files (storage grid, filters, Delete all)
+adb shell am start -W -a android.intent.action.VIEW -d fileora://screen/home in.fileora.app
+sleep 3
+adb exec-out screencap -p > "$OUT/v124-home.png"
+adb shell am start -W -a android.intent.action.VIEW -d fileora://demo/files in.fileora.app
+sleep 5
+adb exec-out screencap -p > "$OUT/v124-files.png"
+adb shell input swipe $((W / 2)) $((H * 75 / 100)) $((W / 2)) $((H * 35 / 100)) 300; sleep 2
+adb exec-out screencap -p > "$OUT/v124-files-list.png"
+if tapText "Delete all files shown here" || tapText "Delete all"; then
+  sleep 2; adb exec-out screencap -p > "$OUT/v124-files-delete-question.png"
+  # the dialog's own button (the last "Delete all" on screen)
+  b=$(adb shell uiautomator dump /sdcard/ui.xml > /dev/null 2>&1; adb exec-out cat /sdcard/ui.xml | tr '>' '\n' | grep -E '(text|content-desc)="Delete all"' | grep -o 'bounds="[^"]*"' | tail -1 | grep -o '[0-9]\+' | tr '\n' ' ')
+  if [ -n "$b" ]; then set -- $b; adb shell input tap $((($1 + $3) / 2)) $((($2 + $4) / 2)); fi
+  sleep 3; adb exec-out screencap -p > "$OUT/v124-files-after-delete.png"
+  adb shell input swipe $((W / 2)) $((H * 35 / 100)) $((W / 2)) $((H * 80 / 100)) 300; sleep 2
+  adb exec-out screencap -p > "$OUT/v124-files-after-delete-top.png"
+else
+  echo "Delete all not found" > "$OUT/v124-files-delete.txt"
+fi
+
+# Android share list: is Fileora offered for each file type? (what the share sheet asks Android)
+: > "$OUT/v124-share-targets.txt"
+for t in application/pdf application/msword application/vnd.openxmlformats-officedocument.wordprocessingml.document application/vnd.ms-excel application/vnd.openxmlformats-officedocument.spreadsheetml.sheet application/vnd.ms-powerpoint application/vnd.openxmlformats-officedocument.presentationml.presentation image/gif image/png image/jpeg image/webp "*/*"; do
+  for a in SEND SEND_MULTIPLE; do
+    if adb shell cmd package query-activities --brief -a "android.intent.action.$a" -t "$t" 2>/dev/null | grep -q "in.fileora.app"; then r=listed; else r=NOT-LISTED; fi
+    echo "$a $t $r" >> "$OUT/v124-share-targets.txt"
+  done
+done
+cat "$OUT/v124-share-targets.txt"
+
+# Real shares: files in Download, found through the media store, sent like File Manager does
+python3 scripts/ci-share-files.py share-files > /dev/null
+adb shell mkdir -p /sdcard/Download
+for f in share-files/*; do adb push "$f" /sdcard/Download/ > /dev/null; done
+adb shell content call --uri content://media --method scan_volume --arg external_primary > /dev/null 2>&1 || true
+sleep 3
+share() { # $1 file name, $2 type, $3 screenshot name
+  local id
+  id=$(adb shell content query --uri content://media/external/file --projection _id --where "_display_name=\'$1\'" 2>/dev/null | grep -o '_id=[0-9]*' | head -1 | cut -d= -f2)
+  echo "$1 -> media id ${id:-none}" >> "$OUT/v124-share-log.txt"
+  [ -n "$id" ] || return 1
+  adb shell am start -W -a android.intent.action.SEND -t "$2" --eu android.intent.extra.STREAM "content://media/external/file/$id" --grant-read-uri-permission -n in.fileora.app/.MainActivity >> "$OUT/v124-share-log.txt" 2>&1
+  sleep 6
+  adb exec-out screencap -p > "$OUT/$3.png"
+}
+: > "$OUT/v124-share-log.txt"
+share fileora-share-test.pdf application/pdf v124-share-pdf
+tapText "Compress PDF" && { sleep 6; adb exec-out screencap -p > "$OUT/v124-share-pdf-compress.png"; adb shell input keyevent 4; sleep 2; }
+adb shell input keyevent 4; sleep 2
+share fileora-share-test.docx application/vnd.openxmlformats-officedocument.wordprocessingml.document v124-share-docx
+adb shell input keyevent 4; sleep 2
+share fileora-share-test.xlsx application/vnd.openxmlformats-officedocument.spreadsheetml.sheet v124-share-xlsx
+adb shell input keyevent 4; sleep 2
+share fileora-share-test.pptx application/vnd.openxmlformats-officedocument.presentationml.presentation v124-share-pptx
+adb shell input keyevent 4; sleep 2
+share fileora-share-test.png image/png v124-share-png
+adb shell input keyevent 4; sleep 2
+adb logcat -d | grep -iE "ReactNativeJS.*(share|Shared)|FileoraNative" | tail -30 >> "$OUT/v124-share-log.txt" || true
+
 adb logcat -d | grep -iE "FATAL|AndroidRuntime" | tail -40 > "$OUT/crash.txt" || true
 if adb shell pidof in.fileora.app > /dev/null; then echo RUNNING > "$OUT/status.txt"; else echo "NOT RUNNING" > "$OUT/status.txt"; fi
 cat "$OUT/status.txt"

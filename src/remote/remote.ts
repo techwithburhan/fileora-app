@@ -175,7 +175,7 @@ type State = {
   install: string;
   prefs: Prefs;
   /** popup = "<id>|<YYYY-MM-DD>" of the Daily Update popup last closed */
-  dismissed: { ann?: string; update?: string; popup?: string; festival?: string; fanim?: string };
+  dismissed: { ann?: string; update?: string; popup?: string; festival?: string; fanim?: string; /** 1.2.4: the last tasks-done milestone celebrated */ milestone?: string };
   subscribed: string[]; // FCM topics this install is subscribed to
   /** app 1.2: ETag of the settings last fetched (a 304 answer = nothing changed) */
   etag: string;
@@ -646,7 +646,7 @@ export const remote = {
       emit();
     }
   },
-  dismiss(kind: 'ann' | 'update' | 'popup' | 'festival' | 'fanim', id: string) {
+  dismiss(kind: 'ann' | 'update' | 'popup' | 'festival' | 'fanim' | 'milestone', id: string) {
     set({ dismissed: { ...state.dismissed, [kind]: id } });
   },
   setSubscribed(list: string[]) {

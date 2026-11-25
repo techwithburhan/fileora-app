@@ -52,7 +52,8 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
-        <!-- Gallery → Share → Fileora (one or more photos: JPG, PNG, WebP, HEIC…) -->
+        <!-- Gallery / File Manager / Google Files → Share → Fileora: photos (JPG, PNG, WebP, GIF, HEIC…),
+             PDFs and Office files (Word, Excel, PowerPoint, OpenDocument, RTF, CSV); one or more (1.2.4) -->
         <!-- fileora://selftest runs the offline tool engine's self-test (adb / CI); not openable from web pages -->
         <intent-filter>
             <action android:name="android.intent.action.VIEW" />
@@ -67,11 +68,41 @@
             <action android:name="android.intent.action.SEND" />
             <category android:name="android.intent.category.DEFAULT" />
             <data android:mimeType="image/*" />
+            <data android:mimeType="application/pdf" />
+            <data android:mimeType="application/msword" />
+            <data android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+            <data android:mimeType="application/vnd.ms-excel" />
+            <data android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+            <data android:mimeType="application/vnd.ms-powerpoint" />
+            <data android:mimeType="application/vnd.openxmlformats-officedocument.presentationml.presentation" />
+            <data android:mimeType="application/vnd.openxmlformats-officedocument.presentationml.slideshow" />
+            <data android:mimeType="application/vnd.oasis.opendocument.text" />
+            <data android:mimeType="application/vnd.oasis.opendocument.spreadsheet" />
+            <data android:mimeType="application/vnd.oasis.opendocument.presentation" />
+            <data android:mimeType="application/rtf" />
+            <data android:mimeType="text/rtf" />
+            <data android:mimeType="text/csv" />
+            <data android:mimeType="text/comma-separated-values" />
         </intent-filter>
         <intent-filter android:label="@string/share_label">
             <action android:name="android.intent.action.SEND_MULTIPLE" />
             <category android:name="android.intent.category.DEFAULT" />
             <data android:mimeType="image/*" />
+            <data android:mimeType="application/pdf" />
+            <data android:mimeType="application/msword" />
+            <data android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+            <data android:mimeType="application/vnd.ms-excel" />
+            <data android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+            <data android:mimeType="application/vnd.ms-powerpoint" />
+            <data android:mimeType="application/vnd.openxmlformats-officedocument.presentationml.presentation" />
+            <data android:mimeType="application/vnd.openxmlformats-officedocument.presentationml.slideshow" />
+            <data android:mimeType="application/vnd.oasis.opendocument.text" />
+            <data android:mimeType="application/vnd.oasis.opendocument.spreadsheet" />
+            <data android:mimeType="application/vnd.oasis.opendocument.presentation" />
+            <data android:mimeType="application/rtf" />
+            <data android:mimeType="text/rtf" />
+            <data android:mimeType="text/csv" />
+            <data android:mimeType="text/comma-separated-values" />
         </intent-filter>
       </activity>
     </application>

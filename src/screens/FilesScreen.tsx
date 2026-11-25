@@ -1,9 +1,14 @@
 /**
  * Files tab: My Storage (Fileora's real file sizes and counts, the phone's free space),
  * Internal storage (Android's file picker), Cloud Storage, Recycle Bin, and Fileora's files with filters.
+ * 1.2.4: the storage counts sit in a 2 × 2 grid (no more broken words), the filters wrap instead of
+ * running off the screen, and "Delete all" moves the files shown to the Recycle Bin after a question.
  */
 import React, { useCallback, useMemo, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
+import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
+import CountUp from '../components/CountUp';
+import Dialog from '../components/Dialog';
 import Alert from '../i18n/Alert';
 import Text from '../i18n/Text';
 
@@ -18,9 +23,9 @@ import { pickFiles } from '../lib/pick';
 import { openRecord } from '../lib/openFile';
 import { useFileActions } from '../components/FileActions';
 import { formatBytes, kindOf, openWithViewer } from '../store/files';
-import { FileRec, Source, useStore } from '../store/store';
+import { FileRec, Source, store, useStore } from '../store/store';
 import { FileFilter, TabParamList } from '../navigation/types';
-import { Theme } from '../theme';
+import { catColor, Theme } from '../theme';
 import { type } from '../typography';
 import Appear from '../components/Appear';
 import { tr } from '../i18n/i18n';
@@ -42,6 +47,12 @@ export default function FilesScreen({ theme }: { theme: Theme }) {
   const [filter, setFilter] = useState<FileFilter>(params?.filter ?? 'all');
   const [folder, setFolder] = useState<string | null>(null);
   const [disk, setDisk] = useState<{ free: number; total: number } | null>(null);
+  const [asking, setAsking] = useState(false);
+  const [busy, setBusy] = useState(false);
+  // the Recycle Bin card gives a little bounce when files land in it
+  const reduced = useReducedMotion();
+  const binPop = useSharedValue(1);
+  const binStyle = useAnimatedStyle(() => ({ transform: [{ scale: binPop.value }] }));
 
   useFocusEffect(
     useCallback(() => {
@@ -88,6 +99,27 @@ export default function FilesScreen({ theme }: { theme: Theme }) {
 
   const used = disk ? disk.total - disk.free : 0;
 
+  /** Delete all: exactly the files in the list below (this filter / folder) go to the Recycle Bin. */
+  const deleteShown = async () => {
+    setAsking(false);
+    setBusy(true);
+    try {
+      await store.trashMany(shown.map(f => f.id));
+      if (!reduced) binPop.value = withSequence(withTiming(1.07, { duration: 140 }), withSpring(1, { damping: 7, stiffness: 180 }));
+    } catch (e) {
+      Alert.alert('Couldn’t delete the files', e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const shownBytes = shown.reduce((a, f) => a + f.size, 0);
+  const tiles: { key: string; n: number; label: string; sub: string; icon: IconName; color: string }[] = [
+    { key: 'pdf', n: stats.by.pdf.n, label: 'PDFs', sub: formatBytes(stats.by.pdf.b), icon: 'pdf', color: catColor('pdf', theme) },
+    { key: 'image', n: stats.by.image.n, label: 'Images', sub: formatBytes(stats.by.image.b), icon: 'image', color: catColor('image', theme) },
+    { key: 'document', n: stats.by.document.n, label: 'Documents', sub: formatBytes(stats.by.document.b), icon: 'file', color: catColor('converter', theme) },
+    { key: 'processed', n: stats.processed, label: 'Processed', sub: 'in the app', icon: 'check', color: theme.accentInk },
+  ];
+
   const header = (
     <View style={styles.head}>
       <Text style={[type.title, { color: theme.ink }]} accessibilityRole="header">
@@ -121,23 +153,27 @@ export default function FilesScreen({ theme }: { theme: Theme }) {
             </Text>
           </View>
         )}
-        <View style={styles.stats}>
-          {[
-            { label: 'PDFs', v: stats.by.pdf },
-            { label: 'Images', v: stats.by.image },
-            { label: 'Documents', v: stats.by.document },
-          ].map(s => (
-            <View key={s.label} style={[styles.stat, { backgroundColor: theme.surface2 }]}>
-              <Text style={[type.section, { color: theme.ink }]}>{s.v.n}</Text>
-              <Text style={[type.caption, { color: theme.muted }]}>{s.label}</Text>
-              <Text style={[type.caption, { color: theme.muted }]}>{formatBytes(s.v.b)}</Text>
+        <View style={styles.statGrid}>
+          {[tiles.slice(0, 2), tiles.slice(2)].map((row, r) => (
+            <View key={r} style={styles.statRow}>
+              {row.map((t, i) => (
+                <Appear key={t.key} delay={120 + (r * 2 + i) * 60} duration={320} style={[styles.stat, { backgroundColor: theme.surface2 }]}>
+                  <View style={[styles.statIcon, { backgroundColor: t.color + '1F' }]}>
+                    <Icon name={t.icon} size={18} color={t.color} />
+                  </View>
+                  <View style={styles.flex}>
+                    <CountUp value={t.n} style={[type.section, { color: theme.ink }]} />
+                    <Text style={[type.caption, { color: theme.ink2 }]} numberOfLines={1}>
+                      {t.label}
+                    </Text>
+                    <Text style={[type.caption, { color: theme.muted }]} numberOfLines={1}>
+                      {t.sub}
+                    </Text>
+                  </View>
+                </Appear>
+              ))}
             </View>
           ))}
-          <View style={[styles.stat, { backgroundColor: theme.surface2 }]}>
-            <Text style={[type.section, { color: theme.ink }]}>{stats.processed}</Text>
-            <Text style={[type.caption, { color: theme.muted }]}>Processed</Text>
-            <Text style={[type.caption, { color: theme.muted }]}>in the app</Text>
-          </View>
         </View>
       </Appear>
 
@@ -152,13 +188,15 @@ export default function FilesScreen({ theme }: { theme: Theme }) {
             {Object.keys(clouds).length ? `${Object.keys(clouds).length} connected` : 'Drive, JioCloud, OneDrive'}
           </Text>
         </PressableScale>
-        <PressableScale onPress={() => nav.navigate('RecycleBin')} accessibilityRole="button" style={[styles.card, styles.half, { backgroundColor: theme.surface, borderColor: theme.line }]}>
+        <Animated.View style={[styles.half, binStyle]}>
+        <PressableScale onPress={() => nav.navigate('RecycleBin')} accessibilityRole="button" style={[styles.card, styles.fill1, { backgroundColor: theme.surface, borderColor: theme.line }]}>
           <View style={[styles.icon, { backgroundColor: theme.danger + '14' }]}>
             <Icon name="trash" size={20} color={theme.danger} />
           </View>
           <Text style={[type.heading, { color: theme.ink }]}>Recycle Bin</Text>
           <Text style={[type.caption, { color: theme.muted }]}>{bin.length ? `${bin.length} ${bin.length === 1 ? 'file' : 'files'} · ${formatBytes(bin.reduce((a, f) => a + f.size, 0))}` : 'Empty'}</Text>
         </PressableScale>
+        </Animated.View>
       </View>
 
       {/* Internal storage */}
@@ -175,6 +213,7 @@ export default function FilesScreen({ theme }: { theme: Theme }) {
 
       <Segmented
         theme={theme}
+        wrap
         value={filter}
         onChange={v => {
           setFilter(v);
@@ -188,6 +227,24 @@ export default function FilesScreen({ theme }: { theme: Theme }) {
           { id: 'folders', label: 'Folders' },
         ]}
       />
+
+      {shown.length > 0 && (
+        <View style={styles.listBar}>
+          <Text style={[type.caption, styles.flex, { color: theme.muted }]} numberOfLines={1}>
+            {tr('{n} files', { n: shown.length })} · {formatBytes(shownBytes)}
+          </Text>
+          <PressableScale
+            accessibilityRole="button"
+            accessibilityLabel={tr('Delete all files shown here')}
+            accessibilityState={{ disabled: busy }}
+            disabled={busy}
+            onPress={() => setAsking(true)}
+            style={[styles.clear, { borderColor: theme.line, backgroundColor: theme.surface, opacity: busy ? 0.45 : 1 }]}>
+            <Icon name="trash" size={16} color={theme.danger} />
+            <Text style={[type.caption, styles.clearText, { color: theme.danger }]}>Delete all</Text>
+          </PressableScale>
+        </View>
+      )}
 
       {filter === 'folders' && (
         <View style={styles.folders}>
@@ -230,6 +287,15 @@ export default function FilesScreen({ theme }: { theme: Theme }) {
         renderItem={({ item }) => <FileRow file={item} theme={theme} onPress={() => openRecord(item)} onMore={() => showActions(item)} />}
       />
       {actionSheet}
+      <Dialog
+        visible={asking}
+        theme={theme}
+        title="Delete all files shown here?"
+        message={tr('{n} files move to the Recycle Bin, where you can restore them. Other files on your phone are not touched.', { n: shown.length })}
+        okLabel="Delete all"
+        onCancel={() => setAsking(false)}
+        onOk={deleteShown}
+      />
     </View>
   );
 }
@@ -244,8 +310,14 @@ const styles = StyleSheet.create({
   diskWrap: { gap: 6 },
   track: { height: 10, borderRadius: 5, overflow: 'hidden' },
   fill: { position: 'absolute', top: 0, bottom: 0, left: 0, borderRadius: 5 },
-  stats: { flexDirection: 'row', gap: 8 },
-  stat: { flex: 1, borderRadius: 14, paddingVertical: 10, paddingHorizontal: 6, alignItems: 'center' },
+  statGrid: { gap: 8 },
+  statRow: { flexDirection: 'row', gap: 8 },
+  stat: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 14, paddingVertical: 10, paddingHorizontal: 10, minHeight: 68 },
+  statIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  listBar: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  clear: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, minHeight: 36 },
+  clearText: { fontWeight: '800' },
+  fill1: { flex: 1 },
   folders: { flexDirection: 'row', gap: 8 },
   pair: { flexDirection: 'row', gap: 10 },
   half: { flex: 1, gap: 4 },

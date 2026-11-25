@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { FlatList, Image, StyleSheet, View } from 'react-native';
+import { FlatList, Image, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Text from '../i18n/Text';
 import Animated, { Easing, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue, useReducedMotion, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
@@ -64,11 +64,15 @@ function Skeleton({ theme }: { theme: Theme }) {
 
 /** The website homepage's quick links (only those switched on are shown). */
 const QUICK = ['merge', 'compress', 'pdf2word', 'sign', 'jpg2pdf', 'aadhaar'];
+/** 1.2.4: their own icons in the quick-tools grid (others use their category's icon). */
+const QUICK_ICON: Record<string, IconName> = { merge: 'merge', compress: 'compress', pdf2word: 'word', sign: 'sign', jpg2pdf: 'image', aadhaar: 'idcard' };
 
 export default function HomeScreen({ theme }: { theme: Theme }) {
   const [showActions, actionSheet] = useFileActions(theme);
   const nav = useNavigation();
   const catGrid = useCells(2, 10); // two category cards per row on every screen size
+  const { width: screenW } = useWindowDimensions();
+  const quickGrid = useCells(screenW >= 600 ? 3 : 2, 8); // quick tools: 2 per row on phones, 3 on wide screens
   const scrollY = useSharedValue(0);
   useHeaderScroll(scrollY);
   const onScroll = useAnimatedScrollHandler(e => {
@@ -152,20 +156,26 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
               What do you want to do? Try “compress pdf”
             </Text>
           </PressableScale>
-          <View style={styles.quick}>
-            {quick.map(t => (
-              <PressableScale
-                key={t.id}
-                onPress={() => openTool(t.id)}
-                accessibilityRole="button"
-                accessibilityLabel={tr(t.name)}
-                style={[styles.quickChip, { backgroundColor: theme.bg, borderColor: theme.line }]}>
-                <Icon name={t.cat as IconName} size={16} color={catColor(t.cat, theme)} />
-                <Text style={[styles.quickText, { color: theme.ink }]} numberOfLines={1}>
-                  {t.name}
-                </Text>
-              </PressableScale>
-            ))}
+          <View style={styles.quick} onLayout={quickGrid.onLayout}>
+            {quick.map((t, i) => {
+              const c = catColor(t.cat, theme);
+              return (
+                <Appear key={t.id} delay={420 + i * 55} duration={380} style={{ width: quickGrid.width }}>
+                  <PressableScale
+                    onPress={() => openTool(t.id)}
+                    accessibilityRole="button"
+                    accessibilityLabel={tr(t.name)}
+                    style={[styles.quickTile, { backgroundColor: theme.bg, borderColor: theme.line }]}>
+                    <View style={[styles.quickIcon, { backgroundColor: c + '1F' }]}>
+                      <Icon name={QUICK_ICON[t.id] ?? (t.cat as IconName)} size={19} color={c} />
+                    </View>
+                    <Text style={[styles.quickText, { color: theme.ink }]} numberOfLines={2}>
+                      {t.name}
+                    </Text>
+                  </PressableScale>
+                </Appear>
+              );
+            })}
           </View>
           <View style={styles.trust}>
             <Icon name="shield" size={16} color={theme.accentInk} />
@@ -393,8 +403,9 @@ const styles = StyleSheet.create({
   search: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 16, paddingHorizontal: 16, minHeight: 54 },
   searchText: { fontSize: 15, flexShrink: 1 },
   quick: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  quickChip: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 38, paddingHorizontal: 12, borderRadius: 999, borderWidth: 1, maxWidth: '100%' },
-  quickText: { fontSize: 13.5, fontWeight: '600', flexShrink: 1 },
+  quickTile: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 56, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 14, borderWidth: 1 },
+  quickIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  quickText: { fontSize: 13.5, lineHeight: 18, fontWeight: '700', flexShrink: 1 },
   trust: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   secHead: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 6 },
   secLink: { fontSize: 14, fontWeight: '700', padding: 4 },

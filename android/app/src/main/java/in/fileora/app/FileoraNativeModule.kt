@@ -30,7 +30,8 @@ import kotlin.math.roundToInt
 
 /**
  * Fileora's own native helpers:
- *  - images shared to Fileora from the Gallery (Android share sheet, ACTION_SEND / SEND_MULTIPLE)
+ *  - files shared to Fileora (Android share sheet, ACTION_SEND / SEND_MULTIPLE): images from the
+ *    Gallery and, since 1.2.4, PDFs and Office files from File Manager, Google Files and other apps
  *  - PDF pages as images for the scanner (Android's PdfRenderer)
  *  - handing a file to a cloud app installed on the phone (Google Drive, JioAICloud, OneDrive)
  *  - notifications while the app is open, the notification check and its phone settings (FileoraNotify)
@@ -39,7 +40,7 @@ class FileoraNativeModule(private val ctx: ReactApplicationContext) : ReactConte
 
   override fun getName() = NAME
 
-  /** Images from the latest share intent, copied into the app's cache (once; later calls return []). */
+  /** Files from the latest share intent, copied into the app's cache (once; later calls return []). */
   @ReactMethod
   fun takeSharedFiles(promise: Promise) {
     val intent = ShareInbox.take()
@@ -78,23 +79,37 @@ class FileoraNativeModule(private val ctx: ReactApplicationContext) : ReactConte
     val dir = File(ctx.cacheDir, "shared").apply { mkdirs() }
     val resolver = ctx.contentResolver
     for (uri in uris.distinct().take(MAX_FILES)) {
-      // Only content:// links from the sharing app (with the temporary read permission it granted).
-      if (uri.scheme != ContentResolver.SCHEME_CONTENT) continue
-      val mime = resolver.getType(uri) ?: intent.type ?: ""
-      if (!mime.startsWith("image/")) continue
-      var name = "image"
+      // content:// links from the sharing app (with the temporary read permission it granted), and
+      // file:// links some older file managers still send (only from shared storage, never this app's own files)
+      val isFile = uri.scheme == ContentResolver.SCHEME_FILE
+      if (uri.scheme != ContentResolver.SCHEME_CONTENT && !isFile) continue
+      var name = ""
       var size = -1L
-      resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE), null, null, null)?.use { c ->
-        if (c.moveToFirst()) {
-          c.getString(0)?.let { name = it }
-          if (!c.isNull(1)) size = c.getLong(1)
+      if (isFile) {
+        val f = sharedFile(uri) ?: continue
+        name = f.name
+        size = f.length()
+      } else {
+        try {
+          resolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE), null, null, null)?.use { c ->
+            if (c.moveToFirst()) {
+              c.getString(0)?.let { name = it }
+              if (!c.isNull(1)) size = c.getLong(1)
+            }
+          }
+        } catch (_: Exception) {
+          // some providers don't answer queries: the name comes from the link
         }
+        if (name.isBlank()) name = uri.lastPathSegment?.substringAfterLast('/') ?: ""
       }
+      val reported = (if (isFile) null else resolver.getType(uri)) ?: intent.type ?: ""
+      val mime = sharedMime(reported, name) ?: continue
       if (size > MAX_BYTES) continue
-      val safe = name.replace(Regex("[^A-Za-z0-9._ -]"), "_").take(80).ifBlank { "image" }
+      if (name.isBlank() || !name.contains('.')) name = (name.ifBlank { "shared" }) + "." + (EXT_OF[mime] ?: "bin")
+      val safe = name.replace(Regex("[^A-Za-z0-9._ -]"), "_").take(80).ifBlank { "file" }
       val file = File(dir, "${System.currentTimeMillis()}-$safe")
       var copied = 0L
-      resolver.openInputStream(uri)?.use { input ->
+      (if (isFile) sharedFile(uri)?.inputStream() else resolver.openInputStream(uri))?.use { input ->
         FileOutputStream(file).use { output ->
           val buf = ByteArray(64 * 1024)
           while (true) {
@@ -118,6 +133,27 @@ class FileoraNativeModule(private val ctx: ReactApplicationContext) : ReactConte
       })
     }
     return out
+  }
+
+  /** A file:// share, only when it is a readable file in shared storage (not in any app's private folder). */
+  private fun sharedFile(uri: Uri): File? {
+    return try {
+      val f = File(uri.path ?: return null).canonicalFile
+      val shared = android.os.Environment.getExternalStorageDirectory().canonicalPath
+      val own = ctx.applicationInfo.dataDir
+      if (!f.path.startsWith("$shared/") || f.path.startsWith(own) || !f.isFile || !f.canRead()) null else f
+    } catch (_: Exception) {
+      null
+    }
+  }
+
+  /** The type Fileora works with for a shared file, from the type the sender gave or the file's extension; null = not supported. */
+  private fun sharedMime(reported: String, name: String): String? {
+    val r = reported.lowercase().substringBefore(';').trim()
+    if (r.startsWith("image/") && r != "image/*") return r
+    if (r in SHARED_TYPES) return r
+    val ext = name.substringAfterLast('.', "").lowercase()
+    return TYPE_OF[ext]
   }
 
   /** Every page of a PDF as a JPEG (longest side up to maxSide px, white background), max 30 pages. */
@@ -279,6 +315,26 @@ class FileoraNativeModule(private val ctx: ReactApplicationContext) : ReactConte
     const val EVENT_SHARE = "fileoraShare"
     const val EVENT_PUSH = "fileoraPushOpen"
     private const val MAX_FILES = 20
+    /** 1.2.4: what can be shared to Fileora besides images (as in AndroidManifest.xml) */
+    private val TYPE_OF = mapOf(
+      "pdf" to "application/pdf",
+      "doc" to "application/msword",
+      "docx" to "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "xls" to "application/vnd.ms-excel",
+      "xlsx" to "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "ppt" to "application/vnd.ms-powerpoint",
+      "pptx" to "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+      "ppsx" to "application/vnd.openxmlformats-officedocument.presentationml.slideshow",
+      "odt" to "application/vnd.oasis.opendocument.text",
+      "ods" to "application/vnd.oasis.opendocument.spreadsheet",
+      "odp" to "application/vnd.oasis.opendocument.presentation",
+      "rtf" to "application/rtf",
+      "csv" to "text/csv",
+      "jpg" to "image/jpeg", "jpeg" to "image/jpeg", "png" to "image/png", "webp" to "image/webp", "gif" to "image/gif",
+      "heic" to "image/heic", "heif" to "image/heif", "bmp" to "image/bmp", "avif" to "image/avif", "svg" to "image/svg+xml",
+    )
+    private val SHARED_TYPES = TYPE_OF.values.toSet() + setOf("text/rtf", "text/comma-separated-values")
+    private val EXT_OF = TYPE_OF.entries.associate { (k, v) -> v to k } + mapOf("image/jpeg" to "jpg", "text/rtf" to "rtf", "text/comma-separated-values" to "csv")
     private const val MAX_BYTES = 60L * 1024 * 1024
     private const val MAX_PAGES = 30
   }

@@ -21,6 +21,7 @@ import { navigationRef } from '../navigation/types';
 import { toolById } from '../data/tools';
 import { LANGS, setLang, LangCode } from '../i18n/i18n';
 import { store } from '../store/store';
+import { saveResult } from '../lib/output';
 import { remote } from '../remote/remote';
 import { inbox } from '../remote/inbox';
 import { showBanner } from '../components/InAppBanner';
@@ -183,15 +184,34 @@ export default function SelfTest() {
       }
       // app 1.2.2 (CI screenshots): fileora://screen/updates opens Settings → App updates,
       // fileora://screen/settings the Settings tab
-      const scr = url ? /^fileora:\/\/screen\/(updates|settings)/i.exec(url) : null;
+      // app 1.2.4: fileora://screen/files and fileora://screen/home open those tabs
+      const scr = url ? /^fileora:\/\/screen\/(updates|settings|files|home)/i.exec(url) : null;
       if (scr) {
+        const which = scr[1].toLowerCase();
         const open = () =>
           navigationRef.isReady()
-            ? scr[1].toLowerCase() === 'updates'
+            ? which === 'updates'
               ? navigationRef.navigate('Update')
-              : navigationRef.navigate('Tabs', { screen: 'Settings' })
+              : navigationRef.navigate('Tabs', { screen: which === 'files' ? 'Files' : which === 'home' ? 'Home' : 'Settings' })
             : setTimeout(open, 300);
         open();
+        return;
+      }
+      // app 1.2.4 (CI): fileora://demo/files saves 3 small sample files in Fileora (to try Files → Delete all)
+      if (url && /^fileora:\/\/demo\/files/i.test(url)) {
+        const add = async () => {
+          if (!store.get().loaded) {
+            setTimeout(add, 300);
+            return;
+          }
+          for (let i = 1; i <= 3; i++) {
+            const tmp = `${BlobUtil.fs.dirs.CacheDir}/sample-${i}-${Date.now()}.txt`;
+            await BlobUtil.fs.writeFile(tmp, `Fileora sample file ${i}\n`.repeat(40 * i), 'utf8');
+            await saveResult({ name: `sample-${i}.txt`, fromPath: tmp, move: true, mime: 'text/plain', publish: false });
+          }
+          if (navigationRef.isReady()) navigationRef.navigate('Tabs', { screen: 'Files' });
+        };
+        add().catch(() => {});
         return;
       }
       if (url && /^fileora:\/\/screen\/downloads/i.test(url)) {

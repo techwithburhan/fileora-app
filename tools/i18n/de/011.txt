@@ -1,0 +1,10 @@
+1402|Die Dateien konnten nicht gelöscht werden
+1403|Die geteilte Datei konnte nicht geöffnet werden
+1404|Alle hier angezeigten Dateien löschen
+1405|Alle hier angezeigten Dateien löschen?
+1406|Meilenstein: {n} Aufgaben in Fileora erledigt. Danke!
+1407|PDF-Tools
+1408|Einige geteilte Dateien haben einen Typ, mit dem Fileora nicht arbeitet, und wurden ausgelassen.
+1409|Dieses Tool ist gerade nicht verfügbar. Bitte versuche es später noch einmal.
+1410|{n} Dateien kommen in den Papierkorb, wo du sie wiederherstellen kannst. Andere Dateien auf deinem Handy bleiben unberührt.
+1411|{n} Dateien · {size} · bereit. Wähle, was du tun möchtest:

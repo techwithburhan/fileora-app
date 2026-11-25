@@ -977,8 +977,14 @@
 "Couldn’t check for updates": [
 "src/screens/SettingsScreen.tsx"
 ],
+"Couldn’t delete the files": [
+"src/screens/FilesScreen.tsx"
+],
 "Couldn’t open the file": [
 "src/screens/ProcessScreen.tsx"
+],
+"Couldn’t open the shared file": [
+"App.tsx"
 ],
 "Couldn’t open the shared image": [
 "App.tsx"
@@ -1119,6 +1125,12 @@
 ],
 "Delete all downloaded files?": [
 "src/screens/ActivityScreen.tsx"
+],
+"Delete all files shown here": [
+"src/screens/FilesScreen.tsx"
+],
+"Delete all files shown here?": [
+"src/screens/FilesScreen.tsx"
 ],
 "Delete all processed files": [
 "src/screens/ActivityScreen.tsx"
@@ -2244,6 +2256,9 @@
 "Middle right": [
 "src/components/tool/OptionField.tsx"
 ],
+"Milestone: {n} tasks done in Fileora. Thank you!": [
+"src/components/tool/ResultView.tsx"
+],
 "Minimum supported": [
 "app 1.2.2"
 ],
@@ -2768,6 +2783,9 @@
 ],
 "PDF to Word": [
 "src/data/tools.ts"
+],
+"PDF tools": [
+"src/screens/SharedScreen.tsx"
 ],
 "PDF/A-1b": [
 "engine:pdfa"
@@ -3601,6 +3619,9 @@
 "Smallest file size": [
 "engine:examphoto"
 ],
+"Some shared files aren’t a type Fileora works with and were left out.": [
+"src/screens/SharedScreen.tsx"
+],
 "Something went wrong": [
 "src/components/ErrorBoundary.tsx"
 ],
@@ -3968,6 +3989,9 @@
 ],
 "This tool isn’t available right now.": [
 "src/navigation/nav.ts"
+],
+"This tool isn’t available right now. Please try again later.": [
+"src/screens/SharedScreen.tsx"
 ],
 "This tool isn’t in the app’s engine yet.": [
 "engine-msg:engine.js"
@@ -4714,11 +4738,17 @@
 "{n} files are ready": [
 "src/screens/ProcessScreen.tsx"
 ],
+"{n} files move to the Recycle Bin, where you can restore them. Other files on your phone are not touched.": [
+"src/screens/FilesScreen.tsx"
+],
 "{n} files saved": [
 "src/components/tool/ResultView.tsx"
 ],
 "{n} files saved in Fileora. In {where} as a ZIP file.": [
 "src/components/tool/ResultView.tsx"
+],
+"{n} files · {size} · ready. Choose what to do:": [
+"src/screens/SharedScreen.tsx"
 ],
 "{n} h ago": [
 "app 1.2.2"

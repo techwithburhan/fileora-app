@@ -3,7 +3,7 @@
  * text (Markdown, extracted text, AI summary), the differences (Compare PDF) or the colours
  * (Colour palette). Single-file results use ResultSheet instead.
  */
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, Share, StyleSheet, View } from 'react-native';
 import Text from '../../i18n/Text';
 import Confetti from '../Confetti';
@@ -15,7 +15,9 @@ import type { RunResult } from '../../engine/engine';
 import { relatedFor } from '../../data/nativeTools';
 import { toolById } from '../../data/tools';
 import { formatBytes, SAVED_WHERE } from '../../store/files';
-import { FileRec } from '../../store/store';
+import { FileRec, useStore } from '../../store/store';
+import { remote } from '../../remote/remote';
+import Appear from '../Appear';
 import { Theme } from '../../theme';
 import { type } from '../../typography';
 import { tr, trMsg } from '../../i18n/i18n';
@@ -39,6 +41,29 @@ type Props = {
   onStartOver: () => void;
 };
 
+/** 1.2.4: tasks done in Fileora worth a small celebration (each shown once). */
+const MILESTONES = [10, 25, 50, 100, 250, 500, 1000];
+
+/** "100 tasks done in Fileora": shown under the result when this task reached a milestone, once. */
+function Milestone({ theme }: { theme: Theme }) {
+  const done = useStore(s => s.events.filter(e => e.type === 'done').length);
+  const [n] = useState(() => (MILESTONES.includes(done) && remote.get().dismissed.milestone !== String(done) ? done : 0));
+  useEffect(() => {
+    if (n) remote.dismiss('milestone', String(n));
+  }, [n]);
+  if (!n) return null;
+  return (
+    <Appear delay={650} duration={450} style={[styles.milestone, { backgroundColor: theme.accent + '14', borderColor: theme.accent + '55' }]}>
+      <View style={[styles.milestoneIcon, { backgroundColor: theme.accent }]}>
+        <Icon name="party" size={18} color={theme.onAccent} width={2.2} />
+      </View>
+      <Text style={[type.bodySm, styles.flex, { color: theme.ink }]} accessibilityRole="text">
+        {tr('Milestone: {n} tasks done in Fileora. Thank you!', { n })}
+      </Text>
+    </Appear>
+  );
+}
+
 export default function ResultView({ title, files, notes, extra, zips = [], failed = [], tool, theme, onOpen, onShare, onNext, onAgain, onStartOver }: Props) {
   const text = extra?.md || extra?.text || '';
   const next = files.length ? relatedFor(tool, files[0].mime).slice(0, 4) : [];
@@ -55,6 +80,7 @@ export default function ResultView({ title, files, notes, extra, zips = [], fail
           {title}
         </Text>
       </View>
+      <Milestone theme={theme} />
       {files.length > 0 && (
         <Text style={[type.bodySm, styles.center, { color: theme.muted }]}>
           {zips.length
@@ -253,6 +279,8 @@ function Diff({ extra, theme }: { extra: Extra; theme: Theme }) {
 }
 
 const styles = StyleSheet.create({
+  milestone: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderRadius: 14, padding: 10 },
+  milestoneIcon: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   wrap: { gap: 14, paddingTop: 8 },
   flex: { flex: 1 },
   bold: { fontWeight: '700' },
