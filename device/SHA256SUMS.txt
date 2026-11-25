@@ -1,0 +1,1 @@
+faabf2d3f70f880f5139d9876facf4f0e41979492de663a2a508e4d5f55cf721  out/device/Fileora-1.2.4-unsigned.ipa
