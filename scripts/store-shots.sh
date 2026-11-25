@@ -7,7 +7,6 @@ OUT=out/store
 mkdir -p "$OUT"
 LOG="$OUT/log.txt"; : > "$LOG"
 note() { echo "$*" | tee -a "$LOG"; }
-shot() { adb exec-out screencap -p > "$OUT/$1.png"; note "shot $1"; }
 dump() { adb shell uiautomator dump /sdcard/ui.xml > /dev/null 2>&1; adb exec-out cat /sdcard/ui.xml; }
 bounds() { # $1 = text/description pattern, $2 = head (first match) or tail (last match)
   dump | tr '>' '\n' | grep -E "(text|content-desc)=\"$1\"" | grep -o 'bounds="[^"]*"' | ${2:-head} -1 | grep -o '[0-9]\+' | tr '\n' ' '
@@ -21,12 +20,21 @@ longPress() {
   adb shell input swipe $x $y $x $y 900
 }
 saveUi() { dump > "$OUT/$1-ui.xml"; }
+anr() { # Android's "... isn't responding" box (slow emulator): Wait
+  local x; x=$(dump | tr '>' '\n')
+  if echo "$x" | grep -q "t responding"; then
+    local b; b=$(echo "$x" | grep -E '(text|content-desc)="Wait"' | grep -o 'bounds="[^"]*"' | head -1 | grep -o '[0-9]\+' | tr '\n' ' ')
+    [ -n "$b" ] && { tapB "$b"; note "closed a 'not responding' box"; sleep 3; }
+  fi
+}
+shot() { anr; adb exec-out screencap -p > "$OUT/$1.png"; note "shot $1"; }
 up() { adb shell input swipe $((W / 2)) $((H * 78 / 100)) $((W / 2)) $((H * ${1:-30} / 100)) 400; sleep 1.5; }
 down() { adb shell input swipe $((W / 2)) $((H * 30 / 100)) $((W / 2)) $((H * 85 / 100)) 400; sleep 1.5; }
 back() { adb shell input keyevent 4; sleep "${1:-2}"; }
 link() { adb shell am start -W -a android.intent.action.VIEW -d "$1" in.fileora.app > /dev/null; sleep "${2:-4}"; }
 clean() { # festival banner, App Center popup, "Not now" cards
   local i
+  anr
   for i in 1 2 3 4; do
     tapB "$(bounds 'Hide the festival banner' head)" || tapB "$(bounds 'Close' head)" || tapB "$(bounds 'Not now' head)" || break
     sleep 1.5
@@ -43,9 +51,11 @@ for a in "-e command enter" "-e command clock -e hhmm 1000" "-e command battery 
   adb shell am broadcast -a com.android.systemui.demo $a > /dev/null
 done
 
+sleep 40; anr
 adb install -r "$APK"
 adb shell am start -W -n in.fileora.app/.MainActivity
 sleep 25
+anr
 # first launch: the app's permissions screen, Android's notification question, then Continue
 if tapText 'Allow'; then sleep 3; tapText "Don.t allow" || tapText "Don’t allow" || back; sleep 2; fi
 up 20
@@ -87,6 +97,7 @@ toTop() { local k; for k in 1 2 3 4; do adb shell input swipe $((W / 2)) $((H * 
 share() { # $1.. file names, last = name of the shot after Fileora opens
   local shot="${@: -1}" n=$(($# - 1)) i=0 f b
   openDownloads
+  anr
   tapB "$(bounds 'List view' head)" && sleep 2
   for f in "${@:1:$n}"; do
     i=$((i + 1))
