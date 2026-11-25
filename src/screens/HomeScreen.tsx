@@ -29,6 +29,7 @@ import { brand, catColor, Theme } from '../theme';
 import { type } from '../typography';
 import Appear from '../components/Appear';
 import { useCells } from '../lib/useCells';
+import { quickMode } from '../lib/quickMode';
 import PullRefresh from '../components/PullRefresh';
 import { tr } from '../i18n/i18n';
 import { FestivalBanner } from '../festival/Festival';
@@ -71,7 +72,7 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
   const [showActions, actionSheet] = useFileActions(theme);
   const nav = useNavigation();
   const catGrid = useCells(2, 10); // two category cards per row on every screen size
-  const { width: screenW } = useWindowDimensions();
+  const { width: screenW, fontScale } = useWindowDimensions();
   const quickGrid = useCells(screenW >= 600 ? 3 : 2, 8); // quick tools: 2 per row on phones, 3 on wide screens
   const scrollY = useSharedValue(0);
   useHeaderScroll(scrollY);
@@ -102,6 +103,10 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
   const deviceCount = tools.filter(t => t.exec !== 'server').length;
   // the website's quick links under the search field
   const quick = useMemo(() => QUICK.map(id => tools.find(t => t.id === id)).filter((t): t is NonNullable<typeof t> => !!t), [tools]);
+  // narrow tiles: the icon sits above the name, so the name gets the whole width;
+  // 'one': a name's longest word would not fit even then (small screen, large text), so one tile per row
+  const quickLayout = quickMode(quickGrid.width, quick.map(q => tr(q.name)), fontScale);
+  const quickW = quickLayout === 'one' ? '100%' : quickGrid.width;
   // Scanner can be switched off in App Center → Navigation: then its Home button goes too
   const scannerOn = useScreenState('scanner') === 'on';
   const promo = config?.promo ?? null;
@@ -159,10 +164,9 @@ export default function HomeScreen({ theme }: { theme: Theme }) {
           <View style={styles.quick} onLayout={quickGrid.onLayout}>
             {quick.map((t, i) => {
               const c = catColor(t.cat, theme);
-              // very narrow phones: the icon sits above the name, so the name gets the whole width
-              const narrow = typeof quickGrid.width === 'number' && quickGrid.width < 150;
+              const narrow = quickLayout === 'narrow';
               return (
-                <Appear key={t.id} delay={420 + i * 55} duration={380} style={{ width: quickGrid.width }}>
+                <Appear key={t.id} delay={420 + i * 55} duration={380} style={{ width: quickW }}>
                   <PressableScale
                     onPress={() => openTool(t.id)}
                     accessibilityRole="button"
