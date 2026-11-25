@@ -8,3 +8,5 @@
 1409|Esta herramienta no está disponible ahora. Inténtalo de nuevo más tarde.
 1410|{n} archivos pasan a la Papelera, donde puedes restaurarlos. No se toca ningún otro archivo de tu teléfono.
 1411|{n} archivos · {size} · listos. Elige qué hacer:
+1412|1 archivo · {size} · listo. Elige qué hacer:
+1413|1 archivo pasa a la Papelera, donde puedes restaurarlo. No se toca ningún otro archivo de tu teléfono.

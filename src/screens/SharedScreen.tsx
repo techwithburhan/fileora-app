@@ -103,7 +103,9 @@ export default function SharedScreen({ theme }: { theme: Theme }) {
           <Text style={[type.bodySm, { color: theme.muted }]}>
             {onlyImages
               ? `${files.length} ${files.length === 1 ? 'image' : 'images'} · ${formatBytes(total)} · ready. Choose what to do:`
-              : tr('{n} files · {size} · ready. Choose what to do:', { n: files.length, size: formatBytes(total) })}
+              : files.length === 1
+                ? tr('1 file · {size} · ready. Choose what to do:', { size: formatBytes(total) })
+                : tr('{n} files · {size} · ready. Choose what to do:', { n: files.length, size: formatBytes(total) })}
           </Text>
           {onlyImages && (
             <PressableScale onPress={scan} accessibilityRole="button" style={[styles.scan, { backgroundColor: theme.accent }]}>
@@ -122,7 +124,7 @@ export default function SharedScreen({ theme }: { theme: Theme }) {
             <Text style={[type.section, { color: theme.ink }]}>{GROUP_TITLE[g.kind]}</Text>
             {!onlyImages && (
               <Text style={[type.caption, { color: theme.muted }]}>
-                {tr('{n} files', { n: g.files.length })} · {formatBytes(g.files.reduce((a, f) => a + (f.size || 0), 0))}
+                {g.files.length === 1 ? tr('1 file') : tr('{n} files', { n: g.files.length })} · {formatBytes(g.files.reduce((a, f) => a + (f.size || 0), 0))}
               </Text>
             )}
             {g.tools.length ? (

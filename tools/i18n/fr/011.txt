@@ -8,3 +8,5 @@
 1409|Cet outil n’est pas disponible pour le moment. Réessayez plus tard.
 1410|{n} fichiers vont dans la Corbeille, d’où vous pouvez les restaurer. Les autres fichiers de votre téléphone ne sont pas touchés.
 1411|{n} fichiers · {size} · prêts. Choisissez quoi faire :
+1412|1 fichier · {size} · prêt. Choisissez quoi faire :
+1413|1 fichier va dans la Corbeille, d’où vous pouvez le restaurer. Les autres fichiers de votre téléphone ne sont pas touchés.

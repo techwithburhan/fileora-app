@@ -231,7 +231,7 @@ export default function FilesScreen({ theme }: { theme: Theme }) {
       {shown.length > 0 && (
         <View style={styles.listBar}>
           <Text style={[type.caption, styles.flex, { color: theme.muted }]} numberOfLines={1}>
-            {tr('{n} files', { n: shown.length })} · {formatBytes(shownBytes)}
+            {shown.length === 1 ? tr('1 file') : tr('{n} files', { n: shown.length })} · {formatBytes(shownBytes)}
           </Text>
           <PressableScale
             accessibilityRole="button"
@@ -291,7 +291,11 @@ export default function FilesScreen({ theme }: { theme: Theme }) {
         visible={asking}
         theme={theme}
         title="Delete all files shown here?"
-        message={tr('{n} files move to the Recycle Bin, where you can restore them. Other files on your phone are not touched.', { n: shown.length })}
+        message={
+          shown.length === 1
+            ? tr('1 file moves to the Recycle Bin, where you can restore it. Other files on your phone are not touched.')
+            : tr('{n} files move to the Recycle Bin, where you can restore them. Other files on your phone are not touched.', { n: shown.length })
+        }
         okLabel="Delete all"
         onCancel={() => setAsking(false)}
         onOk={deleteShown}

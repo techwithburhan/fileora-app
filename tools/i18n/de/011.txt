@@ -8,3 +8,5 @@
 1409|Dieses Tool ist gerade nicht verfügbar. Bitte versuche es später noch einmal.
 1410|{n} Dateien kommen in den Papierkorb, wo du sie wiederherstellen kannst. Andere Dateien auf deinem Handy bleiben unberührt.
 1411|{n} Dateien · {size} · bereit. Wähle, was du tun möchtest:
+1412|1 Datei · {size} · bereit. Wähle, was du tun möchtest:
+1413|1 Datei kommt in den Papierkorb, wo du sie wiederherstellen kannst. Andere Dateien auf deinem Handy bleiben unberührt.

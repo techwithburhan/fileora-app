@@ -5,6 +5,8 @@ const d: Record<string, string> = {
  "1 alert marked as read": "1 الرٹ پڑھا ہوا نشان زد",
  "1 day": "1 دن",
  "1 file": "1 فائل",
+ "1 file moves to the Recycle Bin, where you can restore it. Other files on your phone are not touched.": "1 فائل ری سائیکل بن میں چلی جاتی ہے، جہاں سے آپ اسے واپس لا سکتے ہیں۔ آپ کے فون کی دوسری فائلوں کو نہیں چھیڑا جاتا۔",
+ "1 file · {size} · ready. Choose what to do:": "1 فائل · {size} · تیار۔ منتخب کریں کیا کرنا ہے:",
  "1 item moves to the Recycle Bin. You can restore it from Files → Recycle Bin.": "1 آئٹم ری سائیکل بن میں چلا جاتا ہے۔ آپ اسے فائلیں ← ری سائیکل بن سے واپس لا سکتے ہیں۔",
  "1 of 12": "12 میں سے 1",
  "1 page": "1 صفحہ",

@@ -5,6 +5,8 @@ const d: Record<string, string> = {
  "1 alert marked as read": "تم تعليم تنبيه واحد كمقروء",
  "1 day": "يوم واحد",
  "1 file": "ملف واحد",
+ "1 file moves to the Recycle Bin, where you can restore it. Other files on your phone are not touched.": "ينتقل ملف واحد إلى سلة المحذوفات، حيث يمكنك استعادته. لا يتم المساس بالملفات الأخرى على هاتفك.",
+ "1 file · {size} · ready. Choose what to do:": "ملف واحد · {size} · جاهز. اختر ما تريد فعله:",
  "1 item moves to the Recycle Bin. You can restore it from Files → Recycle Bin.": "ينتقل عنصر واحد إلى سلة المحذوفات. يمكنك استعادته من الملفات ← سلة المحذوفات.",
  "1 of 12": "1 من 12",
  "1 page": "صفحة واحدة",

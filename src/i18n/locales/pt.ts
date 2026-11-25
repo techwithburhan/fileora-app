@@ -5,6 +5,8 @@ const d: Record<string, string> = {
  "1 alert marked as read": "1 alerta marcado como lido",
  "1 day": "1 dia",
  "1 file": "1 arquivo",
+ "1 file moves to the Recycle Bin, where you can restore it. Other files on your phone are not touched.": "1 arquivo vai para a Lixeira, de onde você pode restaurá-lo. Outros arquivos do seu telefone não são alterados.",
+ "1 file · {size} · ready. Choose what to do:": "1 arquivo · {size} · pronto. Escolha o que fazer:",
  "1 item moves to the Recycle Bin. You can restore it from Files → Recycle Bin.": "1 item vai para a Lixeira. Você pode restaurá-lo em Arquivos → Lixeira.",
  "1 of 12": "1 de 12",
  "1 page": "1 página",

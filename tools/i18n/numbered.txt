@@ -1408,3 +1408,5 @@
 1409|This tool isn’t available right now. Please try again later.
 1410|{n} files move to the Recycle Bin, where you can restore them. Other files on your phone are not touched.
 1411|{n} files · {size} · ready. Choose what to do:
+1412|1 file · {size} · ready. Choose what to do:
+1413|1 file moves to the Recycle Bin, where you can restore it. Other files on your phone are not touched.

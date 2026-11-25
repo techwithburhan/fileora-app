@@ -24,6 +24,12 @@
 "src/components/tool/ResultView.tsx",
 "src/screens/ActivityScreen.tsx"
 ],
+"1 file moves to the Recycle Bin, where you can restore it. Other files on your phone are not touched.": [
+"src/screens/FilesScreen.tsx"
+],
+"1 file · {size} · ready. Choose what to do:": [
+"src/screens/SharedScreen.tsx"
+],
 "1 item moves to the Recycle Bin. You can restore it from Files → Recycle Bin.": [
 "src/lib/openFile.ts"
 ],

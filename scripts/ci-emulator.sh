@@ -283,6 +283,8 @@ longPress() {
   adb shell input swipe $x $y $x $y 900
 }
 openDownloads() {
+  # a fresh Files app each time (no files left selected from the last share)
+  adb shell am force-stop com.google.android.documentsui 2>/dev/null; adb shell am force-stop com.android.documentsui 2>/dev/null
   adb shell am start -W -a android.intent.action.VIEW -t vnd.android.document/root -d content://com.android.providers.downloads.documents/root/downloads > /dev/null 2>&1
   sleep 5
 }

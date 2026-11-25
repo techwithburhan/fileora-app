@@ -8,3 +8,5 @@
 1409|Esta ferramenta não está disponível agora. Tente novamente mais tarde.
 1410|{n} arquivos vão para a Lixeira, de onde você pode restaurá-los. Outros arquivos do seu telefone não são alterados.
 1411|{n} arquivos · {size} · prontos. Escolha o que fazer:
+1412|1 arquivo · {size} · pronto. Escolha o que fazer:
+1413|1 arquivo vai para a Lixeira, de onde você pode restaurá-lo. Outros arquivos do seu telefone não são alterados.
