@@ -1,0 +1,50 @@
+# Play Store screenshots (branch store-screenshots only): runs the released 1.2.4 APK (branch
+# "builds") on a Pixel 6 emulator (1080 x 2400) and saves real screens to branch "store-shots-out".
+name: Store screenshots
+on:
+  push:
+    branches: [store-screenshots]
+  workflow_dispatch:
+jobs:
+  shots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: APK 1.2.4 from the builds branch
+        run: |
+          git fetch -q --depth 1 origin builds
+          git show FETCH_HEAD:fileora-app.apk > app.apk
+          git show FETCH_HEAD:README.md || true
+          ls -l app.apk
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Screens on a Pixel 6 emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          ram-size: 4096M
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash scripts/store-shots.sh app.apk
+      - name: Publish the screens
+        if: always()
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          [ -d out ] || exit 0
+          cd out
+          echo "Fileora store screens from ${GITHUB_SHA::7} ($(date -u '+%Y-%m-%d %H:%M'))" > README.md
+          git init -q -b store-shots-out
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A && git commit -q -m "Store screens ${GITHUB_SHA::7}"
+          git push -q -f "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" store-shots-out
